@@ -1,0 +1,13 @@
+{
+  "name": "savdogar-pos",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd savdogar_project_ready/frontend && npm install && npm run build",
+    "install": "cd savdogar_project_ready/frontend && npm install",
+    "dev": "cd savdogar_project_ready/frontend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

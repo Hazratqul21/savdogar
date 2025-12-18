@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "builds": [
+    {
+      "src": "savdogar_project_ready/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "savdogar_project_ready/frontend/.next"
+      }
+    },
+    {
+      "src": "savdogar_project_ready/backend/api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "savdogar_project_ready/backend/api/index.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "savdogar_project_ready/backend"
+  }
+}

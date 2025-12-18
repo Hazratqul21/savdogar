@@ -1,0 +1,48 @@
+[
+  {
+    "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.Resources/deployments/Microsoft.CloudHealth-HealthModels-20251208045123/operations/4517E3B052EE9DD6",
+    "operationId": "4517E3B052EE9DD6",
+    "properties": {
+      "provisioningOperation": "Create",
+      "provisioningState": "Succeeded",
+      "timestamp": "2025-12-07T23:51:54.1386519Z",
+      "duration": "PT1M31.3727304S",
+      "trackingId": "d5c699c9-2d8a-4040-acf3-d9fc5a2e85ed",
+      "statusCode": "OK",
+      "targetResource": {
+        "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside/authenticationsettings/systemassigned",
+        "resourceType": "Microsoft.CloudHealth/healthmodels/authenticationsettings",
+        "resourceName": "engineerInside/systemassigned"
+      }
+    }
+  },
+  {
+    "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.Resources/deployments/Microsoft.CloudHealth-HealthModels-20251208045123/operations/31A9B5DA8F5CCA94",
+    "operationId": "31A9B5DA8F5CCA94",
+    "properties": {
+      "provisioningOperation": "Create",
+      "provisioningState": "Succeeded",
+      "timestamp": "2025-12-07T23:51:54.1386519Z",
+      "duration": "PT1M30.7789879S",
+      "trackingId": "d751c3ac-8122-4f7b-885a-5c8120f6d833",
+      "statusCode": "OK",
+      "targetResource": {
+        "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside",
+        "resourceType": "Microsoft.CloudHealth/healthmodels",
+        "resourceName": "engineerInside"
+      }
+    }
+  },
+  {
+    "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.Resources/deployments/Microsoft.CloudHealth-HealthModels-20251208045123/operations/08584364553727379622",
+    "operationId": "08584364553727379622",
+    "properties": {
+      "provisioningOperation": "EvaluateDeploymentOutput",
+      "provisioningState": "Succeeded",
+      "timestamp": "2025-12-07T23:51:54.1386519Z",
+      "duration": "PT1M31.7476981S",
+      "trackingId": "b23ed240-da8f-4e40-9b40-01be1a521995",
+      "statusCode": "OK"
+    }
+  }
+]

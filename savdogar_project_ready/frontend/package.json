@@ -1,0 +1,44 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@tanstack/query-persist-client-core": "^5.91.11",
+    "@tanstack/query-sync-storage-persister": "^5.90.14",
+    "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-query-devtools": "^5.91.1",
+    "@tanstack/react-query-persist-client": "^5.90.14",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.26",
+    "lucide-react": "^0.561.0",
+    "next": "16.0.10",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
+    "react-hook-form": "^7.68.0",
+    "react-qr-code": "^2.0.18",
+    "react-to-print": "^3.2.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "virtua": "^0.48.2",
+    "zod": "^4.2.0",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/w3c-web-usb": "^1.0.13",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "tailwindcss": "^4.1.18",
+    "typescript": "5.9.3"
+  }
+}

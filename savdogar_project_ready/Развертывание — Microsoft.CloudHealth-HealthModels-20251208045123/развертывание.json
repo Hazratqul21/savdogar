@@ -1,0 +1,93 @@
+{
+  "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.Resources/deployments/Microsoft.CloudHealth-HealthModels-20251208045123",
+  "name": "Microsoft.CloudHealth-HealthModels-20251208045123",
+  "type": "Microsoft.Resources/deployments",
+  "properties": {
+    "templateHash": "1933389320378689228",
+    "parameters": {
+      "name": {
+        "type": "String",
+        "value": "engineerInside"
+      },
+      "location": {
+        "type": "String",
+        "value": "uksouth"
+      },
+      "tagsByResource": {
+        "type": "Object",
+        "value": {}
+      },
+      "identity": {
+        "type": "Object",
+        "value": {
+          "type": "SystemAssigned"
+        }
+      },
+      "discoveryConfiguration": {
+        "type": "Object",
+        "value": {
+          "scope": "none",
+          "selectedScope": "/",
+          "subscriptionId": "N/A",
+          "subscriptionName": "N/A",
+          "resourceGroupName": "N/A",
+          "createRoleAssignment": false
+        }
+      }
+    },
+    "mode": "Incremental",
+    "debugSetting": {
+      "detailLevel": "None"
+    },
+    "provisioningState": "Succeeded",
+    "timestamp": "2025-12-07T23:53:25.9957574Z",
+    "duration": "PT1M33.2595836S",
+    "correlationId": "713952a9-f1b6-46f7-8ae9-ee2bb662ff24",
+    "providers": [
+      {
+        "namespace": "Microsoft.CloudHealth",
+        "resourceTypes": [
+          {
+            "resourceType": "healthmodels",
+            "locations": [
+              "uksouth"
+            ]
+          },
+          {
+            "resourceType": "healthmodels/authenticationsettings",
+            "locations": [
+              null
+            ]
+          }
+        ]
+      }
+    ],
+    "dependencies": [
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside",
+            "resourceType": "Microsoft.CloudHealth/healthmodels",
+            "resourceName": "engineerInside"
+          }
+        ],
+        "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside/authenticationsettings/systemassigned",
+        "resourceType": "Microsoft.CloudHealth/healthmodels/authenticationsettings",
+        "resourceName": "engineerInside/systemassigned"
+      }
+    ],
+    "outputResources": [
+      {
+        "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside"
+      },
+      {
+        "id": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside/authenticationsettings/systemassigned"
+      }
+    ],
+    "validationLevel": "Template"
+  },
+  "tags": {
+    "primaryResourceId": "/subscriptions/3393b357-e5ea-4868-9b21-80160fa0a148/resourceGroups/RG-AIFoundry-Dev/providers/Microsoft.CloudHealth/healthmodels/engineerInside",
+    "marketplaceItemId": "Microsoft.CloudHealth-HealthModels"
+  }
+}

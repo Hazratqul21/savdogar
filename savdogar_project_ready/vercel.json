@@ -8,16 +8,12 @@
       "config": {
         "distDir": "frontend/.next"
       }
-    },
-    {
-      "src": "backend/api/index.py",
-      "use": "@vercel/python"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/api/index.py"
+      "destination": "/api/index.py"
     }
   ]
 }

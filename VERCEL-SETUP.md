@@ -58,3 +58,4 @@ npx vercel
 ---
 
 **Eslatma**: Root Directory ni `savdogar_project_ready` qilib o'rnatish juda muhim!
+

@@ -8,7 +8,10 @@ import { Loader2, Printer, Search, CheckSquare, Square } from "lucide-react";
 import { motion } from "framer-motion";
 import { getToken } from "@/lib/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://savdogar.vercel.app');
 
 async function downloadLabels(productIds: number[]) {
   const token = getToken();

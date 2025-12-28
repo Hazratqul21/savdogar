@@ -13,7 +13,12 @@ app.add_middleware(RateLimitMiddleware)
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Production monorepo uses relative paths, but allowing * protects external integrations
+    allow_origins=[
+        "https://savdogar-kt7z.vercel.app",  # Frontend
+        "https://savdogar-otjp.vercel.app",  # Docs
+        "http://localhost:3000",  # Local development
+        "http://localhost:3001",  # Local development alternative
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

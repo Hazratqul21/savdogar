@@ -1,6 +1,10 @@
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? ''
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+// API Base URL configuration
+// Production: Use environment variable or default backend URL
+// Development: Use localhost or environment variable
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://savdogar.vercel.app');
 
 
 export function getAuthHeaders(): HeadersInit {

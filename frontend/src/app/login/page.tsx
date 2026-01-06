@@ -24,7 +24,8 @@ export default function LoginPage() {
     try {
       const response = await login(formData);
       saveToken(response.access_token);
-      router.push("/dashboard");
+      // Force navigation with window.location for reliable redirect
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err.message || "Kirishda xatolik yuz berdi");
     } finally {

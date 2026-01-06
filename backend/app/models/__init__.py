@@ -19,3 +19,17 @@ from .product_v2 import ProductV2, ProductVariant, ProductType
 from .pricing import PriceTier, PriceTierType
 from .customer_v2 import CustomerV2, CustomerTransactionV2, CustomerLedger, CustomerTier
 from .sale_v2 import SaleV2, SaleItemV2, PaymentMethod, SaleStatus
+
+# ✅ PART 2: Plumbing & HVAC models
+from .serial_number import SerialNumber, SerialNumberStatus, MaintenanceStatus, SerialNumberMovement
+from .warranty import Warranty, WarrantyStatus, WarrantyType
+from .product_bundle import ProductBundle
+
+# ✅ Enterprise-Grade Double-Entry Inventory System
+from .stock_engine import (
+    StockLocation, StockMove, StockQuant, StockLot,
+    MoveState, QuantStatus
+)
+
+# ✅ AI Audit & Automation
+from .audit_log import AuditLog, AuditSeverity, AuditCategory

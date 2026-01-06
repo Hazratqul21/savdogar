@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('access_token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '');
+  // Token ni cookie dan olish
+  const token = request.cookies.get('access_token')?.value;
 
   // Protected routes
   const protectedRoutes = ['/dashboard'];
@@ -11,20 +11,23 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   );
 
-  // If accessing protected route without token, redirect to login
+  // Agar protected route va token yo'q - login sahifasiga
   if (isProtectedRoute && !token) {
-    // Check localStorage (client-side only)
-    // For server-side, we'll handle in the component
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Agar login sahifasida va token bor - dashboard ga
+  if (request.nextUrl.pathname === '/login' && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/login'],
 };
 
 

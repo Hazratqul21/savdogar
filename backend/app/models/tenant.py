@@ -14,6 +14,7 @@ class BusinessType(str, enum.Enum):
     JEWELRY = "jewelry"         # Bijuteriya
     CAFE = "cafe"               # Qahvaxona
     KITCHEN = "kitchen"         # Oshxona
+    PLUMBING_HVAC = "plumbing_hvac"  # Sanitariya va HVAC (Boilerlar, quvurlar, xizmatlar)
 
 class Tenant(Base):
     """

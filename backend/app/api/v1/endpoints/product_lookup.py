@@ -17,14 +17,43 @@ async def lookup_product(
     """
     Shtrix-kod bo'yicha mahsulotni qidirish (Local DB + External API)
     """
-    # 1. Local bazadan qidirish
-    local_product = db.query(Product).filter(Product.barcode == barcode).first()
-    if local_product:
-        return {
-            "found": True,
-            "source": "local",
-            "product": local_product
-        }
+    # ✅ SECURITY FIX: Tenant isolation check
+    # Try ProductV2/ProductVariant first (new multi-tenant model)
+    from app.models.product_v2 import ProductVariant
+    from sqlalchemy import and_
+    
+    if current_user.tenant_id:
+        # Use ProductVariant (new model with tenant_id)
+        variant = db.query(ProductVariant).filter(
+            and_(
+                ProductVariant.tenant_id == current_user.tenant_id,
+                ProductVariant.barcode_aliases.contains([barcode])
+            )
+        ).first()
+        
+        if variant:
+            return {
+                "found": True,
+                "source": "local",
+                "variant": variant,
+                "product": variant.product_v2
+            }
+    
+    # Fallback to legacy Product model (organization_id)
+    if current_user.organization_id:
+        local_product = db.query(Product).filter(
+            and_(
+                Product.barcode == barcode,
+                Product.organization_id == current_user.organization_id
+            )
+        ).first()
+        
+        if local_product:
+            return {
+                "found": True,
+                "source": "local",
+                "product": local_product
+            }
 
     # 2. External API dan qidirish
     external_product = await product_lookup.lookup_by_barcode(barcode)

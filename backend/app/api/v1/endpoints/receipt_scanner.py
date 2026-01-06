@@ -44,8 +44,8 @@ def get_organization_id_for_user(current_user: User, db: Session) -> int:
     else:
         return deps.require_organization(current_user=current_user, db=db)
 
-# Ensure upload directory exists
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+# ✅ SECURITY FIX: File upload handling with cloud storage support
+from app.core.file_storage import upload_file, cleanup_file, is_ephemeral_storage
 
 @router.post("/upload", response_model=ReceiptUploadResponse)
 async def upload_receipt(
@@ -82,24 +82,53 @@ async def upload_receipt(
     # Generate unique filename
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"{current_user.id}_{timestamp}_{file.filename}"
-    file_path = os.path.join(settings.UPLOAD_DIR, filename)
     
     try:
         # Get organization_id first (before AI analysis)
         organization_id = get_organization_id_for_user(current_user, db)
         
-        # Save uploaded file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # ✅ SECURITY FIX: Read file content and upload to cloud storage
+        file_content = await file.read()
+        
+        # Upload to storage (cloud or local)
+        file_path = upload_file(file_content, filename, subdirectory="receipts")
+        
+        # Warn if using ephemeral storage in production
+        if is_ephemeral_storage() and settings.is_production():
+            logger.warning(
+                f"File uploaded to ephemeral storage: {file_path}. "
+                "File will be lost when serverless function ends. "
+                "Set STORAGE_TYPE=azure and configure Azure Blob Storage."
+            )
+        
+        # For AI analysis, we need a local file path
+        # If using cloud storage, download temporarily for analysis
+        from app.core.file_storage import download_file
+        import tempfile
+        
+        if file_path.startswith("http"):  # Cloud storage URL
+            # Download temporarily for AI analysis
+            temp_file_content = download_file(file_path)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as temp_file:
+                temp_file.write(temp_file_content)
+                temp_file_path = temp_file.name
+        else:
+            temp_file_path = file_path
         
         # Analyze with Azure OpenAI
         try:
-            ai_response = openai_service.analyze_receipt_image(file_path)
+            ai_response = openai_service.analyze_receipt_image(temp_file_path)
+            
+            # Clean up temporary file if we created one
+            if file_path.startswith("http") and os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
         except Exception as ai_error:
             logger.error(f"AI analysis error: {ai_error}")
-            # Clean up file on AI error
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            # Clean up temporary file if we created one
+            if file_path.startswith("http") and 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+            # Clean up uploaded file on AI error
+            cleanup_file(file_path)
             raise HTTPException(
                 status_code=500, 
                 detail=f"AI tahlil qilishda xatolik: {str(ai_error)}. Iltimos, rasm sifatini tekshiring yoki qayta urinib ko'ring."
@@ -216,11 +245,8 @@ async def upload_receipt(
     except Exception as e:
         logger.error(f"Receipt upload error: {e}", exc_info=True)
         # Clean up file on error
-        if 'file_path' in locals() and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except:
-                pass
+        if 'file_path' in locals():
+            cleanup_file(file_path)
         raise HTTPException(
             status_code=500, 
             detail=f"Xatolik: {str(e)}. Iltimos, qayta urinib ko'ring yoki administratorga murojaat qiling."
@@ -235,10 +261,23 @@ def get_receipt(
     receipt_id: int
 ) -> Any:
     """Get scanned receipt details."""
-    receipt = db.query(ScannedReceipt).filter(
-        ScannedReceipt.id == receipt_id,
-        ScannedReceipt.user_id == current_user.id
-    ).first()
+    # ✅ SECURITY FIX: Tenant/organization isolation check
+    from sqlalchemy import and_
+    
+    query = db.query(ScannedReceipt).filter(ScannedReceipt.id == receipt_id)
+    
+    # Check tenant_id first (new multi-tenant model)
+    if current_user.tenant_id:
+        # ScannedReceipt should have organization_id (legacy) or we need to add tenant_id
+        # For now, check user_id and organization_id
+        query = query.filter(ScannedReceipt.user_id == current_user.id)
+        if hasattr(ScannedReceipt, 'organization_id') and current_user.organization_id:
+            query = query.filter(ScannedReceipt.organization_id == current_user.organization_id)
+    else:
+        # Fallback to user_id only (less secure but maintains backward compatibility)
+        query = query.filter(ScannedReceipt.user_id == current_user.id)
+    
+    receipt = query.first()
     
     if not receipt:
         raise HTTPException(status_code=404, detail="Chek topilmadi")

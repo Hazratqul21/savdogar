@@ -63,7 +63,7 @@ class CustomerV2(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    tenant = relationship("Tenant", back_populates="customers")
+    tenant = relationship("Tenant")
     transactions = relationship("CustomerTransactionV2", back_populates="customer_v2")
     ledger_entries = relationship("CustomerLedger", back_populates="customer_v2")
     

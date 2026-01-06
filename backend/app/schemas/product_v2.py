@@ -43,6 +43,13 @@ class ProductVariantCreate(BaseModel):
     attributes: Optional[Dict[str, Any]] = Field(default_factory=dict)
     barcode_aliases: Optional[List[str]] = Field(default_factory=list)
     is_active: bool = True
+    
+    # ✅ PART 2: Plumbing/HVAC Support
+    primary_unit: Optional[str] = Field("piece", description="Primary unit: piece, meter, kg, liter, etc.")
+    secondary_unit: Optional[str] = Field(None, description="Secondary unit for conversion")
+    unit_conversion_factor: Optional[float] = Field(None, description="Conversion factor between units")
+    requires_serial_number: Optional[bool] = Field(False, description="Requires serial number tracking (boilers, equipment)")
+    is_serialized: Optional[bool] = Field(False, description="Is serialized inventory")
 
 class ProductVariantUpdate(BaseModel):
     """Variant yangilash"""
@@ -66,6 +73,13 @@ class ProductVariant(BaseModel):
     attributes: Dict[str, Any]
     barcode_aliases: List[str]
     is_active: bool
+    
+    # ✅ PART 2: Plumbing/HVAC Fields
+    primary_unit: Optional[str] = "piece"
+    secondary_unit: Optional[str] = None
+    unit_conversion_factor: Optional[float] = None
+    requires_serial_number: Optional[bool] = False
+    is_serialized: Optional[bool] = False
     
     class Config:
         from_attributes = True
@@ -102,6 +116,11 @@ class ProductCreate(BaseModel):
     cost_price: Optional[float] = Field(0.0, ge=0)
     tax_rate: Optional[float] = Field(0.0, ge=0, le=100)
     product_metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, alias="metadata")
+    
+    # ✅ PART 2: Service Item Configuration (Plumbing/HVAC)
+    service_duration_hours: Optional[float] = Field(None, description="Service duration in hours (for SERVICE type)")
+    service_category: Optional[str] = Field(None, description="Service category: installation, repair, maintenance")
+    linked_product_ids: Optional[List[int]] = Field(None, description="Linked products (e.g., boiler + installation service)")
     
     # Agar type = VARIABLE bo'lsa, variantlar avtomatik yaratiladi
     variants: Optional[List[ProductVariantCreate]] = None

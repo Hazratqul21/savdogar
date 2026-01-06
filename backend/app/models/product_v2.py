@@ -10,6 +10,8 @@ class ProductType(str, enum.Enum):
     SIMPLE = "simple"           # Oddiy mahsulot (bitta variant)
     VARIABLE = "variable"      # Variantli mahsulot (size, color, va hokazo)
     COMPOSITE = "composite"    # Kompozit mahsulot (set, combo)
+    SERVICE = "service"         # Xizmat (o'rnatish, texnik xizmat) - Plumbing/HVAC uchun
+    BUNDLE = "bundle"           # To'plam/Kit (1 Boiler + 5 Radiator + 20m Pipe)
 
 class ProductV2(Base):
     """
@@ -44,10 +46,17 @@ class ProductV2(Base):
     # Recipe / Ingredients (Oshxona & Cafe uchun)
     recipe = Column(JSONB, nullable=True, default={})
     
+    # ✅ PART 2: Service Item Configuration (Plumbing/HVAC)
+    # For SERVICE type products (installation, maintenance)
+    service_duration_hours = Column(Float, nullable=True)  # Xizmat davomiyligi (soatlar)
+    service_category = Column(String, nullable=True)  # Xizmat kategoriyasi (installation, repair, maintenance)
+    linked_product_ids = Column(ARRAY(Integer), nullable=True)  # Bog'langan mahsulotlar (boiler + installation service)
+    
     # Relationships
-    tenant = relationship("Tenant", back_populates="products")
+    tenant = relationship("Tenant")
     category = relationship("Category")
     variants = relationship("ProductVariant", back_populates="product_v2", cascade="all, delete-orphan")
+    bundles = relationship("ProductBundle", foreign_keys="ProductBundle.product_id", back_populates="product", cascade="all, delete-orphan")
     
     # Indexes
     __table_args__ = (
@@ -77,11 +86,23 @@ class ProductVariant(Base):
     min_stock_level = Column(Float, default=0.0)
     max_stock_level = Column(Float, nullable=True)
     
+    # ✅ PART 2: Dual Unit Support (Plumbing/HVAC)
+    # Primary unit (e.g., "meter" for pipes, "piece" for fittings)
+    primary_unit = Column(String, default="piece", nullable=False)  # piece, meter, kg, liter, etc.
+    # Secondary unit (optional, for conversion)
+    secondary_unit = Column(String, nullable=True)  # e.g., "foot" for meters
+    unit_conversion_factor = Column(Float, nullable=True)  # Conversion factor (e.g., 1 meter = 3.28084 feet)
+    
+    # ✅ PART 2: Serialized Inventory Support
+    requires_serial_number = Column(Boolean, default=False, index=True)  # Serial number kerekmi? (Boilers uchun)
+    is_serialized = Column(Boolean, default=False, index=True)  # Serial number bilan kuzatiladimi?
+    
     # Attributes (JSONB) - Bu muhim!
     # Fashion: {"size": "XL", "color": "Red", "fabric": "Cotton", "material_code": "COT-001"}
     # Grocery: {"expiry_date": "2025-12-01", "weight": "500g", "batch": "BATCH-123"}
     # Horeca: {"portion": "large", "spice_level": "medium", "dietary": "vegetarian"}
     # Wholesale: {"pack_size": 50, "inner_sku": "ITEM-001", "pallet_qty": 1000}
+    # Plumbing/HVAC: {"material": "copper", "diameter": "1/2 inch", "pressure_rating": "PN16"}
     attributes = Column(JSONB, nullable=True, default={})
     
     # Barcode aliases (Array) - Bir nechta barcode
@@ -97,9 +118,11 @@ class ProductVariant(Base):
     
     # Relationships
     product_v2 = relationship("ProductV2", back_populates="variants")
-    tenant = relationship("Tenant", back_populates="product_variants")
+    tenant = relationship("Tenant")
     price_tiers = relationship("PriceTier", back_populates="variant", cascade="all, delete-orphan")
     sale_items = relationship("SaleItemV2", back_populates="variant")
+    serial_numbers = relationship("SerialNumber", back_populates="variant", cascade="all, delete-orphan")
+    bundle_components = relationship("ProductBundle", foreign_keys="ProductBundle.component_variant_id", back_populates="component_variant")
     
     # Indexes
     __table_args__ = (

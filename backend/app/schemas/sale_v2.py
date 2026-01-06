@@ -39,6 +39,11 @@ class CartItem(BaseModel):
     variant_id: int
     quantity: float = Field(..., gt=0)
     discount_percent: Optional[float] = Field(0.0, ge=0, le=100)
+    
+    # ✅ PART 2: Plumbing/HVAC Support
+    serial_number: Optional[str] = Field(None, description="Serial number for serialized items (boilers, equipment)")
+    is_service_item: Optional[bool] = Field(False, description="Is this a service item?")
+    linked_variant_id: Optional[int] = Field(None, description="Linked product variant (for service items)")
 
 class CheckoutRequest(BaseModel):
     """Checkout so'rovi"""

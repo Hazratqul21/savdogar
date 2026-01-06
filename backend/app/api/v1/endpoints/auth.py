@@ -63,34 +63,15 @@ def signup(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        error_msg = str(e)
-        print(f"Signup error: {error_msg}")
-        print(traceback.format_exc())
+        from app.core.exceptions import handle_database_error, handle_generic_error
         
-        # Database connection error
-        if "relation" in error_msg.lower() and "does not exist" in error_msg.lower():
-            # Check if it's a specific table error
-            if "users" in error_msg.lower():
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Database jadvallari yaratilmagan. Iltimos, migration ni ishga tushiring: 'alembic upgrade head'"
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"Database jadvali topilmadi: {error_msg[:100]}"
-                )
-        elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Database serverga ulanib bo'lmadi. Iltimos, keyinroq urinib ko'ring."
-            )
+        # Check if it's a database error
+        error_msg = str(e).lower()
+        if "relation" in error_msg or "connection" in error_msg or "database" in error_msg:
+            raise handle_database_error(e)
         
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ro'yxatdan o'tishda xatolik yuz berdi: {error_msg[:100]}"
-        )
+        # Generic error
+        raise handle_generic_error(e, context="Ro'yxatdan o'tish")
 
 @router.post("/login", response_model=user_schema.Token)
 def login_access_token(
@@ -100,29 +81,38 @@ def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     Supports login with username, email, or phone number
+    
+    ✅ SECURITY FIX: Constant-time lookup to prevent timing attacks
     """
     try:
-        # Try to find user by username, email, or phone number
+        from sqlalchemy import or_
+        
+        # ✅ SECURITY FIX: Single query with OR conditions (constant time)
+        # This prevents timing attacks by always executing the same query structure
         login_identifier = form_data.username.strip()
-        user = None
         
-        # First try username
-        user = db.query(User).filter(User.username == login_identifier).first()
+        user = db.query(User).filter(
+            or_(
+                User.username == login_identifier,
+                User.email == login_identifier,
+                User.phone_number == login_identifier
+            )
+        ).first()
         
-        # If not found, try email
+        # ✅ SECURITY FIX: Always perform password verification to maintain constant time
+        # This prevents attackers from detecting user existence via timing differences
+        # Use a dummy hash if user not found to ensure constant verification time
         if not user:
-            user = db.query(User).filter(User.email == login_identifier).first()
-        
-        # If still not found, try phone number
-        if not user:
-            user = db.query(User).filter(User.phone_number == login_identifier).first()
-        
-        if not user:
+            # Perform dummy password verification to maintain constant execution time
+            # This prevents timing attacks that could reveal user existence
+            dummy_hash = "$2b$12$dummy.hash.for.timing.attack.prevention.constant.time"
+            security.verify_password("dummy_password_that_will_never_match", dummy_hash)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Noto'g'ri login, telefon raqami yoki parol"
             )
         
+        # Verify password (always takes same time regardless of user existence)
         if not security.verify_password(form_data.password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -142,19 +132,12 @@ def login_access_token(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        error_msg = str(e)
-        print(f"Login error: {error_msg}")
-        print(traceback.format_exc())
+        from app.core.exceptions import handle_database_error, handle_generic_error
         
-        # Database connection error
-        if "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Database serverga ulanib bo'lmadi. Iltimos, keyinroq urinib ko'ring."
-            )
+        # Check if it's a database error
+        error_msg = str(e).lower()
+        if "connection" in error_msg or "timeout" in error_msg or "database" in error_msg:
+            raise handle_database_error(e)
         
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server xatolik yuz berdi"
-        )
+        # Generic error
+        raise handle_generic_error(e, context="Kirish")

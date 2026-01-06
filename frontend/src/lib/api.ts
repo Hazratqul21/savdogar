@@ -1,10 +1,24 @@
 // API Base URL configuration
-// Production: Use environment variable or default backend URL
-// Development: Use localhost or environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://savdogar.vercel.app');
+// Monorepo deployment: Use relative path /api (same domain)
+// Development: Use localhost backend
+// External deployment: Use NEXT_PUBLIC_API_URL environment variable
+const getApiBaseUrl = (): string => {
+  // If explicitly set via environment variable, use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Development: use localhost backend
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  
+  // Production monorepo: use relative path (same domain)
+  // This works because frontend and backend are on the same domain
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 
 export function getAuthHeaders(): HeadersInit {
@@ -53,9 +67,8 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
       throw new Error(error.detail || 'Kirishda xatolik yuz berdi');
     }
 
-    return response.json();
+    return await response.json();
   } catch (error: any) {
-    // Network error handling
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
       throw new Error("Backend serverga ulanib bo'lmadi. Iltimos, backend ishlayotganini tekshiring (http://localhost:8000)");
     }
@@ -101,6 +114,8 @@ export async function signup(userData: SignupRequest): Promise<any> {
 export function saveToken(token: string): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('access_token', token);
+    // Cookie ga ham saqlash (middleware uchun)
+    document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Lax`;
   }
 }
 
@@ -114,6 +129,8 @@ export function getToken(): string | null {
 export function removeToken(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token');
+    // Cookie ni ham o'chirish
+    document.cookie = 'access_token=; path=/; max-age=0';
   }
 }
 

@@ -19,6 +19,7 @@ def calculate_cart_total(
     tenant_id: int,
     items: List[schemas.CartItem],
     customer_id: Optional[int] = None,
+    validate_serials: bool = True,  # ✅ PART 2: Serial number validation
 ) -> schemas.CartCalculationResult:
     """
     Savatcha jami summasini hisoblash
@@ -59,12 +60,63 @@ def calculate_cart_total(
                 detail=f"Variant {item.variant_id} topilmadi"
             )
         
-        # Ombor tekshirish
-        if variant.stock_quantity < item.quantity:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}, Talab: {item.quantity}"
-            )
+        # ✅ PART 2: Serial number validation for serialized items
+        if validate_serials and variant.requires_serial_number:
+            if not item.serial_number:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Variant {variant.sku} serial number talab qiladi. Serial number kiriting."
+                )
+            
+            # Verify serial number exists and is available
+            from app.models.serial_number import SerialNumber
+            serial = db.query(SerialNumber).filter(
+                and_(
+                    SerialNumber.tenant_id == tenant_id,
+                    SerialNumber.variant_id == variant.id,
+                    SerialNumber.serial_number == item.serial_number,
+                    SerialNumber.is_sold == False,
+                    SerialNumber.is_active == True
+                )
+            ).first()
+            
+            if not serial:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Serial number '{item.serial_number}' topilmadi yoki allaqachon sotilgan"
+                )
+        
+        # ✅ PART 2: Stock check with decimal support for length-based items
+        # For length-based items (meters), allow decimal quantities
+        # For count-based items (pieces), check whole number availability
+        if variant.primary_unit == "meter" or variant.primary_unit == "metr":
+            # Length-based: allow decimal quantities, check if we have enough
+            if variant.stock_quantity < item.quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}m, Talab: {item.quantity}m"
+                )
+        else:
+            # Count-based: check whole number availability
+            # ✅ PART 2: Stock check with decimal support for length-based items
+            # For serialized items, stock is tracked by serial numbers, not quantity
+            if not variant.is_serialized:
+                # For length-based items (meters), allow decimal quantities
+                # For count-based items (pieces), check whole number availability
+                if variant.primary_unit in ["meter", "metr", "m"]:
+                    # Length-based: allow decimal quantities, check if we have enough
+                    if variant.stock_quantity < item.quantity:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}m, Talab: {item.quantity}m"
+                        )
+                else:
+                    # Count-based: check whole number availability
+                    if variant.stock_quantity < item.quantity:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}, Talab: {item.quantity}"
+                        )
         
         # Narxni aniqlash (PriceTier dan)
         unit_price = variant.price
@@ -280,15 +332,65 @@ def checkout(
         db.flush()  # ID ni olish uchun
         
         # Sale items yaratish va omborni yangilash
-        for item_detail in cart_result.items:
+        # ✅ PART 2: Track sale items for service linking
+        sale_items_map = {}  # variant_id -> sale_item_id for service linking
+        
+        for idx, item_detail in enumerate(cart_result.items):
             variant = db.query(ProductVariant).filter(
                 ProductVariant.id == item_detail["variant_id"]
             ).first()
             
+            # ✅ PART 2: Serial number handling
+            serial_number_id = None
+            cart_item = checkout_data.items[idx] if idx < len(checkout_data.items) else None
+            
+            if variant.requires_serial_number and cart_item and cart_item.serial_number:
+                from app.models.serial_number import SerialNumber
+                serial = db.query(SerialNumber).filter(
+                    and_(
+                        SerialNumber.tenant_id == current_user.tenant_id,
+                        SerialNumber.variant_id == variant.id,
+                        SerialNumber.serial_number == cart_item.serial_number,
+                        SerialNumber.is_sold == False
+                    )
+                ).first()
+                
+                if serial:
+                    serial_number_id = serial.id
+                    serial.is_sold = True
+                    serial.sale_id = sale_obj.id
+                    # Set warranty start date if not set
+                    if not serial.warranty_start_date:
+                        from datetime import date
+                        serial.warranty_start_date = date.today()
+                        if serial.warranty_duration_months:
+                            from dateutil.relativedelta import relativedelta
+                            serial.warranty_end_date = serial.warranty_start_date + relativedelta(months=serial.warranty_duration_months)
+                    db.add(serial)
+            
+            # ✅ PART 2: Service item linking
+            is_service_item = False
+            linked_sale_item_id = None
+            
+            if cart_item and cart_item.is_service_item:
+                is_service_item = True
+                # Link to the product variant if specified
+                if cart_item.linked_variant_id:
+                    # Find the sale item for the linked variant
+                    for prev_idx, prev_item in enumerate(cart_result.items):
+                        if prev_item["variant_id"] == cart_item.linked_variant_id:
+                            # This will be set after we create the linked item
+                            pass
+            
             # Omborni yangilash (Xirmon: Recipe support for Kitchen/Cafe)
             from app.models.tenant import BusinessType
             product = variant.product_v2
-            if tenant.business_type in [BusinessType.KITCHEN, BusinessType.CAFE] and product.recipe and "ingredients" in product.recipe:
+            
+            # ✅ PART 2: For serialized items, don't decrease stock (stock is tracked by serial numbers)
+            if variant.is_serialized:
+                # Stock is managed by serial numbers, not quantity
+                pass
+            elif tenant.business_type in [BusinessType.KITCHEN, BusinessType.CAFE] and product.recipe and "ingredients" in product.recipe:
                 for ing in product.recipe["ingredients"]:
                      # Deduct ingredient: qty * portions
                      ing_qty = item_detail["quantity"] * ing["qty"]
@@ -296,6 +398,7 @@ def checkout(
                      if ing_variant:
                          ing_variant.stock_quantity -= ing_qty
             else:
+                # ✅ PART 2: Decimal quantity support for length-based items
                 variant.stock_quantity -= item_detail["quantity"]
             
             # Sale item yaratish
@@ -310,8 +413,67 @@ def checkout(
                 discount_amount=item_detail.get("discount_amount", 0.0),
                 tax_rate=item_detail.get("tax_rate", 0.0),
                 tax_amount=item_detail.get("tax_amount", 0.0),
+                # ✅ PART 2: Serial number and service tracking
+                serial_number_id=serial_number_id,
+                is_service_item=is_service_item,
             )
             db.add(sale_item)
+            db.flush()  # Get sale_item.id
+            
+            sale_items_map[variant.id] = sale_item.id
+            
+            # ✅ PART 2: Link service item to product item
+            if is_service_item and cart_item and cart_item.linked_variant_id:
+                linked_sale_item_id = sale_items_map.get(cart_item.linked_variant_id)
+                if linked_sale_item_id:
+                    sale_item.linked_sale_item_id = linked_sale_item_id
+                    db.add(sale_item)
+        
+        # ✅ PART 2: Handle bundle breakdown
+        # If any item is a bundle, create sale items for components
+        for idx, item_detail in enumerate(cart_result.items):
+            variant = db.query(ProductVariant).filter(
+                ProductVariant.id == item_detail["variant_id"]
+            ).first()
+            product = variant.product_v2
+            
+            if product.type == ProductType.BUNDLE:
+                from app.models.product_bundle import ProductBundle
+                bundle_components = db.query(ProductBundle).filter(
+                    and_(
+                        ProductBundle.product_id == product.id,
+                        ProductBundle.tenant_id == current_user.tenant_id,
+                        ProductBundle.is_active == True
+                    )
+                ).order_by(ProductBundle.sequence).all()
+                
+                # Create sale items for each bundle component
+                for component in bundle_components:
+                    component_variant = db.query(ProductVariant).filter(
+                        ProductVariant.id == component.component_variant_id
+                    ).first()
+                    
+                    if component_variant:
+                        # Calculate component quantity (bundle quantity * component quantity)
+                        component_qty = item_detail["quantity"] * component.quantity
+                        component_price = component.price_override or component_variant.price
+                        component_total = component_qty * component_price
+                        
+                        # Update stock for component
+                        if not component_variant.is_serialized:
+                            component_variant.stock_quantity -= component_qty
+                        
+                        # Create sale item for component
+                        component_sale_item = SaleItemV2(
+                            sale_id=sale_obj.id,
+                            variant_id=component_variant.id,
+                            quantity=component_qty,
+                            unit_price=component_price,
+                            cost_price=component_variant.cost_price,
+                            total=component_total,
+                            notes=f"Bundle component: {product.name}",
+                        )
+                        db.add(component_sale_item)
         
         # Qarz kitobiga yozuv qo'shish
         if checkout_data.payment_method == PaymentMethod.DEBT and customer:

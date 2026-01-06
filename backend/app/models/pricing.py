@@ -36,7 +36,7 @@ class PriceTier(Base):
     
     # Relationships
     variant = relationship("ProductVariant", back_populates="price_tiers")
-    tenant = relationship("Tenant", back_populates="price_tiers")
+    tenant = relationship("Tenant")
     
     # Indexes
     __table_args__ = (

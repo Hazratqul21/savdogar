@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from app.api import deps
 from app.models.user import User
+from app.core.exceptions import handle_generic_error, handle_database_error
 from app.services.ai_chatbot import (
     chat_with_ai,
     get_quick_answers
@@ -39,8 +40,10 @@ def chat(
             chat_data.conversation_history
         )
         return response
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Xatolik: {str(e)}")
+        raise handle_generic_error(e, context="AI chat")
 
 
 @router.get("/quick/{question_type}")
@@ -57,8 +60,10 @@ def quick_answer(
     try:
         answer = get_quick_answers(db, question_type, organization_id)
         return answer
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Xatolik: {str(e)}")
+        raise handle_generic_error(e, context="Quick answer")
 
 
 

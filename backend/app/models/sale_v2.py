@@ -56,7 +56,7 @@ class SaleV2(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    tenant = relationship("Tenant", back_populates="sales")
+    tenant = relationship("Tenant")
     cashier = relationship("User")
     customer = relationship("CustomerV2")
     branch = relationship("Branch")
@@ -94,12 +94,21 @@ class SaleItemV2(Base):
     tax_rate = Column(Float, default=0.0)
     tax_amount = Column(Float, default=0.0)
     
+    # ✅ PART 2: Serial Number Tracking (Plumbing/HVAC)
+    serial_number_id = Column(Integer, ForeignKey("serial_numbers.id"), nullable=True, index=True)
+    
+    # ✅ PART 2: Service Item Tracking
+    is_service_item = Column(Boolean, default=False, index=True)  # Xizmat mahsulotimi?
+    linked_sale_item_id = Column(Integer, ForeignKey("sale_items_v2.id"), nullable=True)  # Bog'langan mahsulot (service -> product)
+    
     # Metadata
     notes = Column(Text, nullable=True)
     
     # Relationships
     sale_v2 = relationship("SaleV2", back_populates="items")
     variant = relationship("ProductVariant", back_populates="sale_items", foreign_keys=[variant_id])
+    serial_number = relationship("SerialNumber", foreign_keys=[serial_number_id])
+    linked_item = relationship("SaleItemV2", remote_side=[id], foreign_keys=[linked_sale_item_id])  # Self-referential for service links
     
     # Indexes
     __table_args__ = (

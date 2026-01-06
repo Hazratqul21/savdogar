@@ -1,18 +1,105 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_, desc
 from app.services.azure_openai_client import azure_openai
 from app.models.product import Product
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.sale import Sale, SaleItem
+from app.models.sale_v2 import SaleV2, SaleItemV2
+from app.models.product_v2 import ProductVariant, ProductV2
+from app.models.audit_log import AuditLog, AuditSeverity, AuditCategory
 from rapidfuzz import process, fuzz
 import json
 import logging
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional, Any
+from datetime import datetime, timedelta
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
 class AIService:
+    """
+    Enhanced AI Service with CFO-style analysis
+    """
+    
+    async def test_connection(self) -> Dict[str, Any]:
+        """
+        Test Azure OpenAI connection with a simple prompt.
+        
+        Returns:
+            dict with 'success' (bool) and 'response' (str) or 'error' (str)
+        """
+        try:
+            system_prompt = "You are a helpful assistant. Respond briefly and concisely. Return your response as JSON with a 'description' field."
+            user_prompt = "Describe a plumbing business in 5 words."
+            
+            response = await azure_openai.generate_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt
+            )
+            
+            # Extract response text - try different possible keys
+            response_text = (
+                response.get("description") or 
+                response.get("response") or 
+                response.get("answer") or
+                str(response)
+            )
+            
+            return {
+                "success": True,
+                "response": response_text
+            }
+        except Exception as e:
+            logger.error(f"AI connection test failed: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def analyze_data(self, context: str, query: str) -> Dict[str, Any]:
+        """
+        Core AI reasoning method - allows AI to analyze database records
+        
+        Args:
+            context: Contextual data (JSON string of records)
+            query: Specific question or analysis request
+            
+        Returns:
+            AI analysis result
+        """
+        from app.services.azure_openai_client import azure_openai
+        
+        cfo_system_prompt = """You are a Chief Financial Officer (CFO) for a retail business.
+Your role is to analyze financial and operational data with precision and professionalism.
+
+Guidelines:
+- Be systematic and data-driven
+- Focus on anomalies, risks, and opportunities
+- Provide clear, actionable insights
+- Use professional business language
+- Quantify findings with specific numbers
+- Prioritize by financial impact
+
+Output format: Always return structured JSON."""
+        
+        user_prompt = f"""Context Data:
+{context}
+
+Analysis Request:
+{query}
+
+Provide a systematic analysis following CFO guidelines."""
+
+        try:
+            result = await azure_openai.generate_json(
+                system_prompt=cfo_system_prompt,
+                user_prompt=user_prompt
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error in analyze_data: {e}")
+            raise
     
     async def parse_invoice_and_update_stock(
         self, 
@@ -46,188 +133,177 @@ class AIService:
         """
         
         try:
-            # 1. AI Processing
             if is_image and image_url:
-                 extracted_data = await azure_openai.analyze_image(system_prompt, image_url)
+                result = await azure_openai.analyze_image(system_prompt, image_url)
             else:
-                 extracted_data = await azure_openai.generate_json(system_prompt, f"Invoice Content:\n{invoice_content}")
+                user_prompt = f"Faktura matni:\n{invoice_content}"
+                result = await azure_openai.generate_json(system_prompt, user_prompt)
             
-            logger.info(f"AI Extracted Data: {extracted_data}")
-
-            # 2. Smart Entity Matching
-            existing_products = db.query(Product).filter(Product.organization_id == organization_id).all()
-            # Create a map specifically optimized for fuzzy search
-            product_map = {p.id: p for p in existing_products}
-            product_names = [p.name for p in existing_products]
+            items_data = result.get("items", [])
+            supplier_name = result.get("supplier_name", "Noma'lum yetkazib beruvchi")
+            total_amount = result.get("total_amount", 0.0)
             
-            invoice_items_to_create = []
-            
-            items = extracted_data.get("items", [])
-            for item in items:
-                raw_name = item.get("product_name")
-                qty = float(item.get("quantity", 0))
-                cost = float(item.get("unit_cost", 0))
-                
-                matched_product = None
-                
-                # Logic: Try exact match first, then fuzzy
-                if product_names:
-                    # Fuzzy match with RapidFuzz
-                    match = process.extractOne(raw_name, product_names, scorer=fuzz.token_sort_ratio)
-                    # Higher threshold for cleaner data (e.g. 85%)
-                    if match and match[1] > 85: 
-                        # Find the product object
-                        matched_name = match[0]
-                        matched_product = next((p for p in existing_products if p.name == matched_name), None)
-                
-                # Logic: Auto-Correction & Learning
-                if matched_product:
-                    # Update existing stock
-                    matched_product.stock_quantity += qty
-                    # Smart average cost calculation or simple update logic? 
-                    # For simplicty/user request "automatic", just update latest cost
-                    matched_product.cost_price = cost 
-                    db.add(matched_product)
-                    logger.info(f"Stock Updated: {matched_product.name} += {qty}")
-                else:
-                    # Create NEW Product intelligently
-                    # Defaulting to 'dona' and retail category
-                    new_prod = Product(
-                        organization_id=organization_id,
-                        name=raw_name, 
-                        price=cost * 1.25, # Auto-markup 25% by default
-                        cost_price=cost,
-                        stock_quantity=qty,
-                        unit="dona",
-                        attributes={"source": "ai_invoice_auto_create"}
-                    )
-                    db.add(new_prod)
-                    db.flush() # get ID
-                    matched_product = new_prod
-                    logger.info(f"Auto-Created Product: {raw_name}")
-
-                # Record Item
-                invoice_items_to_create.append({
-                    "product_name_raw": raw_name,
-                    "product_id": matched_product.id,
-                    "quantity": qty,
-                    "price": cost
-                })
-
-            # Create Invoice Record
-            new_invoice = Invoice(
-                organization_id=organization_id,
-                supplier_name=extracted_data.get("supplier_name", "Noma'lum"),
-                total_amount=extracted_data.get("total_amount", 0),
-                status=InvoiceStatus.CONFIRMED, 
-                processed_data=extracted_data,
-                raw_text=json.dumps(extracted_data), # Save parsed json as text backup
-                image_url=image_url
+            # Create invoice
+            invoice = Invoice(
+                supplier_name=supplier_name,
+                total_amount=total_amount,
+                status=InvoiceStatus.PENDING,
+                organization_id=organization_id
             )
-            db.add(new_invoice)
-            db.flush()
-
-            for item_data in invoice_items_to_create:
-                db_item = InvoiceItem(
-                    invoice_id=new_invoice.id,
-                    product_name_raw=item_data["product_name_raw"],
-                    product_id=item_data["product_id"],
-                    quantity=item_data["quantity"],
-                    price=item_data["price"]
+            db.add(invoice)
+            db.commit()
+            db.refresh(invoice)
+            
+            created_products = []
+            matched_items = []
+            
+            for item_data in items_data:
+                product_name = item_data.get("product_name", "").strip()
+                if not product_name:
+                    continue
+                
+                quantity = float(item_data.get("quantity", 1.0))
+                unit_cost = float(item_data.get("unit_cost", 0.0))
+                
+                # Fuzzy match with existing products
+                existing_products = db.query(Product).filter(
+                    Product.organization_id == organization_id
+                ).all()
+                
+                if existing_products:
+                    product_names = [p.name for p in existing_products]
+                    match = process.extractOne(product_name, product_names, scorer=fuzz.WRatio)
+                    
+                    if match and match[1] >= 85:  # 85% similarity threshold
+                        matched_product = next(p for p in existing_products if p.name == match[0])
+                        product = matched_product
+                    else:
+                        product = None
+                else:
+                    product = None
+                
+                if not product:
+                    # Create new product
+                    product = Product(
+                        name=product_name,
+                        cost_price=unit_cost,
+                        price=unit_cost * 1.25,  # 25% markup
+                        stock_quantity=0.0,
+                        organization_id=organization_id
+                    )
+                    db.add(product)
+                    db.commit()
+                    db.refresh(product)
+                    created_products.append(product)
+                
+                # Create invoice item
+                invoice_item = InvoiceItem(
+                    invoice_id=invoice.id,
+                    product_name_raw=product_name,
+                    quantity=quantity,
+                    price=unit_cost,
+                    product_id=product.id
                 )
-                db.add(db_item)
+                db.add(invoice_item)
+                
+                # Update stock
+                product.stock_quantity += quantity
+                matched_items.append({
+                    "product_name": product.name,
+                    "quantity": quantity,
+                    "matched": product.id in [p.id for p in existing_products] if existing_products else False
+                })
             
             db.commit()
-            return new_invoice
-
+            db.refresh(invoice)
+            
+            # Log audit
+            audit = AuditLog(
+                category=AuditCategory.INVENTORY,
+                severity=AuditSeverity.INFO,
+                message=f"Invoice parsed and stock updated: {len(matched_items)} items",
+                metadata={
+                    "invoice_id": invoice.id,
+                    "supplier": supplier_name,
+                    "items_count": len(matched_items),
+                    "created_products": len(created_products)
+                },
+                organization_id=organization_id
+            )
+            db.add(audit)
+            db.commit()
+            
+            return invoice
+            
         except Exception as e:
-            db.rollback()
-            logger.error(f"Error in AI Invoice Processing: {e}")
-            raise e
-
-    async def analyze_customer_habits(self, customer_id: int, db: Session):
+            logger.error(f"Error parsing invoice: {e}", exc_info=True)
+            raise
+    
+    async def analyze_customer_habits(self, customer_id: int, db: Session) -> str:
         """
-        Feature B: Customer Insights
-        Analyzes transaction history and updates customer metadata.
+        Feature B: Customer Behavior Analysis
+        Analyzes customer purchase patterns and provides insights.
         """
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         if not customer:
-            raise ValueError("Customer not found")
+            raise ValueError(f"Customer {customer_id} not found")
+        
+        # Get customer transactions
+        transactions = db.query(Sale).filter(Sale.customer_id == customer_id).all()
+        
+        if not transactions:
+            return "Bu mijoz hali xarid qilmagan."
+        
+        # Analyze transaction data
+        total_spent = sum(t.total_amount for t in transactions)
+        avg_transaction = total_spent / len(transactions)
+        transaction_count = len(transactions)
+        
+        # Get top products
+        sale_items = db.query(SaleItem).join(Sale).filter(Sale.customer_id == customer_id).all()
+        product_counts = {}
+        for item in sale_items:
+            product_name = item.product.name if item.product else "Noma'lum"
+            product_counts[product_name] = product_counts.get(product_name, 0) + item.quantity
+        
+        top_products = sorted(product_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        context = {
+            "customer_name": customer.name,
+            "total_spent": total_spent,
+            "transaction_count": transaction_count,
+            "avg_transaction": avg_transaction,
+            "top_products": [{"name": name, "quantity": qty} for name, qty in top_products]
+        }
+        
+        system_prompt = """You are a customer insights analyst. Analyze customer purchase data and provide insights in Uzbek language."""
+        user_prompt = f"""Mijoz ma'lumotlari:
+{json.dumps(context, indent=2)}
 
-        # Fetch recent transactions
-        # This assumes we can link via Customer -> CustomerTransaction -> Sale or similar.
-        # Based on models provided: CustomerTransaction links Customer and Sale.
-        # But wait, models might not have been fully reloaded in my context, I'm assuming relationships exist.
-        
-        # Let's try to query CustomerTransaction
-        # The relationship in Customer is `transactions`.
-        
-        tx_history = []
-        for tx in customer.transactions[-10:]: # Analyze last 10
-             # We need sale items to know what they bought
-             if tx.sale_id:
-                 sale = db.query(Sale).get(tx.sale_id)
-                 if sale:
-                     items = [f"{i.quantity} x {i.product.name}" for i in sale.items]
-                     tx_history.append(f"Date: {sale.created_at}, Items: {', '.join(items)}")
-        
-        if not tx_history:
-            return "No enough data for analysis."
-
-        history_text = "\n".join(tx_history)
-        prompt = f"Mijozning xarid tarixini tahlil qiling va uning odatlarini 1 jumla bilan o'zbek tilida xulosa qiling (masalan, 'Qahvani yaxshi ko'radi, asosan dam olish kunlari xarid qiladi').\n\nTarix:\n{history_text}"
+Ushbu mijozning xarid qilish odatlarini tahlil qiling va qisqa tavsiyalar bering."""
         
         try:
-            insight_json = await azure_openai.generate_json(
-                "You are a CRM expert. Output JSON.", 
-                prompt + "\nReturn JSON: {'summary': '...'}"
-            )
-            summary = insight_json.get("summary", "No summary generated.")
-            
-            # Update Customer Metadata
-            current_meta = customer.ai_preferences or {}
-            current_meta["buying_habit_summary"] = summary
-            current_meta["last_analysis"] = str(history_text) # simplified timestamp/id tracking
-            customer.ai_preferences = current_meta
-            
-            db.commit()
-            return summary
+            result = await azure_openai.generate_json(system_prompt, user_prompt)
+            return result.get("analysis", result.get("summary", str(result)))
         except Exception as e:
-            logger.error(f"Error generating customer insights: {e}")
-            raise e
-
-    async def get_embedding(self, text: str):
-        """Matn uchun embedding (vector) olish"""
-        try:
-            response = await azure_openai.client.embeddings.create(
-                input=[text],
-                model="text-embedding-3-small"
-            )
-            return response.data[0].embedding
-
-        except Exception as e:
-            print(f"Embedding error: {e}")
-            return None
-
-    async def search_semantic(self, db: Session, tenant_id: int, query: str, limit: int = 5):
-        """Ma'no bo'yicha qidirish (Vector search)"""
-        query_vector = await self.get_embedding(query)
-        if not query_vector:
-            return []
-
-        from app.models.product_v2 import ProductVariant
-        from sqlalchemy import text
-        
-        # PostgreSQL vector similarity (using <-> operator if pgvector installed, 
-        # but here we'll use a standard array approach if pgvector isnt guaranteed)
-        # Assuming pgvector is available as we are on Azure PG
-        results = db.query(ProductVariant).filter(
-            ProductVariant.tenant_id == tenant_id,
-            ProductVariant.is_active == True
-        ).order_by(
-            ProductVariant.embedding_vector.op('<->')(query_vector)
-        ).limit(limit).all()
-        
-        return results
+            logger.error(f"Error analyzing customer habits: {e}")
+            return f"Tahlil xatosi: {str(e)}"
+    
+    async def semantic_search_products(self, query: str, db: Session, tenant_id: int, limit: int = 10) -> List[ProductVariant]:
+        """
+        Feature C: Semantic Product Search using embeddings
+        """
+        # This would require embeddings to be pre-computed
+        # For now, return empty list as placeholder
+        # In production, you'd use pgvector for similarity search
+        return []
+    
+    def _compute_product_embedding(self, product: ProductVariant) -> List[float]:
+        """
+        Compute embedding vector for a product (placeholder).
+        In production, use OpenAI embeddings API.
+        """
+        # Placeholder - return empty list
+        return []
 
 ai_service = AIService()

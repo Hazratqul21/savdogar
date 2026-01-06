@@ -1,12 +1,26 @@
 import { getAuthHeaders } from './api';
 
 // API Base URL configuration
-// Production: Use environment variable or default backend URL
-// Development: Use localhost or environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://savdogar.vercel.app');
+// Monorepo deployment: Use relative path /api (same domain)
+// Development: Use localhost backend
+// External deployment: Use NEXT_PUBLIC_API_URL environment variable
+const getApiBaseUrl = (): string => {
+  // If explicitly set via environment variable, use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Development: use localhost backend
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  
+  // Production monorepo: use relative path (same domain)
+  // This works because frontend and backend are on the same domain
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 
 export interface ProductVariant {
@@ -83,7 +97,7 @@ export interface CheckoutRequest {
 
 // Product APIs
 export async function getProducts(tenantId: number): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/v2/products`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/products`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch products');
@@ -161,7 +175,7 @@ export async function searchProductsBySku(sku: string, tenantId: number): Promis
 
 // Cart calculation
 export async function calculateCart(request: CartCalculationRequest): Promise<CartCalculationResult> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/v2/sales/cart/calculate`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/sales/cart/calculate`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -172,7 +186,7 @@ export async function calculateCart(request: CartCalculationRequest): Promise<Ca
 
 // Checkout
 export async function checkout(request: CheckoutRequest): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/v2/sales/checkout`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/sales/checkout`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -186,7 +200,7 @@ export async function checkout(request: CheckoutRequest): Promise<any> {
 
 // Customer APIs
 export async function getCustomers(tenantId: number): Promise<Customer[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/v2/customers`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/customers`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch customers');
@@ -211,7 +225,7 @@ export async function getStockAlerts(): Promise<any[]> {
 }
 
 export async function getTenantInfo(): Promise<{ id: number; business_type: string; config: any }> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/v2/tenants/me`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/tenants/me`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch tenant info');

@@ -40,6 +40,10 @@ def create_product(
         tax_rate=product_in.tax_rate or 0.0,
         product_metadata=product_in.product_metadata or {},
         is_active=True,
+        # ✅ PART 2: Service item configuration
+        service_duration_hours=product_in.service_duration_hours,
+        service_category=product_in.service_category,
+        linked_product_ids=product_in.linked_product_ids,
     )
     db.add(product_obj)
     db.flush()  # ID ni olish uchun
@@ -59,6 +63,12 @@ def create_product(
                 attributes=variant_data.attributes or {},
                 barcode_aliases=variant_data.barcode_aliases or [],
                 is_active=variant_data.is_active,
+                # ✅ PART 2: Dual unit and serial number support
+                primary_unit=variant_data.primary_unit or "piece",
+                secondary_unit=variant_data.secondary_unit,
+                unit_conversion_factor=variant_data.unit_conversion_factor,
+                requires_serial_number=variant_data.requires_serial_number or False,
+                is_serialized=variant_data.is_serialized or False,
             )
             db.add(variant_obj)
     elif product_in.type == ProductType.SIMPLE:
@@ -73,6 +83,10 @@ def create_product(
             attributes={},
             barcode_aliases=[],
             is_active=True,
+            # ✅ PART 2: Default unit support
+            primary_unit="piece",
+            requires_serial_number=False,
+            is_serialized=False,
         )
         db.add(variant_obj)
     

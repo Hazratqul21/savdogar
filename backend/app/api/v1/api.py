@@ -35,7 +35,13 @@ from app.api.v1.endpoints import (
     customers_v2,
     tenants,
     labels,
-    settings
+    settings,
+    # ✅ PART 2: Plumbing & HVAC endpoints
+    serial_numbers,
+    warranties,
+    bundles,
+    # ✅ AI Audit & Automation
+    ai_audit
 )
 
 api_router = APIRouter()
@@ -76,4 +82,12 @@ api_router.include_router(sales_v2.router, prefix="/v2/sales", tags=["sales-v2"]
 api_router.include_router(customers_v2.router, prefix="/v2/customers", tags=["customers-v2"])
 api_router.include_router(labels.router, prefix="/labels", tags=["labels"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
+
+# ✅ PART 2: Plumbing & HVAC endpoints
+api_router.include_router(serial_numbers.router, prefix="/serial-numbers", tags=["serial-numbers"])
+api_router.include_router(warranties.router, prefix="/warranties", tags=["warranties"])
+api_router.include_router(bundles.router, prefix="/bundles", tags=["bundles"])
+
+# ✅ AI Audit & Automation Platform
+api_router.include_router(ai_audit.router, prefix="/ai/audit", tags=["ai-audit"])
 

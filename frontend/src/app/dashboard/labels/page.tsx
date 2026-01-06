@@ -8,10 +8,18 @@ import { Loader2, Printer, Search, CheckSquare, Square } from "lucide-react";
 import { motion } from "framer-motion";
 import { getToken } from "@/lib/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://savdogar.vercel.app');
+// API Base URL - same logic as api.ts for consistency
+const getApiBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  return '/api'; // Monorepo: relative path
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 async function downloadLabels(productIds: number[]) {
   const token = getToken();

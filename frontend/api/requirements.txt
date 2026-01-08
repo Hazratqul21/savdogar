@@ -1,0 +1,44 @@
+# Vercel Serverless Function Dependencies
+# Minimal and clean requirements.txt
+
+# Core Framework
+fastapi>=0.109.0
+uvicorn>=0.24.0
+mangum>=0.17.0  # Vercel serverless adapter
+
+# Configuration
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0  # .env file reading (local development)
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0  # PostgreSQL driver
+alembic>=1.12.0  # Database migrations
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0  # JWT tokens
+passlib[bcrypt]>=1.7.4  # Password hashing
+
+# File Uploads
+python-multipart>=0.0.6  # FastAPI file uploads
+
+# AI & OpenAI
+openai>=1.0.0  # GPT-4o
+
+# Image Processing
+pillow>=10.0.0  # Image processing (used in openai_service.py)
+
+# Storage
+supabase>=2.0.0  # Supabase storage
+
+# Additional Services (actually used in codebase)
+redis>=5.0.0  # Rate limiting and caching
+qrcode>=7.0  # QR code generation
+httpx>=0.25.0  # HTTP client
+rapidfuzz>=3.0.0  # Fuzzy string matching
+tenacity>=8.0.0  # Retry logic for OpenAI
+openpyxl>=3.1.2  # Excel export
+reportlab>=4.0.0  # PDF generation
+duckduckgo_search>=4.0.0  # Image search
+python-telegram-bot>=20.0.0  # Telegram notifications
+python-dateutil>=2.8.0  # Date utilities

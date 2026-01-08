@@ -247,3 +247,4 @@ class StockQuant(Base):
 
 
 
+

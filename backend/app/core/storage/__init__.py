@@ -27,10 +27,23 @@ def get_storage() -> StorageInterface:
     # Lazy imports to avoid circular dependencies
     from app.core.storage.local_storage import LocalStorage
     from app.core.storage.azure_blob import AzureBlobStorage
+    from app.core.storage.supabase_storage import SupabaseStorage
     
     storage_type = settings.STORAGE_TYPE.lower()
     
-    if storage_type == "azure":
+    if storage_type == "supabase":
+        if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+            logger.warning("Supabase storage selected but credentials not set. Falling back to local storage.")
+            _storage_instance = LocalStorage()
+        else:
+            _storage_instance = SupabaseStorage(
+                supabase_url=settings.SUPABASE_URL,
+                service_role_key=settings.SUPABASE_SERVICE_ROLE_KEY,
+                bucket_name=settings.SUPABASE_STORAGE_BUCKET
+            )
+            logger.info(f"Using Supabase Storage for file uploads (bucket: {settings.SUPABASE_STORAGE_BUCKET})")
+    
+    elif storage_type == "azure":
         if not settings.AZURE_STORAGE_CONNECTION_STRING:
             logger.warning("Azure storage selected but connection string not set. Falling back to local storage.")
             _storage_instance = LocalStorage()
@@ -53,7 +66,7 @@ def get_storage() -> StorageInterface:
             logger.warning(
                 "Using local storage in production! "
                 "Files will be lost in serverless environments. "
-                "Set STORAGE_TYPE=azure and configure Azure Blob Storage."
+                "Set STORAGE_TYPE=supabase and configure Supabase Storage."
             )
     
     return _storage_instance

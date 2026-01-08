@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type BusinessType = 'retail' | 'fashion' | 'horeca' | 'wholesale' | 'jewelry' | 'cafe' | 'kitchen';
+export type BusinessType = 'retail' | 'fashion' | 'horeca' | 'wholesale' | 'jewelry' | 'cafe' | 'kitchen' | 'tobacco' | 'plumbing_hvac';
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'debt' | 'mixed' | 'payme' | 'click';
 
 export interface ProductVariant {

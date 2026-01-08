@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { usePosState, type ProductVariant, type Customer } from '@/stores/pos-state';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, getCustomers, checkout } from '@/lib/api-pos';
+import { getProducts, getCustomers } from '@/lib/api-pos';
 import { Search, Plus, Minus, Trash2, Edit2, Check, X, AlertCircle } from 'lucide-react';
 import { useSmartScanner } from '@/hooks/useSmartScanner';
+import { useCheckout } from '@/hooks/useCheckout';
 
 export function TraderView() {
   const {
@@ -33,6 +34,13 @@ export function TraderView() {
   const [lastScannedItem, setLastScannedItem] = useState<{ name: string; isPack: boolean } | null>(null);
   const queryClient = useQueryClient();
 
+  // Checkout hook with receipt printing (handles auto-print)
+  const {
+    handleCheckout: handleCheckoutWithReceipt,
+    isProcessing: isCheckoutProcessing,
+    AgeVerificationModal: AgeModal,
+  } = useCheckout();
+
   // Smart scanner with pack detection
   useSmartScanner({
     onScan: (variant, isPack) => {
@@ -59,6 +67,13 @@ export function TraderView() {
     queryFn: () => getCustomers(tenantId!),
     enabled: !!tenantId,
   });
+
+  // Checkout hook with receipt printing
+  const {
+    handleCheckout: handleCheckoutWithReceipt,
+    isProcessing: isCheckoutProcessing,
+    AgeVerificationModal: AgeModal,
+  } = useCheckout();
 
   const filteredProducts = products.filter((p: any) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,16 +104,6 @@ export function TraderView() {
     setTempPrice('');
   };
 
-  const checkoutMutation = useMutation({
-    mutationFn: checkout,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products', tenantId] });
-      queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
-      // Clear cart after successful checkout
-      usePosState.getState().clearCart();
-    },
-  });
-
   const handleCheckout = async () => {
     if (!selectedCustomer) {
       alert('Mijoz tanlash majburiy!');
@@ -110,23 +115,10 @@ export function TraderView() {
       return;
     }
 
-    const checkoutData = {
-      items: cart.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        discount_percent: item.discount_percent,
-      })),
-      customer_id: selectedCustomer.id,
-      payment_method: paymentMethod,
-      debt_amount: paymentMethod === 'debt' ? getCartTotal() : undefined,
-    };
-
-    try {
-      await checkoutMutation.mutateAsync(checkoutData);
-      alert('Sotuv muvaffaqiyatli yakunlandi!');
-    } catch (error: any) {
-      alert(`Xatolik: ${error.message}`);
-    }
+    // Use checkout hook which handles receipt printing automatically
+    await handleCheckoutWithReceipt({
+      price_tier: selectedCustomer.price_tier,
+    });
   };
 
   return (
@@ -386,10 +378,10 @@ export function TraderView() {
               </div>
               <button
                 onClick={handleCheckout}
-                disabled={!selectedCustomer || checkoutMutation.isPending}
+                disabled={!selectedCustomer || isCheckoutProcessing}
                 className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg font-bold text-lg transition-colors"
               >
-                {checkoutMutation.isPending ? 'Jarayonda...' : 'Sotuvni yakunlash'}
+                {isCheckoutProcessing ? 'Jarayonda...' : 'Sotuvni yakunlash'}
               </button>
             </div>
           )}
@@ -452,6 +444,9 @@ export function TraderView() {
           </div>
         </div>
       )}
+
+      {/* Age Verification Modal (for Tobacco) */}
+      {AgeModal}
     </div>
   );
 }

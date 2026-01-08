@@ -1,12 +1,40 @@
 @import "tailwindcss";
 
+/* Mobile-First: Prevent horizontal scrolling */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Mobile Input Fix: Prevent iOS zoom on focus */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Thumb-Friendly Buttons on Mobile */
+@media screen and (max-width: 768px) {
+  button,
+  a[role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Premium Neural Light - Soft & Vibrant */
-  --background: 220 33% 98%;
+  /* Clean White Design - Simple & Professional */
+  --background: 0 0% 100%;
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
@@ -15,57 +43,57 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
 
-  --primary: 262 83% 58%;
-  --primary-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 190 90% 50%;
+  --secondary: 210 40% 96.1%;
   --secondary-foreground: 222 47% 11%;
 
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 320 100% 60%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
 
   --border: 220 13% 91%;
   --input: 220 13% 91%;
-  --ring: 262 83% 58%;
+  --ring: 217 91% 60%;
 
-  --radius: 1.25rem;
+  --radius: 0.5rem;
 }
 
 .dark {
-  /* Premium Neural Dark - Depth & Energy */
-  --background: 240 10% 4%;
-  --foreground: 0 0% 100%;
+  /* Light mode for clean design */
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
 
-  --card: 240 10% 6%;
-  --card-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
 
-  --popover: 240 10% 4%;
-  --popover-foreground: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
 
-  --primary: 262 83% 58%;
-  --primary-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 180 100% 50%;
-  --secondary-foreground: 240 10% 4%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222 47% 11%;
 
-  --muted: 240 10% 10%;
-  --muted-foreground: 240 5% 65%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 320 100% 60%;
+  --accent: 217 91% 60%;
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 240 10% 20%;
-  --input: 240 10% 20%;
-  --ring: 262 83% 58%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 217 91% 60%;
 }
 
 
@@ -130,7 +158,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-white text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
@@ -139,50 +167,11 @@
   }
 }
 
-/* Glassmorphism Utilities */
-@utility glass {
-  @apply bg-background/60 backdrop-blur-xl border-b border-border/50;
+/* Clean Design Utilities */
+@utility clean-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-@utility glass-card {
-  @apply bg-card/60 backdrop-blur-xl border border-border/60 shadow-2xl;
-}
-
-@utility shadow-glow {
-  box-shadow: 0 10px 40px -10px hsla(var(--primary), 0.4);
-}
-
-@utility neon-border {
-  border: 1px solid hsla(var(--primary), 0.6);
-  box-shadow: 0 0 20px hsla(var(--primary), 0.2);
-}
-
-
-
-@utility mesh-gradient {
-  background-color: hsl(var(--background));
-  background-image:
-    radial-gradient(at 0% 0%, hsla(var(--primary), 0.1) 0, transparent 40%),
-    radial-gradient(at 100% 0%, hsla(var(--secondary), 0.1) 0, transparent 40%),
-    radial-gradient(at 100% 100%, hsla(var(--accent), 0.05) 0, transparent 40%),
-    radial-gradient(at 0% 100%, hsla(var(--primary), 0.05) 0, transparent 40%);
-}
-
-@utility text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent;
-}
-
-@utility text-neural-fade {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground to-foreground/20;
-  mask-image: linear-gradient(to right, black 70%, transparent 100%);
-}
-
-
-
-@utility premium-shadow {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02);
-}
-
-@utility glow-text {
-  text-shadow: 0 0 20px hsla(var(--primary), 0.5);
+@utility card-shadow {
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
 }

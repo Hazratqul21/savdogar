@@ -11,10 +11,11 @@ class BusinessType(str, enum.Enum):
     FASHION = "fashion"         # Kiyim-kechak
     HORECA = "horeca"           # Kafe/Restoran
     WHOLESALE = "wholesale"     # Optovaya (B2B)
-    JEWELRY = "jewelry"         # Bijuteriya
+    JEWELRY = "jewelry"         # Bijuteriya (Accessories & Bijouterie - NOT high-end)
     CAFE = "cafe"               # Qahvaxona
     KITCHEN = "kitchen"         # Oshxona
     PLUMBING_HVAC = "plumbing_hvac"  # Sanitariya va HVAC (Boilerlar, quvurlar, xizmatlar)
+    TOBACCO = "tobacco"         # Tamaki do'koni (Licensed, regulated)
 
 class Tenant(Base):
     """
@@ -37,10 +38,14 @@ class Tenant(Base):
     min_margin_percent = Column(Float, default=5.0)
     
     # Industry-specific konfiguratsiya (JSONB)
-    # Retail: {"allow_negative_stock": true, "require_barcode": false}
-    # Fashion: {"size_chart": {...}, "color_variants": true}
-    # Horeca: {"print_kitchen_ticket": true, "table_service": true}
-    # Wholesale: {"min_order_quantity": 10, "credit_limit": 10000}
+    # Retail: {"allow_negative_stock": true, "require_barcode": false, "quick_keys": true}
+    # Fashion: {"size_chart": {...}, "color_variants": true, "strict_returns": true}
+    # Horeca: {"print_kitchen_ticket": true, "table_service": true, "modifiers": true}
+    # Wholesale: {"min_order_quantity": 10, "credit_limit": 10000, "tiered_pricing": true}
+    # Jewelry: {"visual_heavy": true, "bundle_focus": true}
+    # Kitchen: {"recipe_costing": true, "auto_deduct_ingredients": true}
+    # Plumbing_HVAC: {"warranty_cards": true, "bundle_auto_pull": true, "serial_optional": true}
+    # Tobacco: {"enforce_age_check": true, "license_expiry": "2025-12-31", "mgc_enabled": true, "mgc_prices": {}}
     config = Column(JSONB, nullable=True, default={})
     
     # Contact info

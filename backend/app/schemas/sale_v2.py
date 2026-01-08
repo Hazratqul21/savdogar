@@ -56,6 +56,12 @@ class CheckoutRequest(BaseModel):
     debt_amount: Optional[float] = Field(None, ge=0)
     notes: Optional[str] = None
     
+    # Industry-specific metadata
+    # Horeca/Cafe: {"table_number": 5, "parked": false}
+    # Tobacco: {"age_verified": true}
+    # Wholesale: {"price_tier": "B"}
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Business-type-specific metadata")
+    
     @validator('debt_amount')
     def validate_debt(cls, v, values):
         """Qarz to'lov usuli uchun tekshirish"""

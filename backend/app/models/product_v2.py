@@ -37,10 +37,14 @@ class ProductV2(Base):
     # Status
     is_active = Column(Boolean, default=True, index=True)
     
-    # Retail: {"brand": "Coca-Cola", "expiry_tracking": true}
-    # Fashion: {"brand": "Nike", "season": "Spring 2025"}
-    # Horeca: {"allergens": ["nuts", "dairy"], "prep_time": 15}
-    # Wholesale: {"moq": 10, "pack_type": "carton"}
+    # Retail: {"brand": "Coca-Cola", "expiry_tracking": true, "quick_key": "F1"}
+    # Fashion: {"brand": "Nike", "season": "Spring 2025", "size_chart": {...}, "return_policy_days": 14}
+    # Horeca: {"allergens": ["nuts", "dairy"], "prep_time": 15, "modifiers": {...}, "kitchen_category": "main"}
+    # Wholesale: {"moq": 10, "pack_type": "carton", "tiered_pricing": {...}}
+    # Jewelry: {"visual_thumbnail_url": "...", "bundle_components": [...]}
+    # Kitchen: {"recipe": {...}, "auto_deduct": true}
+    # Plumbing_HVAC: {"warranty_months": 12, "bundle_auto_pull": true, "serial_required": false}
+    # Tobacco: {"parent_product_id": null, "unit_type": "pack", "conversion_chain": {...}, "mgc_price": 50000}
     product_metadata = Column("metadata", JSONB, nullable=True, default={})
     
     # Recipe / Ingredients (Oshxona & Cafe uchun)

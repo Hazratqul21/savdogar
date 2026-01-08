@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
@@ -250,6 +250,17 @@ def checkout(
     if not current_user.tenant_id:
         raise HTTPException(status_code=400, detail="Tenant topilmadi")
     
+    # Get tenant and business type
+    from app.models.tenant import Tenant, BusinessType
+    from app.services.business_logic import business_logic
+    
+    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant topilmadi")
+    
+    business_type = tenant.business_type
+    tenant_config = tenant.config or {}
+    
     # Database transaction
     try:
         db.begin()
@@ -275,6 +286,21 @@ def checkout(
             if not customer:
                 raise HTTPException(status_code=404, detail="Mijoz topilmadi")
         
+        # ✅ Business Logic: Tobacco Age Verification
+        if business_type == BusinessType.TOBACCO:
+            if business_logic.requires_age_verification(business_type, tenant_config):
+                age_verified = checkout_data.metadata.get("age_verified") if hasattr(checkout_data, 'metadata') else False
+                if not age_verified:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Yosh tekshiruvi talab qilinadi. Mijoz 20+ yoshda ekanligini tasdiqlang."
+                    )
+            
+            # Check license expiry
+            is_valid, warning = business_logic.check_license_expiry(business_type, tenant_config)
+            if not is_valid:
+                raise HTTPException(status_code=400, detail=warning or "Litsenziya yaroqsiz")
+        
         # Qarz tekshirish
         if checkout_data.payment_method == PaymentMethod.DEBT:
             if not customer:
@@ -295,8 +321,6 @@ def checkout(
                 )
         
         # Margin Guard - Minimal foyda marjasini tekshirish
-        from app.models.tenant import Tenant
-        tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
         min_margin = tenant.min_margin_percent if tenant else 5.0
         
         for item_detail in cart_result.items:
@@ -310,6 +334,13 @@ def checkout(
                         status_code=400,
                         detail=f"Marja juda past: {variant.sku}. Minimal: {min_margin}%, Joriy: {margin:.1f}%"
                     )
+        
+        # Process business-type-specific metadata
+        sale_metadata = business_logic.process_sale_metadata(
+            sale=None,  # Will be set after creation
+            business_type=business_type,
+            additional_data=checkout_data.metadata or {}
+        )
         
         # Sale yaratish
         sale_obj = SaleV2(
@@ -327,6 +358,7 @@ def checkout(
             is_debt=(checkout_data.payment_method == PaymentMethod.DEBT),
             debt_amount=checkout_data.debt_amount or (cart_result.total if checkout_data.payment_method == PaymentMethod.DEBT else 0.0),
             notes=checkout_data.notes,
+            sale_metadata=sale_metadata,
         )
         db.add(sale_obj)
         db.flush()  # ID ni olish uchun
@@ -401,6 +433,29 @@ def checkout(
                 # ✅ PART 2: Decimal quantity support for length-based items
                 variant.stock_quantity -= item_detail["quantity"]
             
+            # Process business-type-specific item metadata
+            item_metadata = business_logic.process_sale_item_metadata(
+                item=None,  # Will be set after creation
+                business_type=business_type,
+                additional_data={
+                    **checkout_data.metadata or {},
+                    "variant_attributes": variant.attributes or {},
+                    "product_metadata": product.product_metadata or {}
+                }
+            )
+            
+            # ✅ Tobacco: Handle unit conversion if needed
+            if business_type == BusinessType.TOBACCO:
+                unit_sold = checkout_data.metadata.get("unit_sold", "pack") if checkout_data.metadata else "pack"
+                conversion_result = business_logic.apply_tobacco_unit_conversion(
+                    db=db,
+                    variant=variant,
+                    quantity=Decimal(str(item_detail["quantity"])),
+                    target_unit=unit_sold
+                )
+                if conversion_result[0] and conversion_result[2]:
+                    item_metadata.update(conversion_result[2])
+            
             # Sale item yaratish
             sale_item = SaleItemV2(
                 sale_id=sale_obj.id,
@@ -413,6 +468,7 @@ def checkout(
                 discount_amount=item_detail.get("discount_amount", 0.0),
                 tax_rate=item_detail.get("tax_rate", 0.0),
                 tax_amount=item_detail.get("tax_amount", 0.0),
+                item_metadata=item_metadata,
                 # ✅ PART 2: Serial number and service tracking
                 serial_number_id=serial_number_id,
                 is_service_item=is_service_item,

@@ -144,3 +144,4 @@ def handle_generic_error(error: Exception, context: str = "Operatsiya") -> HTTPE
 
 
 
+

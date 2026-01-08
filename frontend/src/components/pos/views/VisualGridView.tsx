@@ -4,108 +4,11 @@ import { useState } from 'react';
 import { usePosState, type ProductVariant } from '@/stores/pos-state';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts } from '@/lib/api-pos';
-import { Plus, Minus, Trash2, ShoppingCart, Utensils } from 'lucide-react';
-
-interface Modifier {
-  id: string;
-  name: string;
-  options: Array<{ id: string; name: string; price: number }>;
-}
-
-interface ModifiersModalProps {
-  variant: ProductVariant;
-  onAdd: (variant: ProductVariant, modifiers: Record<string, string>) => void;
-  onClose: () => void;
-}
-
-function ModifiersModal({ variant, onAdd, onClose }: ModifiersModalProps) {
-  const [selectedModifiers, setSelectedModifiers] = useState<Record<string, string>>({});
-
-  // Mock modifiers - in real app, fetch from API
-  const modifiers: Modifier[] = [
-    {
-      id: 'sugar',
-      name: 'Shakar',
-      options: [
-        { id: 'none', name: 'Shakarsiz', price: 0 },
-        { id: 'low', name: 'Kam', price: 0 },
-        { id: 'medium', name: "O'rtacha", price: 0 },
-        { id: 'high', name: 'Ko\'p', price: 0 },
-      ],
-    },
-    {
-      id: 'ice',
-      name: 'Muz',
-      options: [
-        { id: 'none', name: 'Muzsiz', price: 0 },
-        { id: 'normal', name: 'Oddiy', price: 0 },
-        { id: 'extra', name: 'Qo\'shimcha', price: 0 },
-      ],
-    },
-  ];
-
-  const handleAdd = () => {
-    onAdd(variant, selectedModifiers);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 border border-slate-700"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-xl font-bold text-white mb-4">{variant.product?.name}</h3>
-
-        <div className="space-y-4 mb-6">
-          {modifiers.map((modifier) => (
-            <div key={modifier.id}>
-              <p className="text-white font-medium mb-2">{modifier.name}</p>
-              <div className="flex flex-wrap gap-2">
-                {modifier.options.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() =>
-                      setSelectedModifiers((prev) => ({ ...prev, [modifier.id]: option.id }))
-                    }
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      selectedModifiers[modifier.id] === option.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {option.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-colors"
-          >
-            Bekor qilish
-          </button>
-          <button
-            onClick={handleAdd}
-            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-          >
-            Qo'shish
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Plus, Minus, Trash2, ShoppingCart, Search, User, ChevronDown } from 'lucide-react';
 
 export function VisualGridView() {
   const {
     cart,
-    selectedTable,
-    setSelectedTable,
     addToCart,
     removeFromCart,
     incrementQuantity,
@@ -114,8 +17,9 @@ export function VisualGridView() {
     tenantId,
   } = usePosState();
 
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Barcha kategoriyalar');
+  const [customerName, setCustomerName] = useState('');
 
   const { data: products = [] } = useQuery({
     queryKey: ['products', tenantId],
@@ -123,179 +27,194 @@ export function VisualGridView() {
     enabled: !!tenantId,
   });
 
-  const handleProductPress = (variant: ProductVariant, isLongPress: boolean) => {
-    if (isLongPress) {
-      // Show details/ingredients
-      alert(`Tarkibi: ${JSON.stringify(variant.attributes)}`);
-    } else {
-      // Open modifiers modal
-      setSelectedVariant(variant);
+  // Flatten products to variants
+  const allVariants: ProductVariant[] = [];
+  products.forEach((product: any) => {
+    if (product.variants && product.variants.length > 0) {
+      product.variants.forEach((variant: ProductVariant) => {
+        allVariants.push(variant);
+      });
     }
-  };
+  });
 
-  const handleAddWithModifiers = (variant: ProductVariant, modifiers: Record<string, string>) => {
+  // Filter products
+  const filteredVariants = allVariants.filter((variant) => {
+    const matchesSearch = !searchQuery || 
+      variant.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      variant.sku?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const handleAddToCart = (variant: ProductVariant) => {
     addToCart(variant, 1);
-    setSelectedVariant(null);
   };
 
-  // Mock tables
-  const tables = Array.from({ length: 12 }, (_, i) => `Stol ${i + 1}`);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="h-full flex gap-4">
-      {/* Main Product Grid - Large Cards */}
-      <div className="flex-1 bg-slate-900 rounded-xl p-6 overflow-auto">
-        <h2 className="text-2xl font-bold text-white mb-6">Mahsulotlar</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {products.map((product: any) =>
-            product.variants?.map((variant: ProductVariant) => (
-              <div
-                key={variant.id}
-                onTouchStart={() => {
-                  const timer = setTimeout(() => {
-                    handleProductPress(variant, true);
-                  }, 500);
-                  setLongPressTimer(timer);
-                }}
-                onTouchEnd={() => {
-                  if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    setLongPressTimer(null);
-                  }
-                }}
-                onClick={() => handleProductPress(variant, false)}
-                className="bg-slate-800 rounded-2xl p-6 cursor-pointer hover:bg-slate-700 transition-all border-2 border-slate-700 hover:border-blue-500"
+    <div className="h-full flex bg-white">
+      {/* Left: Products List */}
+      <div className="flex-1 flex flex-col border-r border-gray-200">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Mahsulotlar</h2>
+          
+          {/* Search and Category */}
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Mahsulotlarni qidirish..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="appearance-none pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer"
               >
-                {/* Product Image Placeholder */}
-                <div className="w-full h-32 bg-slate-700 rounded-xl mb-4 flex items-center justify-center">
-                  <Utensils className="text-slate-400" size={48} />
+                <option>Barcha kategoriyalar</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+            </div>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-2 gap-4">
+            {filteredVariants.map((variant) => {
+              const productName = variant.product?.name || 'Mahsulot';
+              const productCode = variant.sku || '';
+              const price = variant.price || 0;
+              const stock = variant.stock_quantity || 0;
+              const unit = variant.attributes?.unit || 'kg';
+
+              return (
+                <div
+                  key={variant.id}
+                  onClick={() => handleAddToCart(variant)}
+                  className="bg-white rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
+                >
+                  <div className="mb-2">
+                    <h3 className="font-semibold text-gray-900 text-sm mb-1">{productName}</h3>
+                    <p className="text-xs text-gray-500">{productCode}</p>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <p className="text-lg font-bold text-gray-900">
+                      {price.toLocaleString()} so'm
+                    </p>
+                    <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {stock} {unit}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{product.name}</h3>
-                <p className="text-2xl font-bold text-blue-400 mb-2">
-                  {variant.price.toLocaleString()} so'm
-                </p>
-                {variant.stock_quantity > 0 ? (
-                  <p className="text-sm text-green-400">Mavjud</p>
-                ) : (
-                  <p className="text-sm text-red-400">Qolmagan</p>
-                )}
-              </div>
-            ))
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Sidebar - Table Management & Cart */}
-      <div className="w-80 bg-slate-900 rounded-xl p-6 flex flex-col">
-        {/* Table Selection */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <Utensils size={20} />
-            Stol tanlash
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            {tables.map((table) => (
-              <button
-                key={table}
-                onClick={() => setSelectedTable(table)}
-                className={`py-2 px-3 rounded-lg font-medium transition-colors ${
-                  selectedTable === table
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {table}
-              </button>
-            ))}
-          </div>
-          {selectedTable && (
-            <p className="text-sm text-slate-400 mt-2">Tanlangan: {selectedTable}</p>
-          )}
+      {/* Right: Cart */}
+      <div className="w-96 flex flex-col bg-white border-l border-gray-200">
+        {/* Cart Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Savat ({cartItemCount})
+          </h2>
         </div>
 
-        {/* Cart */}
-        <div className="flex-1 overflow-auto">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <ShoppingCart size={20} />
-            Savat
-          </h3>
-          <div className="space-y-3">
-            {cart.map((item) => (
-              <div
-                key={item.variant_id}
-                className="bg-slate-800 rounded-xl p-4 border border-slate-700"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
-                    <p className="font-medium text-white">{item.variant.product?.name}</p>
-                    <p className="text-sm text-slate-400">{item.variant.sku}</p>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(item.variant_id)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => decrementQuantity(item.variant_id)}
-                      className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg"
-                    >
-                      <Minus size={16} className="text-white" />
-                    </button>
-                    <span className="text-white font-semibold text-lg w-8 text-center">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => incrementQuantity(item.variant_id)}
-                      className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg"
-                    >
-                      <Plus size={16} className="text-white" />
-                    </button>
-                  </div>
-                  <span className="text-white font-bold text-lg">
-                    {item.total.toLocaleString()} so'm
-                  </span>
-                </div>
-              </div>
-            ))}
+        {/* Customer Name */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <p className="text-sm text-gray-600 mb-2">Mijoz ismi (Ixtiyoriy)</p>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Mehmon mijoz"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
+        </div>
+
+        {/* Cart Items */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <ShoppingCart className="text-gray-300 mb-4" size={64} />
+              <p className="text-gray-500 font-medium">Savat bo'sh</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {cart.map((item) => {
+                const productName = item.variant.product?.name || item.variant.sku;
+                return (
+                  <div
+                    key={item.variant_id}
+                    className="bg-white border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-sm mb-1">{productName}</p>
+                        <p className="text-xs text-gray-500">{item.variant.sku}</p>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.variant_id)}
+                        className="text-red-500 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => decrementQuantity(item.variant_id)}
+                          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          <Minus size={14} className="text-gray-600" />
+                        </button>
+                        <span className="font-semibold text-gray-900 w-8 text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => incrementQuantity(item.variant_id)}
+                          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          <Plus size={14} className="text-gray-600" />
+                        </button>
+                      </div>
+                      <span className="font-bold text-gray-900">
+                        {item.total.toLocaleString()} so'm
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Total & Payment */}
         {cart.length > 0 && (
-          <div className="border-t border-slate-700 pt-4 mt-4">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-slate-400 text-lg">Jami:</span>
-              <span className="text-white text-2xl font-bold">
+          <div className="border-t border-gray-200 px-6 py-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold text-gray-900">Jami:</span>
+              <span className="text-2xl font-bold text-gray-900">
                 {getCartTotal().toLocaleString()} so'm
               </span>
             </div>
-            <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors">
+            <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-lg transition-colors">
               To'lov
             </button>
           </div>
         )}
       </div>
-
-      {/* Modifiers Modal */}
-      {selectedVariant && (
-        <ModifiersModal
-          variant={selectedVariant}
-          onAdd={handleAddWithModifiers}
-          onClose={() => setSelectedVariant(null)}
-        />
-      )}
     </div>
   );
 }
-
-
-
-
-
-
-
-

@@ -90,11 +90,14 @@ class Settings(BaseSettings):
         description="Comma-separated list of allowed CORS origins"
     )
     
-    # Azure OpenAI Configuration
+    # Azure OpenAI Configuration (Legacy - can be removed if not using Azure)
     AZURE_OPENAI_ENDPOINT: str = Field(default="", description="Azure OpenAI endpoint")
     AZURE_OPENAI_API_KEY: str = Field(default="", description="Azure OpenAI API key")
     AZURE_OPENAI_DEPLOYMENT_NAME: str = Field(default="gpt-4o", description="Azure OpenAI deployment name")
     AZURE_OPENAI_API_VERSION: str = Field(default="2024-02-15-preview", description="Azure OpenAI API version")
+    
+    # OpenAI Configuration (Direct API - for hybrid scanner)
+    OPENAI_API_KEY: str = Field(default="", description="OpenAI API key for direct API access")
     
     # Redis Configuration (for rate limiting and caching)
     REDIS_URL: Optional[str] = Field(
@@ -109,11 +112,25 @@ class Settings(BaseSettings):
     # File Storage Configuration
     STORAGE_TYPE: str = Field(
         default="local",
-        description="Storage type: local, azure, s3"
+        description="Storage type: local, azure, s3, supabase"
     )
     UPLOAD_DIR: str = Field(default="/tmp/uploads", description="Directory for file uploads (local storage only)")
     
-    # Azure Blob Storage Configuration
+    # Supabase Configuration (Primary for Vercel + Supabase setup)
+    SUPABASE_URL: Optional[str] = Field(
+        default=None,
+        description="Supabase project URL (e.g., https://xxx.supabase.co)"
+    )
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = Field(
+        default=None,
+        description="Supabase service role key (for backend secure access)"
+    )
+    SUPABASE_STORAGE_BUCKET: str = Field(
+        default="invoices",
+        description="Supabase Storage bucket name for invoices"
+    )
+    
+    # Azure Blob Storage Configuration (Legacy)
     AZURE_STORAGE_CONNECTION_STRING: Optional[str] = Field(
         default=None,
         description="Azure Storage connection string for blob storage"

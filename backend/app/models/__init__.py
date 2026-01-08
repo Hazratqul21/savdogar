@@ -33,3 +33,6 @@ from .stock_engine import (
 
 # ✅ AI Audit & Automation
 from .audit_log import AuditLog, AuditSeverity, AuditCategory
+
+# ✅ Inventory Logging (AI Scanner)
+from .inventory_log import InventoryLog

@@ -1,5 +1,5 @@
 // API Base URL configuration
-// Monorepo deployment: Use relative path /api (same domain)
+// Vercel deployment: Use empty string (routes are handled by vercel.json)
 // Development: Use localhost backend
 // External deployment: Use NEXT_PUBLIC_API_URL environment variable
 const getApiBaseUrl = (): string => {
@@ -13,9 +13,9 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:8000';
   }
   
-  // Production monorepo: use relative path (same domain)
-  // This works because frontend and backend are on the same domain
-  return '/api';
+  // Production (Vercel): use empty string
+  // Vercel routes /api/* to backend, so we just use /api/v1/... directly
+  return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -159,6 +159,104 @@ export async function updateTenant(data: any): Promise<any> {
     body: JSON.stringify(data),
   });
   if (!response.ok) throw new Error("Tashkilotni yangilashda xatolik");
+  return response.json();
+}
+
+// Nakladnoy Scanner API
+export interface NakladnoyItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  price: number;
+  total: number;
+}
+
+export interface NakladnoyScanResult {
+  success: boolean;
+  items: NakladnoyItem[];
+  image_path?: string;
+}
+
+export async function scanNakladnoyImage(file: File): Promise<NakladnoyScanResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/api/v1/nakladnoy/upload-scan`, {
+    method: 'POST',
+    headers: {
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Nakladnoy tahlil qilishda xatolik' }));
+    throw new Error(error.detail || 'Nakladnoy tahlil qilishda xatolik');
+  }
+
+  return response.json();
+}
+
+export async function importNakladnoyToInventory(items: NakladnoyItem[]): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/nakladnoy/import-to-inventory`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(items),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Omborga import qilishda xatolik' }));
+    throw new Error(error.detail || 'Omborga import qilishda xatolik');
+  }
+
+  return response.json();
+}
+
+// Hybrid Invoice Scanner API
+export interface HybridScanItem {
+  product_name: string;
+  quantity: number;
+  price: number;
+  unit: string;
+}
+
+export interface HybridScanResponse {
+  success: boolean;
+  items: HybridScanItem[];
+  model_used: string;
+  mode: string;
+  image_path?: string;
+  error?: string;
+}
+
+export async function scanInvoiceHybrid(
+  file: File,
+  mode: 'printed' | 'handwritten' = 'printed'
+): Promise<HybridScanResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getToken();
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/invoice-scanner/scan?mode=${mode}`,
+    {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ 
+      error: 'Invoice tahlil qilishda xatolik',
+      success: false 
+    }));
+    throw new Error(error.error || error.detail || 'Invoice tahlil qilishda xatolik');
+  }
+
   return response.json();
 }
 

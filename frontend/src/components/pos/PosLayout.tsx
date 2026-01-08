@@ -45,13 +45,36 @@ export function PosLayout() {
   // Render appropriate view based on business type
   switch (businessType) {
     case 'retail':
-    case 'fashion':
+      // Retail: Extreme speed, quick keys, minimal popups
       return <ScannerView />;
+    
+    case 'fashion':
+      // Fashion: Size/Color matrix selection
+      return <ScannerView />;
+    
+    case 'jewelry':
+      // Jewelry: Visual-heavy grid with thumbnails
+      return <VisualGridView />;
 
     case 'horeca':
+    case 'cafe':
+      // Horeca/Cafe: Table management, modifiers, kitchen tickets
       return <VisualGridView />;
 
     case 'wholesale':
+      // Wholesale: Tiered pricing, credit limits, pack quantities
+      return <TraderView />;
+    
+    case 'kitchen':
+      // Kitchen: Recipe costing, ingredient deduction
+      return <VisualGridView />;
+    
+    case 'tobacco':
+      // Tobacco: Age verification, MGC compliance, unit conversion
+      return <ScannerView />;
+    
+    case 'plumbing_hvac':
+      // Plumbing/HVAC: Bundles, warranties, optional serials
       return <TraderView />;
 
     default:

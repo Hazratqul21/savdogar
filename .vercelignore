@@ -1,0 +1,74 @@
+# Vercel ignore file
+# Files and directories to exclude from deployment
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+
+# Node
+node_modules/
+.next/
+out/
+.npm
+.eslintcache
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (should use cloud storage in production)
+backend/uploads/
+frontend/public/uploads/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Snapshots
+.snapshots/
+
+# Temporary files
+*.tmp
+*.temp
+*.pid

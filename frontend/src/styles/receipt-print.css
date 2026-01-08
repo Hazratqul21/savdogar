@@ -1,0 +1,228 @@
+/**
+ * Receipt Print Styles for Xprinter XP-58 (58mm thermal printer)
+ * Optimized for thermal paper printing
+ */
+
+/* Receipt Container */
+.receipt-container {
+  width: 58mm;
+  max-width: 58mm;
+  padding: 5mm;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10pt;
+  line-height: 1.2;
+  color: #000;
+  background: #fff;
+}
+
+/* Store Header */
+.receipt-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.store-name {
+  font-weight: bold;
+  font-size: 12pt;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.store-address,
+.store-phone {
+  font-size: 9pt;
+  margin-bottom: 2px;
+}
+
+/* Dividers */
+.receipt-divider {
+  border-top: 1px dashed #000;
+  margin: 8px 0;
+}
+
+/* Info Section */
+.receipt-info {
+  margin-bottom: 8px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 9pt;
+}
+
+/* Customer Section (Wholesale) */
+.customer-section {
+  margin-bottom: 8px;
+}
+
+.customer-name {
+  font-weight: bold;
+  font-size: 10pt;
+  margin-bottom: 4px;
+}
+
+/* Items Section */
+.items-section {
+  margin-bottom: 8px;
+}
+
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 9pt;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2px;
+}
+
+.item-row {
+  margin-bottom: 4px;
+  font-size: 9pt;
+}
+
+.item-name {
+  font-weight: bold;
+  margin-bottom: 2px;
+  word-wrap: break-word;
+}
+
+.item-details {
+  text-align: right;
+  color: #333;
+}
+
+/* Totals Section */
+.totals-section {
+  margin-bottom: 8px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 9pt;
+}
+
+.total-row.discount {
+  color: #666;
+}
+
+.total-row.final-total {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #000;
+}
+
+/* Payment Section */
+.payment-section {
+  margin-bottom: 8px;
+}
+
+/* Debt Section (Wholesale) */
+.debt-section {
+  margin-bottom: 8px;
+}
+
+.debt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+  font-size: 9pt;
+}
+
+.debt-row.final-debt {
+  font-weight: bold;
+  font-size: 10pt;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #000;
+}
+
+/* Signature Section (Wholesale) */
+.signature-section {
+  margin-bottom: 8px;
+}
+
+.signature-line {
+  font-size: 9pt;
+  margin-top: 20px;
+}
+
+/* Footer */
+.receipt-footer {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.footer-text {
+  font-size: 9pt;
+  margin-bottom: 4px;
+}
+
+.disclaimer {
+  font-size: 7pt;
+  color: #666;
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+.disclaimer-en {
+  font-size: 7pt;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Print Styles - Critical for thermal printer */
+@media print {
+  @page {
+    margin: 0;
+    size: 58mm auto;
+  }
+
+  /* Hide everything except receipt */
+  body * {
+    visibility: hidden;
+  }
+
+  .receipt-container,
+  .receipt-container * {
+    visibility: visible;
+  }
+
+  .receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 58mm !important;
+    max-width: 58mm !important;
+    padding: 5mm !important;
+    background: white !important;
+    display: block !important;
+    font-family: "Courier New", Courier, monospace !important;
+  }
+
+  /* Hide all other elements */
+  body > *:not(.receipt-container) {
+    display: none !important;
+  }
+
+  /* Ensure no page breaks */
+  .receipt-container * {
+    page-break-inside: avoid;
+  }
+}
+
+/* Screen preview (for testing) */
+@media screen {
+  .receipt-container {
+    display: block;
+    margin: 20px auto;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}

@@ -1,6 +1,7 @@
 import { getAuthHeaders } from "./api";
 
 // API Base URL configuration (shared with api.ts)
+// Vercel deployment: Use empty string (routes are handled by vercel.json)
 const getApiBaseUrl = (): string => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
@@ -8,7 +9,9 @@ const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:8000';
   }
-  return '/api';
+  // Production (Vercel): use empty string
+  // Vercel routes /api/* to backend, so we just use /api/v1/... directly
+  return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();

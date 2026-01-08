@@ -86,8 +86,5 @@ api_router.include_router(settings.router, prefix="/settings", tags=["settings"]
 # ✅ PART 2: Plumbing & HVAC endpoints
 api_router.include_router(serial_numbers.router, prefix="/serial-numbers", tags=["serial-numbers"])
 api_router.include_router(warranties.router, prefix="/warranties", tags=["warranties"])
-api_router.include_router(bundles.router, prefix="/bundles", tags=["bundles"])
-
-# ✅ AI Audit & Automation Platform
+api_router.include_router(bundles.router, prefix="/bundles", tags=["bundles"])# ✅ AI Audit & Automation Platform
 api_router.include_router(ai_audit.router, prefix="/ai/audit", tags=["ai-audit"])
-

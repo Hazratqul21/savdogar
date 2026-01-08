@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Link from "next/link";
-import { Zap } from "lucide-react";
 import { login, saveToken } from "@/lib/api";
 
 export default function LoginPage() {
@@ -24,7 +22,6 @@ export default function LoginPage() {
     try {
       const response = await login(formData);
       saveToken(response.access_token);
-      // Force navigation with window.location for reliable redirect
       window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err.message || "Kirishda xatolik yuz berdi");
@@ -34,97 +31,73 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center mesh-gradient text-foreground p-4">
-      <div className="w-full max-w-sm">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass-card rounded-[2.5rem] p-8 md:p-10 neon-border relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full translate-x-1/2 translate-y-[-50%]" />
-
-          <div className="flex flex-col items-center mb-10 relative z-10">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg p-8 md:p-10 border border-gray-200 shadow-sm">
+          <div className="flex flex-col items-center mb-10">
             <img
               src="/logo.png"
               alt="Savdogar Logo"
-              className="w-16 h-16 object-contain shadow-glow rounded-2xl mb-4"
+              className="w-16 h-16 object-contain rounded-xl mb-4"
             />
-            <h1 className="text-3xl font-black tracking-tighter flex items-center">
-              <span className="text-foreground">Savdo</span>
-              <span className="text-primary ml-[1px]">gar</span>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center">
+              <span className="text-gray-900">Savdo</span>
+              <span className="text-blue-600 ml-1">gar</span>
             </h1>
-
-
-
-
-            <p className="text-sm text-foreground/60 font-medium mt-1">Avtomatlashtirilgan Biznes Boshqaruvi</p>
+            <p className="text-sm text-gray-600 font-medium mt-2">Avtomatlashtirilgan Biznes Boshqaruvi</p>
           </div>
 
-
           {error && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium"
-            >
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
               {error}
-            </motion.div>
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold ml-1 opacity-70">Login / Email / Tel</label>
+              <label className="text-sm font-semibold text-gray-700">Login / Email / Tel</label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
-                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:neon-border focus:outline-none transition-all placeholder:text-muted-foreground/30 font-medium"
+                className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                 placeholder="Username yoki Email"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold ml-1 opacity-70">Parol</label>
+              <label className="text-sm font-semibold text-gray-700">Parol</label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                className="w-full px-5 py-4 rounded-2xl bg-white/5 border border-white/10 focus:neon-border focus:outline-none transition-all placeholder:text-muted-foreground/30 font-medium"
+                className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-2xl bg-primary text-white font-black text-lg shadow-glow hover:translate-y--0.5 active:scale-95 transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "KIRILMOQDA..." : "KIRISH"}
             </button>
           </form>
 
-          <div className="mt-10 text-center space-y-4 relative z-10">
-            <p className="text-sm font-medium text-muted-foreground">
+          <div className="mt-10 text-center space-y-4">
+            <p className="text-sm font-medium text-gray-600">
               Hisobingiz yo'qmi?{" "}
-              <Link href="/signup" className="text-secondary font-bold hover:underline">
+              <Link href="/signup" className="text-blue-600 font-semibold hover:underline">
                 Ro'yxatdan o'tish
               </Link>
             </p>
-            <Link href="/" className="block text-xs font-bold opacity-40 hover:opacity-100 transition-opacity uppercase tracking-widest">
+            <Link href="/" className="block text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
               ← ASOSIY SAHIFA
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

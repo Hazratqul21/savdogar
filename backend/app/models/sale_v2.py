@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Enum, Text, Boolean, Index
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from datetime import datetime
@@ -52,6 +53,13 @@ class SaleV2(Base):
     notes = Column(Text, nullable=True)
     receipt_number = Column(String, nullable=True, index=True)  # Unique receipt number
     
+    # Industry-specific metadata (JSONB)
+    # Horeca/Cafe: {"table_number": 5, "parked": true, "kitchen_ticket_printed": true}
+    # Wholesale: {"credit_approved": true, "tier_used": "B"}
+    # Tobacco: {"age_verified": true, "mgc_compliant": true}
+    # Kitchen: {"recipe_ingredients_deducted": true}
+    sale_metadata = Column("metadata", JSONB, nullable=True, default={})
+    
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -103,6 +111,13 @@ class SaleItemV2(Base):
     
     # Metadata
     notes = Column(Text, nullable=True)
+    
+    # Industry-specific metadata (JSONB)
+    # Fashion: {"size": "XL", "color": "Red", "return_policy_applied": true}
+    # Horeca: {"modifiers": {"sugar": 2, "milk": "soy"}, "special_instructions": "no onions"}
+    # Tobacco: {"unit_sold": "pack", "block_opened": false, "conversion_applied": true}
+    # Kitchen: {"recipe_applied": true, "ingredients_deducted": {...}}
+    item_metadata = Column("metadata", JSONB, nullable=True, default={})
     
     # Relationships
     sale_v2 = relationship("SaleV2", back_populates="items")

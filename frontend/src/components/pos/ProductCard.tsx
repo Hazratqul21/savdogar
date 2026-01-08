@@ -85,64 +85,30 @@ export function ProductCard({
       >
         <Card
           className={cn(
-            "h-full cursor-pointer transition-all duration-200",
-            "hover:shadow-lg hover:border-primary/50",
+            "h-full cursor-pointer transition-all duration-200 bg-white border border-gray-200",
+            "hover:shadow-md",
             isOutOfStock && "opacity-50 cursor-not-allowed",
-            isAdding && "ring-2 ring-primary ring-offset-2"
+            isAdding && "ring-2 ring-blue-500 ring-offset-2"
           )}
           onClick={!isOutOfStock ? handleClick : undefined}
         >
           <CardContent className="p-4 flex flex-col h-full">
-            {/* Product Image/Icon */}
-            <div className="flex items-center justify-center h-32 mb-3 bg-muted rounded-lg">
-              <Package className="h-12 w-12 text-muted-foreground" />
-            </div>
-
             {/* Product Info */}
-            <div className="flex-1 space-y-2">
-              <h3 className="font-semibold text-sm line-clamp-2 leading-tight">
+            <div className="flex-1 space-y-2 mb-3">
+              <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 leading-tight mb-1">
                 {productName}
               </h3>
+              <p className="text-xs text-gray-500">{variant.sku}</p>
               
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-primary">
-                  {price.toLocaleString()} UZS
+              <div className="flex items-baseline justify-between mt-3">
+                <span className="text-lg font-bold text-gray-900">
+                  {price.toLocaleString()} so'm
                 </span>
-                {isPlumbing && primaryUnit === "meter" && (
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                    per meter
-                  </span>
-                )}
-              </div>
-
-              {/* Stock Info */}
-              <div className="flex items-center justify-between text-xs">
-                <span className={cn(
-                  "text-muted-foreground",
-                  stock < 10 && "text-orange-500",
-                  isOutOfStock && "text-red-500"
-                )}>
-                  Stock: {stock.toFixed(2)} {primaryUnit}
-                </span>
-                <span className="text-muted-foreground">
-                  SKU: {variant.sku}
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  {stock.toFixed(2)} {primaryUnit}
                 </span>
               </div>
             </div>
-
-            {/* Add Button */}
-            <Button
-              className="w-full mt-3"
-              size="lg"
-              disabled={isOutOfStock || isAdding}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClick();
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {isOutOfStock ? "Out of Stock" : "Add to Cart"}
-            </Button>
           </CardContent>
         </Card>
       </motion.div>

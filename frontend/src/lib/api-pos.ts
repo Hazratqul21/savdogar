@@ -1,7 +1,7 @@
 import { getAuthHeaders } from './api';
 
 // API Base URL configuration
-// Monorepo deployment: Use relative path /api (same domain)
+// Vercel deployment: Use empty string (routes are handled by vercel.json)
 // Development: Use localhost backend
 // External deployment: Use NEXT_PUBLIC_API_URL environment variable
 const getApiBaseUrl = (): string => {
@@ -15,9 +15,9 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:8000';
   }
   
-  // Production monorepo: use relative path (same domain)
-  // This works because frontend and backend are on the same domain
-  return '/api';
+  // Production (Vercel): use empty string
+  // Vercel routes /api/* to backend, so we just use /api/v1/... directly
+  return '';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -87,12 +87,16 @@ export interface CheckoutRequest {
     variant_id: number;
     quantity: number;
     discount_percent?: number;
+    serial_number?: string;
+    is_service_item?: boolean;
+    linked_variant_id?: number;
   }>;
   customer_id?: number;
   branch_id?: number;
   payment_method: 'cash' | 'card' | 'transfer' | 'debt' | 'mixed' | 'payme' | 'click';
   debt_amount?: number;
   notes?: string;
+  metadata?: Record<string, any>; // Business-type-specific metadata
 }
 
 // Product APIs

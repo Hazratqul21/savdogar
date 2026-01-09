@@ -383,7 +383,7 @@ export default function SettingsPage() {
     );
 }
 
-function ChevronRight({ size }: { size: number }) {
+function ChevronRight({ size, className }: { size: number; className?: string }) {
     return (
         <svg
             width={size}
@@ -392,6 +392,7 @@ function ChevronRight({ size }: { size: number }) {
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
+            className={className}
             strokeLinecap="round"
             strokeLinejoin="round"
         >

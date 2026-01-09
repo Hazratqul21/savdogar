@@ -19,7 +19,7 @@ interface Column<T> {
 
 interface ResponsiveTableProps<T> {
   data: T[];
-  columns: Column<T>;
+  columns: Column<T>[];
   keyExtractor: (item: T) => string | number;
   mobileCardRender?: (item: T) => ReactNode; // Custom mobile card render
   className?: string;

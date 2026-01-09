@@ -50,6 +50,17 @@ def get_current_admin(
         )
     return current_user
 
+def get_current_super_admin(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Require super_admin role specifically"""
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super Admin access required"
+        )
+    return current_user
+
 def get_user_organization(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),

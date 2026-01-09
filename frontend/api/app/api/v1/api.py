@@ -46,6 +46,8 @@ from app.api.v1.endpoints import (
     global_catalog,
     # ✅ AI Invoice Parser (Smart Dual-Model)
     ai_invoice_parser,
+    # ✅ Super Admin endpoints
+    admin,
 )
 
 api_router = APIRouter()
@@ -100,3 +102,6 @@ api_router.include_router(global_catalog.router, prefix="/global-catalog", tags=
 
 # ✅ AI Invoice Parser (Smart Dual-Model: gpt-4o-mini / gpt-4o)
 api_router.include_router(ai_invoice_parser.router, prefix="/ai", tags=["ai-invoice-parser"])
+
+# ✅ Super Admin endpoints
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

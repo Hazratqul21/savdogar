@@ -141,3 +141,12 @@ def login_access_token(
         
         # Generic error
         raise handle_generic_error(e, context="Kirish")
+
+@router.get("/me", response_model=user_schema.User)
+def get_current_user_info(
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Get current authenticated user information
+    """
+    return current_user

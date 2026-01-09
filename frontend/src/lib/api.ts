@@ -5,16 +5,27 @@
 const getApiBaseUrl = (): string => {
   // If explicitly set via environment variable, use it
   if (process.env.NEXT_PUBLIC_API_URL) {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:8',message:'API_BASE_URL from env',data:{apiUrl:process.env.NEXT_PUBLIC_API_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
   // Development: use localhost backend
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:14',message:'API_BASE_URL localhost',data:{hostname:window.location.hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return 'http://localhost:8000';
   }
   
   // Production (Vercel): use empty string
   // Vercel routes /api/* to backend, so we just use /api/v1/... directly
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:20',message:'API_BASE_URL empty (production)',data:{hostname:window.location.hostname,origin:window.location.origin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   return '';
 };
 
@@ -78,8 +89,15 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
 }
 
 export async function signup(userData: SignupRequest): Promise<any> {
+  // #region agent log
+  const signupUrl = `${API_BASE_URL}/api/v1/auth/signup`;
+  fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:82',message:'signup function entry',data:{apiBaseUrl:API_BASE_URL,fullUrl:signupUrl,hasUsername:!!userData.username,hasEmail:!!userData.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/signup`, {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:85',message:'signup fetch before',data:{url:signupUrl,method:'POST'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const response = await fetch(signupUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,14 +105,28 @@ export async function signup(userData: SignupRequest): Promise<any> {
       body: JSON.stringify(userData),
     });
 
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:94',message:'signup fetch after',data:{status:response.status,statusText:response.statusText,ok:response.ok,url:response.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
     if (!response.ok) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:98',message:'signup response not ok',data:{status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       const error = await response.json().catch(() => ({ detail: "Ro'yxatdan o'tishda xatolik yuz berdi" }));
       const errorMessage = error.detail || "Ro'yxatdan o'tishda xatolik yuz berdi";
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const result = await response.json();
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:106',message:'signup success',data:{hasResult:!!result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return result;
   } catch (error: any) {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:110',message:'signup error',data:{errorMessage:error.message,errorName:error.name,errorType:typeof error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     // Network error handling
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
       throw new Error("Backend serverga ulanib bo'lmadi. Iltimos, backend ishlayotganini tekshiring (http://localhost:8000)");

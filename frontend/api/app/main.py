@@ -84,7 +84,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
+# CRITICAL FIX: Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
 # MUST be defined BEFORE routers to catch OPTIONS requests first
 # This handler catches ALL OPTIONS requests before they reach route handlers
 @app.options("/{full_path:path}")
@@ -94,7 +94,7 @@ async def options_handler(full_path: str, request: Request):
     import logging
     
     logger = logging.getLogger(__name__)
-    logger.info(f"OPTIONS request received for path: {full_path}")
+    logger.info(f"OPTIONS request received for path: {full_path}, method: {request.method}")
     
     # Get origin from request
     origin = request.headers.get("origin", "*")
@@ -118,7 +118,7 @@ async def options_handler(full_path: str, request: Request):
         }
     )
     
-    logger.info(f"OPTIONS response sent with origin: {origin}")
+    logger.info(f"OPTIONS response sent with origin: {origin}, status: 200")
     return response
 
 # Include routers AFTER OPTIONS handler

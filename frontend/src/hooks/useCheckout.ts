@@ -126,20 +126,22 @@ export function useCheckout() {
     }
   };
 
+  const AgeVerificationModalComponent = showAgeVerification ? (
+    <AgeVerificationModal
+      isOpen={showAgeVerification}
+      onConfirm={handleAgeVerification}
+      onCancel={() => {
+        setShowAgeVerification(false);
+        setPendingCheckout(null);
+      }}
+    />
+  ) : null;
+
   return {
     handleCheckout,
     handleAgeVerification,
     showAgeVerification,
     isProcessing: checkoutMutation.isPending,
-    AgeVerificationModal: showAgeVerification ? (
-      <AgeVerificationModal
-        isOpen={showAgeVerification}
-        onConfirm={handleAgeVerification}
-        onCancel={() => {
-          setShowAgeVerification(false);
-          setPendingCheckout(null);
-        }}
-      />
-    ) : null,
+    AgeVerificationModal: AgeVerificationModalComponent,
   };
 }

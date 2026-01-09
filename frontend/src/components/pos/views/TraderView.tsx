@@ -34,13 +34,6 @@ export function TraderView() {
   const [lastScannedItem, setLastScannedItem] = useState<{ name: string; isPack: boolean } | null>(null);
   const queryClient = useQueryClient();
 
-  // Checkout hook with receipt printing (handles auto-print)
-  const {
-    handleCheckout: handleCheckoutWithReceipt,
-    isProcessing: isCheckoutProcessing,
-    AgeVerificationModal: AgeModal,
-  } = useCheckout();
-
   // Smart scanner with pack detection
   useSmartScanner({
     onScan: (variant, isPack) => {
@@ -68,7 +61,7 @@ export function TraderView() {
     enabled: !!tenantId,
   });
 
-  // Checkout hook with receipt printing
+  // Checkout hook with receipt printing (handles auto-print)
   const {
     handleCheckout: handleCheckoutWithReceipt,
     isProcessing: isCheckoutProcessing,

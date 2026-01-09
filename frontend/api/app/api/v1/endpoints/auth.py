@@ -25,7 +25,12 @@ def signup(
     """
     Register a new user (public endpoint)
     """
+    import logging
+    logger = logging.getLogger(__name__)
     try:
+        # #region agent log
+        logger.info(f"DEBUG: signup endpoint called - username={user_in.username}, email={user_in.email}")
+        # #endregion
         # Check if user with email exists
         user = db.query(User).filter(User.email == user_in.email).first()
         if user:

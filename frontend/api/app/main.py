@@ -22,10 +22,12 @@ app = FastAPI(
     title="SmartPOS CRM API",
     version="1.0.0",
     lifespan=lifespan,
+    # Enable docs in production (can be disabled via ENABLE_DOCS=false env var)
     # Disable automatic OPTIONS handling - we'll handle it manually
     # This ensures better control over CORS preflight requests
-    docs_url="/docs" if not settings.is_production() else None,
-    redoc_url="/redoc" if not settings.is_production() else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 # Rate limiting - MUST be first to catch all requests

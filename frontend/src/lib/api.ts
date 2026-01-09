@@ -63,27 +63,8 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
     });
 
     if (!response.ok) {
-      // Handle 405 Method Not Allowed specifically
-      if (response.status === 405) {
-        throw new Error(
-          "Server so'rov metodini qabul qilmayapti (405). " +
-          "Iltimos, Vercel'da environment variable'larni tekshiring: " +
-          "ENVIRONMENT=production, FRONTEND_URL, va SECRET_KEY o'rnatilganligini tekshiring."
-        );
-      }
-
       const error = await response.json().catch(() => ({ detail: 'Kirishda xatolik yuz berdi' }));
       const errorMessage = error.detail || 'Kirishda xatolik yuz berdi';
-
-      // Database connection error
-      if (errorMessage.includes("database") || errorMessage.includes("connection") || errorMessage.includes("ulanib bo'lmadi")) {
-        throw new Error(
-          "Database serverga ulanib bo'lmadi. " +
-          "Iltimos, Vercel'da DATABASE_URL to'g'ri sozlanganligini tekshiring " +
-          "(sslmode=require qo'shilganligini tekshiring)."
-        );
-      }
-
       throw new Error(errorMessage);
     }
 
@@ -107,35 +88,8 @@ export async function signup(userData: SignupRequest): Promise<any> {
     });
 
     if (!response.ok) {
-      // Handle 405 Method Not Allowed specifically
-      if (response.status === 405) {
-        throw new Error(
-          "Server so'rov metodini qabul qilmayapti (405). " +
-          "Iltimos, Vercel'da environment variable'larni tekshiring: " +
-          "ENVIRONMENT=production, FRONTEND_URL, va SECRET_KEY o'rnatilganligini tekshiring."
-        );
-      }
-
       const error = await response.json().catch(() => ({ detail: "Ro'yxatdan o'tishda xatolik yuz berdi" }));
       const errorMessage = error.detail || "Ro'yxatdan o'tishda xatolik yuz berdi";
-
-      // Database migration error
-      if (errorMessage.includes("migration") || errorMessage.includes("jadvallari yaratilmagan")) {
-        throw new Error(
-          "Database jadvallari yaratilmagan. Backend da quyidagi buyruqni bajaring:\n" +
-          "cd backend && source venv/bin/activate && alembic upgrade head"
-        );
-      }
-
-      // Database connection error
-      if (errorMessage.includes("database") || errorMessage.includes("connection") || errorMessage.includes("ulanib bo'lmadi")) {
-        throw new Error(
-          "Database serverga ulanib bo'lmadi. " +
-          "Iltimos, Vercel'da DATABASE_URL to'g'ri sozlanganligini tekshiring " +
-          "(sslmode=require qo'shilganligini tekshiring)."
-        );
-      }
-
       throw new Error(errorMessage);
     }
 

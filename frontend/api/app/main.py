@@ -1,39 +1,54 @@
+"""
+SmartPOS CRM API - Main Application
+Professional FastAPI application with CORS, rate limiting, and health checks.
+"""
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import logging
 
 from app.api.v1.api import api_router
 from app.api.v1.endpoints.receipts import public_router
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.core.config import settings
-from app.core.setup import auto_setup
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown events"""
-    # Startup: Run automatic setup
-    await auto_setup()
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
+    logger.info("🚀 Starting SmartPOS CRM API...")
+    try:
+        from app.core.setup import auto_setup
+        await auto_setup()
+        logger.info("✅ Auto setup completed")
+    except Exception as e:
+        logger.error(f"⚠️ Auto setup failed: {e}")
     yield
-    # Shutdown: (nothing to clean up for now)
+    # Shutdown
+    logger.info("👋 Shutting down SmartPOS CRM API...")
 
 
+# Initialize FastAPI application
 app = FastAPI(
     title="SmartPOS CRM API",
+    description="Professional POS and CRM system for businesses",
     version="1.0.0",
     lifespan=lifespan,
-    # Enable docs in production (can be disabled via ENABLE_DOCS=false env var)
-    # Disable automatic OPTIONS handling - we'll handle it manually
-    # This ensures better control over CORS preflight requests
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
 
-# Rate limiting - MUST be first to catch all requests
-app.add_middleware(RateLimitMiddleware)
 
-# CORS Configuration - Dynamic based on environment
+# =============================================================================
+# CORS Configuration
+# =============================================================================
 def get_cors_origins() -> list[str]:
     """Get allowed CORS origins based on environment."""
     origins = []
@@ -42,15 +57,16 @@ def get_cors_origins() -> list[str]:
     if settings.CORS_ORIGINS:
         origins.extend([origin.strip() for origin in settings.CORS_ORIGINS.split(",")])
     
-    # For monorepo deployment (same domain), allow same origin
-    # In production, if FRONTEND_URL is not set, we're on the same domain
-    if settings.is_production():
-        if settings.FRONTEND_URL:
-            origins.append(settings.FRONTEND_URL)
-        # If no FRONTEND_URL, assume same domain (monorepo)
-        # CORS will work automatically for same-origin requests
-    else:
-        # Development: allow localhost
+    # Add FRONTEND_URL if set
+    if settings.FRONTEND_URL:
+        origins.append(settings.FRONTEND_URL)
+        # Also add www variant
+        if not settings.FRONTEND_URL.startswith("http://localhost"):
+            if "www." not in settings.FRONTEND_URL:
+                origins.append(settings.FRONTEND_URL.replace("https://", "https://www."))
+    
+    # Development origins
+    if settings.is_development():
         origins.extend([
             "http://localhost:3000",
             "http://localhost:3001",
@@ -61,96 +77,132 @@ def get_cors_origins() -> list[str]:
     # Remove duplicates and empty strings
     origins = list(set(filter(None, origins)))
     
-    # If no origins specified and in production, allow all (not recommended but functional)
-    # Better to set CORS_ORIGINS explicitly
-    if not origins and settings.is_production():
-        # Log warning but allow (for backward compatibility)
-        import logging
-        logging.warning(
-            "No CORS origins configured in production. "
-            "Consider setting CORS_ORIGINS or FRONTEND_URL environment variable."
-        )
-        origins = ["*"]  # Fallback for monorepo (same domain)
-    elif not origins:
-        # Development fallback
-        origins = ["*"]
+    # Fallback: allow all origins if none configured (with warning)
+    if not origins:
+        if settings.is_production():
+            logger.warning(
+                "⚠️ No CORS origins configured in production. "
+                "Set CORS_ORIGINS or FRONTEND_URL environment variable."
+            )
+        # Return ["*"] for permissive CORS (monorepo same-origin requests work)
+        return ["*"]
     
     return origins
 
-# CORS for frontend
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
-# CRITICAL FIX: Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
-# MUST be defined BEFORE routers to catch OPTIONS requests first
-# This handler catches ALL OPTIONS requests before they reach route handlers
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware)
+
+
+# =============================================================================
+# Global OPTIONS Handler (CORS Preflight)
+# =============================================================================
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str, request: Request):
-    """Handle CORS preflight OPTIONS requests for all paths"""
-    from fastapi import Response
-    import logging
-    
-    logger = logging.getLogger(__name__)
-    logger.info(f"OPTIONS request received for path: {full_path}, method: {request.method}")
-    
-    # Get origin from request
+    """
+    Handle CORS preflight OPTIONS requests for all paths.
+    This ensures all endpoints respond correctly to browser preflight checks.
+    """
     origin = request.headers.get("origin", "*")
-    
-    # Check if origin is in allowed origins
     allowed_origins = get_cors_origins()
-    if origin not in allowed_origins and "*" not in allowed_origins:
-        # If origin not allowed, use first allowed origin or *
-        origin = allowed_origins[0] if allowed_origins else "*"
-    elif "*" in allowed_origins:
-        origin = "*"
     
-    response = Response(
+    # Determine which origin to send back
+    if "*" in allowed_origins:
+        response_origin = "*"
+    elif origin in allowed_origins:
+        response_origin = origin
+    else:
+        response_origin = allowed_origins[0] if allowed_origins else "*"
+    
+    return Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Origin": response_origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Max-Age": "3600",
         }
     )
-    
-    logger.info(f"OPTIONS response sent with origin: {origin}, status: 200")
-    return response
 
-# Include routers AFTER OPTIONS handler
+
+# =============================================================================
+# Include Routers
+# =============================================================================
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/verify", tags=["public"])
 
+
+# =============================================================================
+# Health Check Endpoint
+# =============================================================================
 @app.get("/health")
-def health_check():
-    """Enhanced health check with system info and database status."""
+async def health_check():
+    """Health check endpoint with database status."""
     from datetime import datetime
-    from app.services.cache import get_cache_stats
-    from app.middleware.rate_limit import get_rate_limit_stats
-    from app.core.database import check_database_health
     
-    db_health = check_database_health()
+    # Check database connection
+    db_status = {"status": "unknown"}
+    try:
+        from app.core.database import check_database_health
+        db_status = check_database_health()
+    except Exception as e:
+        db_status = {"status": "error", "error": str(e)[:100]}
     
-    # Overall status is unhealthy if database is unhealthy
-    overall_status = "healthy" if db_health.get("status") == "healthy" else "degraded"
+    # Overall status
+    overall_status = "healthy" if db_status.get("status") == "healthy" else "degraded"
     
     return {
         "status": overall_status,
-        "service": "SmartPOS CRM Backend",
+        "service": "SmartPOS CRM API",
         "version": settings.PROJECT_VERSION,
         "environment": settings.ENVIRONMENT,
         "timestamp": datetime.utcnow().isoformat(),
-        "database": db_health,
-        "cache": get_cache_stats(),
-        "rate_limit": get_rate_limit_stats(),
+        "database": db_status,
     }
 
+
+# =============================================================================
+# Root Endpoint
+# =============================================================================
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to SmartPOS CRM API"}
+async def root():
+    """Root endpoint - API information."""
+    return {
+        "message": "Welcome to SmartPOS CRM API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
+# =============================================================================
+# Global Exception Handler
+# =============================================================================
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle uncaught exceptions gracefully."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Don't expose internal errors in production
+    if settings.is_production():
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Ichki server xatosi. Iltimos, keyinroq urinib ko'ring."}
+        )
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)}
+    )

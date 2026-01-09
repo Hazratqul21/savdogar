@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "installCommand": "cd frontend && npm install",
+  "outputDirectory": "frontend/.next",
   "builds": [
     {
       "src": "frontend/package.json",
@@ -7,16 +11,19 @@
     },
     {
       "src": "frontend/api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/api/v1/(.*)",
       "dest": "/frontend/api/index.py"
     },
     {
-      "src": "/verify/(.*)",
+      "src": "/api/(.*)",
       "dest": "/frontend/api/index.py"
     },
     {
@@ -36,18 +43,25 @@
       "dest": "/frontend/api/index.py"
     },
     {
+      "src": "/verify/(.*)",
+      "dest": "/frontend/api/index.py"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
   ],
-  "env": {
-    "PYTHONPATH": "frontend/api"
-  },
   "functions": {
     "frontend/api/index.py": {
       "maxDuration": 60,
-      "memory": 3008,
+      "memory": 1024,
       "runtime": "python3.9"
     }
+  },
+  "env": {
+    "PYTHONPATH": "frontend/api"
   }
 }

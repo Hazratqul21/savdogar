@@ -1,135 +1,128 @@
+"""
+Database Configuration for SmartPOS CRM API
+Optimized for Supabase and Vercel serverless environment.
+"""
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
-from app.core.config import settings
-from app.services.logging import get_logger
-import ssl
+import logging
 import os
 
-logger = get_logger(__name__)
+from app.core.config import settings
 
-# Database URL from settings (includes SSL configuration)
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# =============================================================================
+# Database URL Configuration
+# =============================================================================
 SQLALCHEMY_DATABASE_URL = settings.database_url
-logger.info("[DATABASE] Connection URL configured (hidden for security)")
 
-# SSL Configuration for Cloud Databases (Supabase, etc.)
-ssl_context = None
-connect_args = {}
-
-# Detect Supabase (contains .supabase.co in URL or pooler.supabase.com)
-is_supabase = "supabase.co" in (SQLALCHEMY_DATABASE_URL or "").lower() or "pooler.supabase.com" in (SQLALCHEMY_DATABASE_URL or "").lower()
-# Detect Session Pooler (port 6543)
+# Detect database type
+is_supabase = any([
+    "supabase.co" in (SQLALCHEMY_DATABASE_URL or "").lower(),
+    "pooler.supabase.com" in (SQLALCHEMY_DATABASE_URL or "").lower(),
+])
 is_session_pooler = ":6543" in (SQLALCHEMY_DATABASE_URL or "")
-is_cloud_db = "sslmode=require" in (SQLALCHEMY_DATABASE_URL or "").lower() or is_supabase
+is_cloud_db = is_supabase or "sslmode=require" in (SQLALCHEMY_DATABASE_URL or "").lower()
 
-if is_cloud_db:
-    # Enforce SSL for Cloud databases (Supabase, etc.)
-    logger.info("[DATABASE] Cloud database configuration detected. Enforcing SSL.")
-    
-    # Supabase requires SSL with specific settings
-    if is_supabase:
-        # Supabase SSL configuration
-        # Supabase works best with sslmode=require in URL, no explicit SSL context needed
-        # psycopg2 handles SSL automatically when sslmode=require is in the URL
-        connect_args["sslmode"] = "require"
-        # Don't set ssl_context for Supabase - let psycopg2 handle it via URL
-        logger.info("[DATABASE] Supabase SSL configuration applied (sslmode=require).")
-    else:
-        # Other cloud databases
-        if "sslmode" not in SQLALCHEMY_DATABASE_URL:
-            connect_args["sslmode"] = "require"
-        
-        # Create default context if strict validation not possible without cert path
-        # For serverless/Vercel, often simpler to trust CA or use system store
-        if os.getenv("DB_CA_PATH"):
-            ssl_context = ssl.create_default_context()
-            ssl_context.load_verify_locations(os.getenv("DB_CA_PATH"))
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
-            connect_args["ssl_context"] = ssl_context
-
-# Serverless-optimized connection pooling
-# In serverless (Vercel), connections are short-lived
-# For Supabase Session Pooler, NullPool is better (pooler handles pooling)
-# For direct Supabase connections, also use NullPool
-if settings.is_production():
-    # Production serverless: Use NullPool for Supabase (better for serverless)
-    if is_supabase:
-        pool_class = NullPool  # No connection pooling for serverless + Supabase
-        if is_session_pooler:
-            logger.info("[DATABASE] Using NullPool for Supabase Session Pooler (port 6543).")
-        else:
-            logger.info("[DATABASE] Using NullPool for Supabase serverless deployment.")
-    else:
-        # Other databases: small pool
-        pool_class = QueuePool
-        pool_size = 2  # Very small for serverless
-        max_overflow = 5
-        pool_recycle = 180  # 3 minutes (serverless functions are short-lived)
-        pool_timeout = 20
-else:
-    # Development: standard pool
-    pool_class = QueuePool
-    pool_size = 5
-    max_overflow = 10
-    pool_recycle = 300  # 5 minutes
-    pool_timeout = 30
-
-# Store pool_class for health check
-_POOL_CLASS = pool_class
-
-# Engine Creation with Serverless Optimizations
-# Add connection timeout for better error handling
-connect_args_with_timeout = {**connect_args, "connect_timeout": 10}
-
-engine_kwargs = {
-    "connect_args": connect_args_with_timeout,
-    "poolclass": pool_class,
-    "pool_pre_ping": True,  # Critical for recovering from dropped connections
-    "echo": False,  # Set to True for SQL query logging in development
-}
-
-# Add pool parameters only if not using NullPool
-if pool_class != NullPool:
-    engine_kwargs.update({
-        "pool_size": pool_size,
-        "max_overflow": max_overflow,
-        "pool_recycle": pool_recycle,
-        "pool_timeout": pool_timeout,
-    })
-
-# Add SSL context if configured (only for non-Supabase databases that need it)
-if ssl_context and not is_supabase:
-    engine_kwargs["connect_args"]["ssl_context"] = ssl_context
-
-# Log connection details (without sensitive info)
+# Log connection info (without sensitive data)
 try:
     from urllib.parse import urlparse
-    parsed_url = urlparse(SQLALCHEMY_DATABASE_URL)
-    host_info = parsed_url.netloc.split('@')[-1] if '@' in parsed_url.netloc else parsed_url.netloc
-    logger.info(f"[DATABASE] Connecting to: {host_info}")
-    if is_session_pooler:
-        logger.info("[DATABASE] Using Supabase Session Pooler (port 6543)")
-    elif is_supabase:
-        logger.info("[DATABASE] Using Supabase Direct Connection")
+    parsed = urlparse(SQLALCHEMY_DATABASE_URL)
+    host_display = parsed.hostname or "unknown"
+    port_display = parsed.port or "5432"
+    logger.info(f"📊 Database: {host_display}:{port_display}")
+    if is_supabase:
+        pooler_type = "Session Pooler" if is_session_pooler else "Direct"
+        logger.info(f"🔗 Supabase {pooler_type} connection detected")
 except Exception:
-    logger.info("[DATABASE] Connection URL configured")
+    logger.info("📊 Database URL configured")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
 
+# =============================================================================
+# Connection Arguments
+# =============================================================================
+connect_args = {}
+
+# SSL configuration for cloud databases
+if is_cloud_db:
+    # Supabase and other cloud DBs require SSL
+    connect_args["sslmode"] = "require"
+    logger.info("🔒 SSL enabled for cloud database")
+
+# Connection timeout (important for serverless)
+connect_args["connect_timeout"] = 10
+
+
+# =============================================================================
+# Connection Pooling Configuration
+# =============================================================================
+# For serverless environments (Vercel), NullPool is recommended
+# because each function invocation is independent
+
+if settings.is_production():
+    # Production: Use NullPool for serverless
+    pool_class = NullPool
+    logger.info("🏊 Using NullPool (serverless optimized)")
+    engine_kwargs = {
+        "poolclass": pool_class,
+        "pool_pre_ping": True,
+        "echo": False,
+    }
+else:
+    # Development: Use connection pool
+    pool_class = QueuePool
+    logger.info("🏊 Using QueuePool (development)")
+    engine_kwargs = {
+        "poolclass": pool_class,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_recycle": 300,
+        "pool_timeout": 30,
+        "pool_pre_ping": True,
+        "echo": False,
+    }
+
+# Store pool class for health check
+_POOL_CLASS = pool_class
+
+
+# =============================================================================
+# Create Engine
+# =============================================================================
+try:
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args=connect_args,
+        **engine_kwargs
+    )
+    logger.info("✅ Database engine created successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to create database engine: {e}")
+    raise
+
+
+# =============================================================================
+# Session Factory
+# =============================================================================
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Base class for models
 Base = declarative_base()
 
+
+# =============================================================================
+# Database Dependency
+# =============================================================================
 def get_db():
     """
-    Dependency to get DB session.
-    Closes session automatically after request.
-    Handles connection errors gracefully.
+    Database session dependency for FastAPI.
     
     Usage:
         @router.get("/items")
-        def read_items(db: Session = Depends(get_db)):
+        def get_items(db: Session = Depends(get_db)):
             ...
     """
     db = SessionLocal()
@@ -137,42 +130,38 @@ def get_db():
         yield db
     except Exception as e:
         db.rollback()
-        error_msg = str(e).lower()
-        
-        # Log connection errors with more detail for debugging
-        if any(keyword in error_msg for keyword in ["connection", "timeout", "ssl", "certificate", "could not connect", "operationalerror"]):
-            logger.error(f"Database connection error in session: {e}", exc_info=True)
-        else:
-            logger.error(f"Database session error: {e}", exc_info=True)
-        
+        logger.error(f"Database session error: {e}")
         raise
     finally:
         db.close()
 
 
+# =============================================================================
+# Health Check
+# =============================================================================
 def check_database_health() -> dict:
     """
     Check database connection health.
     
     Returns:
-        dict with health status and connection info
+        dict with status information
     """
     try:
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1 as health_check, version() as version"))
+            result = conn.execute(text("SELECT 1 as health, version() as ver"))
             row = result.fetchone()
             
-            # Get pool info (NullPool doesn't have size/checkedout)
+            # Get pool info if available
             pool_info = {}
             if hasattr(engine.pool, 'size'):
                 pool_info["pool_size"] = engine.pool.size()
             if hasattr(engine.pool, 'checkedout'):
-                pool_info["checked_out"] = engine.pool.checkedout()
+                pool_info["connections_used"] = engine.pool.checkedout()
             
             return {
                 "status": "healthy",
-                "database": "connected",
-                "version": row[1][:50] if row else "unknown",
+                "connected": True,
+                "version": str(row[1])[:50] if row else "unknown",
                 "pool_type": _POOL_CLASS.__name__,
                 "is_supabase": is_supabase,
                 "is_session_pooler": is_session_pooler,
@@ -180,12 +169,39 @@ def check_database_health() -> dict:
             }
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Database health check failed: {error_msg}", exc_info=True)
+        logger.error(f"Database health check failed: {error_msg}")
+        
+        # Provide helpful error message
+        if "timeout" in error_msg.lower():
+            hint = "Connection timeout - check DATABASE_URL and network"
+        elif "ssl" in error_msg.lower() or "certificate" in error_msg.lower():
+            hint = "SSL error - ensure ?sslmode=require in DATABASE_URL"
+        elif "password" in error_msg.lower() or "authentication" in error_msg.lower():
+            hint = "Authentication failed - check database credentials"
+        elif "could not connect" in error_msg.lower():
+            hint = "Cannot connect - check DATABASE_URL host and port"
+        else:
+            hint = "Check DATABASE_URL configuration"
+        
         return {
             "status": "unhealthy",
-            "database": "disconnected",
-            "error": error_msg[:200] if not settings.is_production() else "Connection failed",
+            "connected": False,
+            "error": error_msg[:200] if not settings.is_production() else hint,
+            "hint": hint,
             "pool_type": _POOL_CLASS.__name__,
             "is_supabase": is_supabase,
-            "is_session_pooler": is_session_pooler,
         }
+
+
+# =============================================================================
+# Test Connection on Import (optional, can be disabled for faster cold starts)
+# =============================================================================
+if os.getenv("TEST_DB_ON_IMPORT", "false").lower() == "true":
+    try:
+        health = check_database_health()
+        if health["status"] == "healthy":
+            logger.info("✅ Database connection verified")
+        else:
+            logger.warning(f"⚠️ Database connection issue: {health.get('hint', 'unknown')}")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not verify database connection: {e}")

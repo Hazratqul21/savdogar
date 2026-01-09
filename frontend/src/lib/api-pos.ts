@@ -22,16 +22,36 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// ============================================
+// TYPE DEFINITIONS (Updated for products_v2 schema)
+// ============================================
 
+/**
+ * Product Variant (from product_variants table)
+ * ✅ UPDATED: Matches new Supabase schema (products_v2)
+ */
 export interface ProductVariant {
   id: number;
   product_id: number;
+  tenant_id: number;
   sku: string;
   price: number;
   cost_price: number;
   stock_quantity: number;
+  min_stock_level: number;
+  max_stock_level?: number;
+  primary_unit: string;
+  secondary_unit?: string;
+  unit_conversion_factor?: number;
+  requires_serial_number: boolean;
+  is_serialized: boolean;
   attributes: Record<string, any>;
   barcode_aliases: string[];
+  velocity_score: number;
+  embedding_vector?: number[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
   product?: {
     id: number;
     name: string;
@@ -100,14 +120,26 @@ export interface CheckoutRequest {
 }
 
 // Product APIs
+// ✅ UPDATED: Use products_v2 endpoint (matches new Supabase schema)
 export async function getProducts(tenantId: number): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/products`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/products_v2`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch products');
   return response.json();
 }
 
+/**
+ * Global Catalog Product Data (from crowdsourced catalog)
+ * Re-export from supabase.ts for consistency
+ */
+export type { GlobalCatalogProduct } from './supabase';
+export { searchGlobalCatalogByBarcode as searchGlobalCatalog, contributeToGlobalCatalogRPC as contributeToGlobalCatalog } from './supabase';
+
+/**
+ * Search products by barcode (from products_v2)
+ * ✅ UPDATED: Uses products_v2 endpoint
+ */
 export async function searchProductsByBarcode(barcode: string, tenantId: number): Promise<ProductVariant | null> {
   // Search in product variants by barcode_aliases
   const products = await getProducts(tenantId);
@@ -118,12 +150,25 @@ export async function searchProductsByBarcode(barcode: string, tenantId: number)
         return {
           id: variant.id,
           product_id: variant.product_id,
+          tenant_id: variant.tenant_id || tenantId,
           sku: variant.sku,
           price: variant.price,
           cost_price: variant.cost_price,
           stock_quantity: variant.stock_quantity,
+          min_stock_level: variant.min_stock_level || 0,
+          max_stock_level: variant.max_stock_level,
+          primary_unit: variant.primary_unit || 'piece',
+          secondary_unit: variant.secondary_unit,
+          unit_conversion_factor: variant.unit_conversion_factor,
+          requires_serial_number: variant.requires_serial_number || false,
+          is_serialized: variant.is_serialized || false,
           attributes: variant.attributes || {},
           barcode_aliases: variant.barcode_aliases || [],
+          velocity_score: variant.velocity_score || 0,
+          embedding_vector: variant.embedding_vector,
+          is_active: variant.is_active !== false,
+          created_at: variant.created_at || new Date().toISOString(),
+          updated_at: variant.updated_at || new Date().toISOString(),
           product: product,
         };
       }
@@ -132,6 +177,10 @@ export async function searchProductsByBarcode(barcode: string, tenantId: number)
   return null;
 }
 
+/**
+ * Search products by SKU (from products_v2)
+ * ✅ UPDATED: Uses products_v2 endpoint
+ */
 export async function searchProductsBySku(sku: string, tenantId: number): Promise<ProductVariant | null> {
   if (!sku || sku.trim().length === 0) return null;
 
@@ -144,12 +193,25 @@ export async function searchProductsBySku(sku: string, tenantId: number): Promis
         return {
           id: variant.id,
           product_id: variant.product_id,
+          tenant_id: variant.tenant_id || tenantId,
           sku: variant.sku,
           price: variant.price,
           cost_price: variant.cost_price,
           stock_quantity: variant.stock_quantity,
+          min_stock_level: variant.min_stock_level || 0,
+          max_stock_level: variant.max_stock_level,
+          primary_unit: variant.primary_unit || 'piece',
+          secondary_unit: variant.secondary_unit,
+          unit_conversion_factor: variant.unit_conversion_factor,
+          requires_serial_number: variant.requires_serial_number || false,
+          is_serialized: variant.is_serialized || false,
           attributes: variant.attributes || {},
           barcode_aliases: variant.barcode_aliases || [],
+          velocity_score: variant.velocity_score || 0,
+          embedding_vector: variant.embedding_vector,
+          is_active: variant.is_active !== false,
+          created_at: variant.created_at || new Date().toISOString(),
+          updated_at: variant.updated_at || new Date().toISOString(),
           product: product,
         };
       }
@@ -163,12 +225,25 @@ export async function searchProductsBySku(sku: string, tenantId: number): Promis
         return {
           id: variant.id,
           product_id: variant.product_id,
+          tenant_id: variant.tenant_id || tenantId,
           sku: variant.sku,
           price: variant.price,
           cost_price: variant.cost_price,
           stock_quantity: variant.stock_quantity,
+          min_stock_level: variant.min_stock_level || 0,
+          max_stock_level: variant.max_stock_level,
+          primary_unit: variant.primary_unit || 'piece',
+          secondary_unit: variant.secondary_unit,
+          unit_conversion_factor: variant.unit_conversion_factor,
+          requires_serial_number: variant.requires_serial_number || false,
+          is_serialized: variant.is_serialized || false,
           attributes: variant.attributes || {},
           barcode_aliases: variant.barcode_aliases || [],
+          velocity_score: variant.velocity_score || 0,
+          embedding_vector: variant.embedding_vector,
+          is_active: variant.is_active !== false,
+          created_at: variant.created_at || new Date().toISOString(),
+          updated_at: variant.updated_at || new Date().toISOString(),
           product: product,
         };
       }

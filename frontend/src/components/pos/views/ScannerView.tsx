@@ -100,7 +100,7 @@ export function ScannerView() {
 
       // Step 3: Handle result
       if (variant) {
-        // Found: Auto-add to cart (increment quantity if already exists)
+        // Found locally: Auto-add to cart (increment quantity if already exists)
         addToCart(variant, 1);
         
         // Visual feedback: Green flash
@@ -109,25 +109,25 @@ export function ScannerView() {
         
         // Audio feedback: Success beep
         soundManager.playBeep();
-        
-        // Optional: Play success sound
-        playSuccess();
       } else {
-        // Not found: Visual feedback: Red flash
-        setScanError(true);
-        setTimeout(() => setScanError(false), 1000);
+        // Not found locally: Check global catalog directly from Supabase
+        const { searchGlobalCatalogByBarcode } = await import('@/lib/supabase');
+        const globalProduct = await searchGlobalCatalogByBarcode(barcode);
         
-        // Audio feedback: Error buzzer
-        soundManager.playError();
-        playError();
-        
-        // Show toast notification
-        const truncatedBarcode = barcode.length > 8 
-          ? `${barcode.substring(0, 8)}...` 
-          : barcode;
-        // Product not found: Open "Add New Product" modal (no error shown)
+        // Product not found: Open "Add New Product" modal
         setMissingBarcode(barcode);
         setShowQuickAdd(true);
+        
+        // If found in global catalog, store the data for pre-filling
+        if (globalProduct) {
+          sessionStorage.setItem('global_catalog_data', JSON.stringify({
+            found: true,
+            ...globalProduct
+          }));
+        } else {
+          sessionStorage.removeItem('global_catalog_data');
+        }
+        
         // No error sound, no toast - just silently open the modal
       }
     } catch (error) {

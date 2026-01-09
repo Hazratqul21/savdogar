@@ -68,6 +68,12 @@ export function AdaptivePosLayout() {
   /**
    * Handle barcode scan: Search and add to cart
    * Used by both USB scanner and mobile camera scanner
+   * 
+   * Search Flow:
+   * 1. Check local products (store's own catalog)
+   * 2. If not found locally -> Check global catalog (crowdsourced)
+   * 3. If found globally -> Open modal pre-filled with global data
+   * 4. If not found globally -> Open empty modal for manual entry
    */
   const handleBarcodeScan = async (barcode: string) => {
     try {
@@ -79,17 +85,17 @@ export function AdaptivePosLayout() {
         return;
       }
 
-      // Step 1: Search by barcode
+      // Step 1: Search in local products by barcode
       let variant = await searchProductsByBarcode(barcode, tenantId);
 
-      // Step 2: If not found, try SKU search
+      // Step 2: If not found locally, try SKU search
       if (!variant) {
         variant = await searchProductsBySku(barcode, tenantId);
       }
 
       // Step 3: Handle result
       if (variant) {
-        // Found: Auto-add to cart (increment quantity if already exists)
+        // Found locally: Auto-add to cart (increment quantity if already exists)
         addToCart(variant, 1);
         
         // Visual feedback: Green flash
@@ -99,9 +105,24 @@ export function AdaptivePosLayout() {
         // Audio feedback: Success beep
         soundManager.playBeep();
       } else {
-        // Product not found: Open "Add New Product" modal (no error shown)
+        // Not found locally: Check global catalog directly from Supabase
+        const { searchGlobalCatalogByBarcode } = await import('@/lib/supabase');
+        const globalProduct = await searchGlobalCatalogByBarcode(barcode);
+        
+        // Product not found: Open "Add New Product" modal
         setMissingBarcode(barcode);
         setShowQuickAdd(true);
+        
+        // If found in global catalog, store the data for pre-filling
+        if (globalProduct) {
+          sessionStorage.setItem('global_catalog_data', JSON.stringify({
+            found: true,
+            ...globalProduct
+          }));
+        } else {
+          sessionStorage.removeItem('global_catalog_data');
+        }
+        
         // No error sound, no toast - just silently open the modal
       }
     } catch (error) {

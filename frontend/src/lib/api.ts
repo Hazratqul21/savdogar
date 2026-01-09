@@ -260,6 +260,63 @@ export async function scanInvoiceHybrid(
   return response.json();
 }
 
+// ============================================
+// AI Invoice Parser API (Smart Dual-Model)
+// ============================================
+
+export interface ParsedInvoiceItem {
+  product_name: string;
+  quantity: number;
+  price: number;
+  unit: string;
+}
+
+export interface ParseInvoiceResponse {
+  success: boolean;
+  items: ParsedInvoiceItem[];
+  model_used: string;
+  mode: string;
+  image_url?: string;
+  error?: string;
+}
+
+/**
+ * Parse invoice image using AI (Smart Dual-Model)
+ * 
+ * @param file - Image file to parse
+ * @param isHandwritten - Toggle: true for handwritten (gpt-4o), false for printed (gpt-4o-mini)
+ * @returns Parsed invoice items
+ */
+export async function parseInvoice(
+  file: File,
+  isHandwritten: boolean = false
+): Promise<ParseInvoiceResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = getToken();
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/ai/parse-invoice?is_handwritten=${isHandwritten}`,
+    {
+      method: 'POST',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ 
+      error: 'Invoice tahlil qilishda xatolik',
+      success: false 
+    }));
+    throw new Error(error.error || error.detail || 'Invoice tahlil qilishda xatolik');
+  }
+
+  return response.json();
+}
+
 
 
 

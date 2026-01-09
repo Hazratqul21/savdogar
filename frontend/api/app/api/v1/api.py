@@ -41,7 +41,11 @@ from app.api.v1.endpoints import (
     warranties,
     bundles,
     # ✅ AI Audit & Automation
-    ai_audit
+    ai_audit,
+    # ✅ Global Product Catalog (Crowdsourcing)
+    global_catalog,
+    # ✅ AI Invoice Parser (Smart Dual-Model)
+    ai_invoice_parser,
 )
 
 api_router = APIRouter()
@@ -86,5 +90,13 @@ api_router.include_router(settings.router, prefix="/settings", tags=["settings"]
 # ✅ PART 2: Plumbing & HVAC endpoints
 api_router.include_router(serial_numbers.router, prefix="/serial-numbers", tags=["serial-numbers"])
 api_router.include_router(warranties.router, prefix="/warranties", tags=["warranties"])
-api_router.include_router(bundles.router, prefix="/bundles", tags=["bundles"])# ✅ AI Audit & Automation Platform
+api_router.include_router(bundles.router, prefix="/bundles", tags=["bundles"])
+
+# ✅ AI Audit & Automation Platform
 api_router.include_router(ai_audit.router, prefix="/ai/audit", tags=["ai-audit"])
+
+# ✅ Global Product Catalog (Crowdsourcing)
+api_router.include_router(global_catalog.router, prefix="/global-catalog", tags=["global-catalog"])
+
+# ✅ AI Invoice Parser (Smart Dual-Model: gpt-4o-mini / gpt-4o)
+api_router.include_router(ai_invoice_parser.router, prefix="/ai", tags=["ai-invoice-parser"])

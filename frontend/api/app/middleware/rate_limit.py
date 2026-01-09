@@ -101,6 +101,10 @@ def check_rate_limit(key: str, limit: int, window: int) -> tuple[bool, int, int]
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Skip rate limiting for OPTIONS requests (CORS preflight)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         # Skip rate limiting for health checks and docs
         if request.url.path in ["/health", "/", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)

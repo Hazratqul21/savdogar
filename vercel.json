@@ -20,14 +20,28 @@
   "routes": [
     {
       "src": "/api/v1/(.*)",
-      "dest": "/frontend/api/index.py"
+      "dest": "/frontend/api/index.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      }
     },
     {
       "src": "/api/(.*)",
-      "dest": "/frontend/api/index.py"
+      "dest": "/frontend/api/index.py",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      }
     },
     {
       "src": "/health",
+      "dest": "/frontend/api/index.py"
+    },
+    {
+      "src": "/health/diagnostic",
       "dest": "/frontend/api/index.py"
     },
     {

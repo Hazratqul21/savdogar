@@ -24,6 +24,45 @@ if api_dir not in sys.path:
 try:
     from mangum import Mangum
     from app.main import app
+    from app.core.config import settings
+    from urllib.parse import urlparse
+    
+    # Log environment configuration (masked for security)
+    logger.info("=" * 60)
+    logger.info("🚀 Initializing SmartPOS CRM API on Vercel")
+    logger.info("=" * 60)
+    logger.info(f"📦 Environment: {settings.ENVIRONMENT}")
+    logger.info(f"🌐 Frontend URL: {settings.FRONTEND_URL or 'Not set'}")
+    
+    # Log database URL info (masked)
+    db_url = settings.database_url
+    try:
+        parsed = urlparse(db_url)
+        host_display = parsed.hostname or "unknown"
+        port_display = parsed.port or "5432"
+        user_display = parsed.username or "unknown"
+        is_pooler = ":6543" in db_url or "pooler.supabase.com" in host_display.lower()
+        pooler_type = "Session Pooler (✅)" if is_pooler else "Direct (⚠️)"
+        logger.info(f"📊 Database Host: {host_display}:{port_display}")
+        logger.info(f"📊 Database User: {user_display}")
+        logger.info(f"📊 Connection Type: {pooler_type}")
+        logger.info(f"📊 Has SSL: {'✅' if 'sslmode=require' in db_url else '❌'}")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not parse DATABASE_URL: {e}")
+    
+    # Check if DATABASE_URL is set
+    if not settings.DATABASE_URL and not settings.POSTGRES_URL:
+        logger.error("❌ DATABASE_URL or POSTGRES_URL not set in environment variables!")
+    else:
+        logger.info("✅ DATABASE_URL is configured")
+    
+    # Check SECRET_KEY
+    if settings.SECRET_KEY and len(settings.SECRET_KEY) >= 32:
+        logger.info("✅ SECRET_KEY is configured")
+    else:
+        logger.warning("⚠️ SECRET_KEY is missing or too short!")
+    
+    logger.info("=" * 60)
     
     # Create Mangum handler for Vercel serverless functions
     # Configuration optimized for Vercel environment

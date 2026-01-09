@@ -173,6 +173,51 @@ async def health_check():
     }
 
 
+@app.get("/health/diagnostic")
+async def diagnostic_check():
+    """Diagnostic endpoint to check environment configuration (safe for production)."""
+    from urllib.parse import urlparse
+    
+    # Check environment variables (masked)
+    env_status = {
+        "ENVIRONMENT": settings.ENVIRONMENT,
+        "FRONTEND_URL": settings.FRONTEND_URL or "❌ Not set",
+        "DATABASE_URL": "✅ Set" if (settings.DATABASE_URL or settings.POSTGRES_URL) else "❌ Not set",
+        "SECRET_KEY": "✅ Set" if (settings.SECRET_KEY and len(settings.SECRET_KEY) >= 32) else "❌ Not set or too short",
+    }
+    
+    # Database URL info (masked)
+    db_info = {}
+    try:
+        db_url = settings.database_url
+        parsed = urlparse(db_url)
+        db_info = {
+            "host": parsed.hostname or "unknown",
+            "port": parsed.port or "unknown",
+            "database": parsed.path.lstrip("/") or "unknown",
+            "user": parsed.username or "unknown",
+            "is_supabase": "supabase.co" in (parsed.hostname or "").lower() or "pooler.supabase.com" in (parsed.hostname or "").lower(),
+            "is_session_pooler": ":6543" in db_url or "pooler.supabase.com" in (parsed.hostname or "").lower(),
+            "has_ssl": "sslmode=require" in db_url,
+        }
+    except Exception as e:
+        db_info = {"error": str(e)[:100]}
+    
+    # Database health
+    db_health = {"status": "unknown"}
+    try:
+        from app.core.database import check_database_health
+        db_health = check_database_health()
+    except Exception as e:
+        db_health = {"status": "error", "error": str(e)[:100]}
+    
+    return {
+        "environment": env_status,
+        "database_info": db_info,
+        "database_health": db_health,
+    }
+
+
 # =============================================================================
 # Root Endpoint
 # =============================================================================

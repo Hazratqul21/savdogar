@@ -11,6 +11,7 @@ import { ToastComponent } from '@/components/inventory/Toast';
 import { ScanIndicator } from '@/components/pos/ScanIndicator';
 import { MobileCartBar } from '@/components/pos/MobileCartBar';
 import { MobileScannerButton } from '@/components/pos/MobileScannerButton';
+import { QuickAddProductModal } from '@/components/pos/quick-add-modal';
 import { soundManager } from '@/lib/sound-manager';
 
 export function VisualGridView() {
@@ -32,6 +33,10 @@ export function VisualGridView() {
   // Scan indicator state
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanError, setScanError] = useState(false);
+  
+  // Add New Product Modal state
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [missingBarcode, setMissingBarcode] = useState("");
 
   // HID Barcode Scanner: Listen for USB scanner input
   useBarcodeScanner({
@@ -77,18 +82,10 @@ export function VisualGridView() {
         // Audio feedback: Success beep
         soundManager.playBeep();
       } else {
-        // Not found: Visual feedback: Red flash
-        setScanError(true);
-        setTimeout(() => setScanError(false), 1000);
-        
-        // Audio feedback: Error buzzer
-        soundManager.playError();
-        
-        // Show toast notification
-        const truncatedBarcode = barcode.length > 8 
-          ? `${barcode.substring(0, 8)}...` 
-          : barcode;
-        showErrorToast(`Product not found: ${truncatedBarcode}`);
+        // Product not found: Open "Add New Product" modal (no error shown)
+        setMissingBarcode(barcode);
+        setShowQuickAdd(true);
+        // No error sound, no toast - just silently open the modal
       }
     } catch (error) {
       console.error('Barcode scan error:', error);
@@ -322,6 +319,16 @@ export function VisualGridView() {
           />
         ))}
       </div>
+
+      {/* Add New Product Modal */}
+      <QuickAddProductModal
+        isOpen={showQuickAdd}
+        onClose={() => {
+          setShowQuickAdd(false);
+          setMissingBarcode("");
+        }}
+        initialBarcode={missingBarcode}
+      />
     </div>
   );
 }

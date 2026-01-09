@@ -125,11 +125,10 @@ export function ScannerView() {
         const truncatedBarcode = barcode.length > 8 
           ? `${barcode.substring(0, 8)}...` 
           : barcode;
-        showErrorToast(`Product not found: ${truncatedBarcode}`);
-        
-        // Show quick-add modal for missing products
+        // Product not found: Open "Add New Product" modal (no error shown)
         setMissingBarcode(barcode);
         setShowQuickAdd(true);
+        // No error sound, no toast - just silently open the modal
       }
     } catch (error) {
       console.error('Barcode scan error:', error);

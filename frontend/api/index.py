@@ -83,35 +83,50 @@ try:
     def wrapped_handler(event, context):
         """Wrapped handler with request logging and Vercel path normalization"""
         try:
+            # CRITICAL: Log full event structure for debugging
+            logger.info(f"🔍 Full event structure: {list(event.keys())}")
+            logger.info(f"🔍 Event content: {event}")
+            
             # CRITICAL: Vercel event format handling
-            # Vercel passes the full path in the event
-            # Extract path and method
-            path = event.get("path") or event.get("rawPath") or "/"
-            method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method", "GET")
+            # Vercel passes the full path in different fields depending on the routing
+            # Extract path from various possible locations
+            path = (
+                event.get("path") or 
+                event.get("rawPath") or 
+                event.get("requestContext", {}).get("path") or
+                event.get("queryStringParameters", {}).get("path") if isinstance(event.get("queryStringParameters"), dict) else None or
+                "/"
+            )
             
-            logger.info(f"📥 Request received: {method} {path}")
-            logger.info(f"📥 Event structure: {list(event.keys())}")
+            # Extract method from various possible locations
+            method = (
+                event.get("httpMethod") or 
+                event.get("requestContext", {}).get("http", {}).get("method") or
+                event.get("requestContext", {}).get("httpMethod") or
+                event.get("method") or
+                "GET"
+            )
             
-            # CRITICAL: Vercel routing passes full path like "/api/v1/auth/signup"
-            # Mangum needs this in the "path" field
-            if "path" not in event or not event.get("path"):
-                # Try alternative field names
-                if "rawPath" in event:
-                    event["path"] = event["rawPath"]
-                elif "pathParameters" in event:
-                    params = event.get("pathParameters") or {}
-                    if "proxy" in params:
-                        # Reconstruct from proxy parameter
-                        event["path"] = f"/api/v1/{params['proxy']}"
-                    else:
-                        # Default path
-                        event["path"] = "/api/v1"
+            logger.info(f"📥 Raw request: {method} {path}")
+            logger.info(f"📥 Event keys: {list(event.keys())}")
             
-            # Ensure httpMethod is set
-            if "httpMethod" not in event and method:
-                event["httpMethod"] = method
+            # CRITICAL: Vercel routing with pattern "/api/v1/(.*)" passes the matched part
+            # The full path should be reconstructed from the routing pattern
+            # If path doesn't start with /api/v1, it might be the matched part only
+            if not path.startswith("/api/v1") and path != "/":
+                # This might be the matched part from vercel.json routing
+                # vercel.json has: "src": "/api/v1/(.*)", "dest": "/frontend/api/index.py"
+                # The matched part (.*) should be reconstructed
+                if not path.startswith("/"):
+                    path = f"/api/v1/{path}"
+                else:
+                    path = f"/api/v1{path}"
             
-            logger.info(f"📥 Normalized: {event.get('httpMethod')} {event.get('path')}")
+            # Ensure path and method are set in event for Mangum
+            event["path"] = path
+            event["httpMethod"] = method
+            
+            logger.info(f"📥 Normalized path: {event.get('httpMethod')} {event.get('path')}")
             
             # Call original Mangum handler
             response = original_handler(event, context)

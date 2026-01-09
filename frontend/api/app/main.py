@@ -107,6 +107,7 @@ app.add_middleware(RateLimitMiddleware)
 
 # =============================================================================
 # Global OPTIONS Handler (CORS Preflight)
+# CRITICAL: Must be defined BEFORE routers to catch OPTIONS requests first
 # =============================================================================
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str, request: Request):
@@ -114,6 +115,10 @@ async def options_handler(full_path: str, request: Request):
     Handle CORS preflight OPTIONS requests for all paths.
     This ensures all endpoints respond correctly to browser preflight checks.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"✅ OPTIONS request received for path: {full_path}")
+    
     origin = request.headers.get("origin", "*")
     allowed_origins = get_cors_origins()
     
@@ -125,7 +130,7 @@ async def options_handler(full_path: str, request: Request):
     else:
         response_origin = allowed_origins[0] if allowed_origins else "*"
     
-    return Response(
+    response = Response(
         status_code=200,
         headers={
             "Access-Control-Allow-Origin": response_origin,
@@ -135,6 +140,8 @@ async def options_handler(full_path: str, request: Request):
             "Access-Control-Max-Age": "3600",
         }
     )
+    logger.info(f"✅ OPTIONS response sent for path: {full_path}")
+    return response
 
 
 # =============================================================================

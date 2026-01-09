@@ -77,6 +77,33 @@ try:
         ],
     )
     
+    # Wrap handler to add logging for debugging
+    original_handler = handler
+    
+    def wrapped_handler(event, context):
+        """Wrapped handler with request logging"""
+        try:
+            # Log request details
+            path = event.get("path", "unknown")
+            method = event.get("httpMethod", "unknown")
+            logger.info(f"📥 Request: {method} {path}")
+            
+            # Call original handler
+            response = original_handler(event, context)
+            
+            # Log response
+            status_code = response.get("statusCode", "unknown")
+            logger.info(f"📤 Response: {status_code} for {method} {path}")
+            
+            return response
+        except Exception as e:
+            logger.error(f"❌ Handler error for {event.get('path', 'unknown')}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
+    
+    handler = wrapped_handler
+    
     logger.info("✅ Mangum handler initialized successfully")
     
 except Exception as e:

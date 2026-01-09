@@ -27,10 +27,8 @@ def signup(
     """
     import logging
     logger = logging.getLogger(__name__)
+    logger.info(f"✅ POST /api/v1/auth/signup called - username={user_in.username}, email={user_in.email}")
     try:
-        # #region agent log
-        logger.info(f"DEBUG: signup endpoint called - username={user_in.username}, email={user_in.email}")
-        # #endregion
         # Check if user with email exists
         user = db.query(User).filter(User.email == user_in.email).first()
         if user:

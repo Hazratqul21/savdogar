@@ -28,6 +28,8 @@ handler = Mangum(
     text_mime_types=["application/json", "text/plain", "application/x-www-form-urlencoded"],
     # Enable CORS preflight handling
     enable_lifespan=False,
+    # Explicitly handle all HTTP methods including OPTIONS
+    api_gateway_base_path="",
 )
 
 logger.info("Mangum handler initialized for Vercel serverless functions")

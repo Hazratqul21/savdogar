@@ -80,13 +80,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api/v1")
-app.include_router(public_router, prefix="/verify", tags=["public"])
-
 # Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
+# MUST be defined BEFORE routers to catch OPTIONS requests first
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str, request: Request):
-    """Handle CORS preflight OPTIONS requests"""
+    """Handle CORS preflight OPTIONS requests for all paths"""
     from fastapi import Response
     
     # Get origin from request
@@ -110,6 +108,10 @@ async def options_handler(full_path: str, request: Request):
             "Access-Control-Max-Age": "3600",
         }
     )
+
+# Include routers AFTER OPTIONS handler
+app.include_router(api_router, prefix="/api/v1")
+app.include_router(public_router, prefix="/verify", tags=["public"])
 
 @app.get("/health")
 def health_check():

@@ -44,8 +44,8 @@ export default function GlobalCatalogPage() {
             if (!imageUrl) setImageUrl("");
             if (!description) setDescription("");
           }
-        } catch (error) {
-          console.error("Error checking barcode:", error);
+        } catch (err) {
+          console.error("Error checking barcode:", err);
         } finally {
           setIsChecking(false);
         }
@@ -56,7 +56,7 @@ export default function GlobalCatalogPage() {
 
     const timeoutId = setTimeout(checkBarcode, 500); // Debounce
     return () => clearTimeout(timeoutId);
-  }, [barcode, toast]);
+  }, [barcode, success]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {

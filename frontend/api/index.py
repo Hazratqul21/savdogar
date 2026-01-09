@@ -77,18 +77,43 @@ try:
         ],
     )
     
-    # Wrap handler to add logging for debugging
+    # Wrap handler to add logging and Vercel-specific path handling
     original_handler = handler
     
     def wrapped_handler(event, context):
-        """Wrapped handler with request logging"""
+        """Wrapped handler with request logging and Vercel path normalization"""
         try:
-            # Log request details
-            path = event.get("path", "unknown")
-            method = event.get("httpMethod", "unknown")
-            logger.info(f"📥 Request: {method} {path}")
+            # CRITICAL: Vercel event format handling
+            # Vercel passes the full path in the event
+            # Extract path and method
+            path = event.get("path") or event.get("rawPath") or "/"
+            method = event.get("httpMethod") or event.get("requestContext", {}).get("http", {}).get("method", "GET")
             
-            # Call original handler
+            logger.info(f"📥 Request received: {method} {path}")
+            logger.info(f"📥 Event structure: {list(event.keys())}")
+            
+            # CRITICAL: Vercel routing passes full path like "/api/v1/auth/signup"
+            # Mangum needs this in the "path" field
+            if "path" not in event or not event.get("path"):
+                # Try alternative field names
+                if "rawPath" in event:
+                    event["path"] = event["rawPath"]
+                elif "pathParameters" in event:
+                    params = event.get("pathParameters") or {}
+                    if "proxy" in params:
+                        # Reconstruct from proxy parameter
+                        event["path"] = f"/api/v1/{params['proxy']}"
+                    else:
+                        # Default path
+                        event["path"] = "/api/v1"
+            
+            # Ensure httpMethod is set
+            if "httpMethod" not in event and method:
+                event["httpMethod"] = method
+            
+            logger.info(f"📥 Normalized: {event.get('httpMethod')} {event.get('path')}")
+            
+            # Call original Mangum handler
             response = original_handler(event, context)
             
             # Log response
@@ -97,10 +122,20 @@ try:
             
             return response
         except Exception as e:
-            logger.error(f"❌ Handler error for {event.get('path', 'unknown')}: {e}")
+            logger.error(f"❌ Handler error: {e}")
             import traceback
             logger.error(traceback.format_exc())
-            raise
+            
+            # Return proper error response
+            return {
+                "statusCode": 500,
+                "body": f'{{"detail": "Internal server error: {str(e)}"}}',
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+                }
+            }
     
     handler = wrapped_handler
     

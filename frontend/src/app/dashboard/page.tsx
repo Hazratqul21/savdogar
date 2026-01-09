@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     ShoppingBag,
     TrendingUp,
@@ -21,11 +22,37 @@ const getUserBusinessType = () => {
 
 export default function DashboardPage() {
     const [businessType, setBusinessType] = useState<string>("retail");
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const type = getUserBusinessType();
         setBusinessType(type);
-    }, []);
+
+        // Check user role and redirect sellers to POS
+        const fetchUserRole = async () => {
+            try {
+                const { getSettings } = await import("@/lib/api");
+                const data = await getSettings();
+                const role = data.user?.role;
+                setUserRole(role);
+                
+                // Redirect 'seller' or 'cashier' users to POS immediately
+                if (role === 'seller' || role === 'cashier') {
+                    router.replace('/pos');
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to fetch user role:", e);
+            }
+        };
+        fetchUserRole();
+    }, [router]);
+
+    // Show loading or nothing while checking role
+    if (userRole === 'seller' || userRole === 'cashier') {
+        return null; // Will redirect
+    }
 
     const renderRetailDashboard = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

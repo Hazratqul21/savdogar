@@ -5,8 +5,9 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 
 from app.api import deps
-from app.models import Sale, SaleItem, Product, User, Invoice
+from app.models import Sale, SaleItem, Product, User, Invoice, UserRole
 from typing import Optional
+from fastapi import HTTPException, status
 
 router = APIRouter()
 
@@ -17,6 +18,12 @@ def get_dashboard_stats(
     organization_id: Optional[int] = Depends(deps.get_user_organization),
 ) -> Any:
     """Get dashboard statistics."""
+    # Restrict access for seller/cashier role
+    if current_user.role in [UserRole.CASHIER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Sellers cannot view dashboard analytics."
+        )
     today = datetime.utcnow().date()
     month_start = today.replace(day=1)
     
@@ -80,6 +87,12 @@ def get_dashboard_charts(
     organization_id: Optional[int] = Depends(deps.get_user_organization),
 ) -> Any:
     """Get data for dashboard charts."""
+    # Restrict access for seller/cashier role
+    if current_user.role in [UserRole.CASHIER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Sellers cannot view dashboard charts."
+        )
     today = datetime.utcnow().date()
     
     # Build filters

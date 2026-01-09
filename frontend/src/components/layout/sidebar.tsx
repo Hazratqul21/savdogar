@@ -20,16 +20,41 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const menuItems = [
-    { icon: LayoutDashboard, label: "Boshqaruv paneli", href: "/admin" },
-    { icon: ShoppingCart, label: "POS Terminali", href: "/pos" },
-    { icon: Tag, label: "Label Studio", href: "/admin/labels" },
-    { icon: Receipt, label: "Fakturalar", href: "/admin/invoices" },
-    { icon: Box, label: "Ombor", href: "/admin/inventory" },
-    { icon: FileText, label: "Nakladnoy Skaner", href: "/admin/inventory/nakladnoy" },
-    { icon: Users, label: "Mijozlar", href: "/admin/customers" },
-    { icon: Settings, label: "Sozlamalar", href: "/admin/settings" },
-];
+// Menu items configuration - some items are restricted for 'seller' role
+const getAllMenuItems = (userRole?: string) => {
+    const allItems = [
+        { icon: LayoutDashboard, label: "Boshqaruv paneli", href: "/admin", restricted: true },
+        { icon: ShoppingCart, label: "POS Terminali", href: "/pos", restricted: false },
+        { icon: Receipt, label: "Buyurtmalar tarixi", href: "/admin/invoices", restricted: false, sellerLabel: "Buyurtmalar tarixi" }, // Show for sellers as "Orders History"
+        { icon: Tag, label: "Label Studio", href: "/admin/labels", restricted: true },
+        { icon: Receipt, label: "Fakturalar", href: "/admin/invoices", restricted: true, ownerLabel: "Fakturalar" }, // Show for owners as "Fakturalar"
+        { icon: Box, label: "Ombor", href: "/admin/inventory", restricted: true },
+        { icon: FileText, label: "Nakladnoy Skaner", href: "/admin/inventory/nakladnoy", restricted: true },
+        { icon: Users, label: "Mijozlar", href: "/admin/customers", restricted: true },
+        { icon: Settings, label: "Sozlamalar", href: "/admin/settings", restricted: true },
+    ];
+    
+    // Filter items based on role
+    if (userRole === 'seller' || userRole === 'cashier') {
+        // Sellers only see POS and Orders History (invoices)
+        return allItems
+            .filter(item => !item.restricted || (item.sellerLabel && item.href === "/admin/invoices"))
+            .map(item => {
+                // Use seller label if available
+                if (item.sellerLabel && item.href === "/admin/invoices") {
+                    return { ...item, label: item.sellerLabel };
+                }
+                return item;
+            });
+    }
+    // Owners/managers see all items, use owner label for invoices if available
+    return allItems.map(item => {
+        if (item.ownerLabel && item.href === "/admin/invoices") {
+            return { ...item, label: item.ownerLabel };
+        }
+        return item;
+    });
+};
 
 export function Sidebar() {
     const [collapsed, setCollapsed] = useState(true); // Default collapsed for mobile/desktop initially
@@ -51,6 +76,9 @@ export function Sidebar() {
         };
         fetchProfile();
     }, []);
+
+    // Get filtered menu items based on user role
+    const menuItems = getAllMenuItems(profile?.role);
 
 
     const pathname = usePathname();

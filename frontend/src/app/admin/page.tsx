@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getAllTenants, getCurrentUser } from "@/lib/api-admin";
 import { Building2, Users, Package, TrendingUp } from "lucide-react";
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const { data: user } = useQuery({
     queryKey: ["current-user"],
     queryFn: getCurrentUser,
@@ -15,6 +17,18 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-tenants"],
     queryFn: getAllTenants,
   });
+
+  // Redirect sellers to POS
+  useEffect(() => {
+    if (user?.role === 'seller' || user?.role === 'cashier') {
+      router.replace('/pos');
+    }
+  }, [user, router]);
+
+  // Show nothing while redirecting
+  if (user?.role === 'seller' || user?.role === 'cashier') {
+    return null;
+  }
 
   const stats = {
     totalTenants: tenants.length,

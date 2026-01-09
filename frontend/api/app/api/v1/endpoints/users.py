@@ -2,10 +2,11 @@ from typing import Any, List
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.api import deps
 from app.core import security
-from app.models import User
+from app.models import User, Tenant
 from app.schemas import user as user_schema
 
 router = APIRouter()
@@ -32,6 +33,7 @@ def create_user(
 ) -> Any:
     """
     Create new user.
+    Enforces max_users limit based on tenant's subscription plan.
     """
     # Check if user with email exists
     user = db.query(User).filter(User.email == user_in.email).first()
@@ -58,6 +60,24 @@ def create_user(
                 detail="Bu telefon raqami bilan foydalanuvchi allaqachon mavjud.",
             )
     
+    # Enforce max_users limit based on tenant's subscription plan
+    if current_user.tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+        if tenant:
+            # Count current active users for this tenant
+            current_user_count = db.query(func.count(User.id)).filter(
+                User.tenant_id == current_user.tenant_id,
+                User.is_active == True
+            ).scalar() or 0
+            
+            # Check if adding a new user would exceed the limit
+            if current_user_count >= tenant.max_users:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Foydalanuvchilar soni chegaradan oshib ketdi. Sizning rejangiz: {tenant.subscription_plan}. Maksimal foydalanuvchilar soni: {tenant.max_users}. Iltimos, rejangizni yangilang yoki ba'zi foydalanuvchilarni o'chiring."
+                )
+    
+    # Set tenant_id for the new user (same as current user's tenant)
     user_obj = User(
         username=user_in.username,
         email=user_in.email,
@@ -66,6 +86,7 @@ def create_user(
         is_active=user_in.is_active,
         phone_number=user_in.phone_number,
         full_name=user_in.full_name,
+        tenant_id=current_user.tenant_id,  # Assign to same tenant
     )
     db.add(user_obj)
     db.commit()

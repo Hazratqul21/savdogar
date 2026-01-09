@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from app.api import deps
-from app.models import User
+from app.models import User, UserRole
 from app.models.product_v2 import ProductV2, ProductVariant, ProductType
 from app.models.pricing import PriceTier
 from app.schemas import product_v2 as schemas
@@ -121,6 +121,14 @@ def read_products(
             ProductVariant.product_id == product.id
         ).all()
     
+    # Hide cost_price for seller/cashier role
+    is_seller = current_user.role in [UserRole.CASHIER]
+    if is_seller:
+        for product in products:
+            product.cost_price = None
+            for variant in product.variants:
+                variant.cost_price = None
+    
     return products
 
 @router.get("/{product_id}", response_model=schemas.Product)
@@ -147,6 +155,13 @@ def read_product(
     product.variants = db.query(ProductVariant).filter(
         ProductVariant.product_id == product.id
     ).all()
+    
+    # Hide cost_price for seller/cashier role
+    is_seller = current_user.role in [UserRole.CASHIER]
+    if is_seller:
+        product.cost_price = None
+        for variant in product.variants:
+            variant.cost_price = None
     
     return product
 

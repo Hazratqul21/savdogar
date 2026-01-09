@@ -54,6 +54,12 @@ class Tenant(Base):
     phone = Column(String, nullable=True)
     email = Column(String, nullable=True)
     
+    # Subscription & Plan Limits
+    subscription_plan = Column(String, default="trial")  # 'trial', 'standard', 'pro'
+    trial_ends_at = Column(DateTime, nullable=True)
+    max_users = Column(Integer, default=5)  # Default: 5 for standard/trial, 25 for pro
+    max_branches = Column(Integer, default=1)  # Default: 1 for standard/trial, 5 for pro
+    
     # Status
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)

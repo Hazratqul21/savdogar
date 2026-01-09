@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Token ni cookie dan olish
   const token = request.cookies.get('access_token')?.value;
 
   // Protected routes
-  const protectedRoutes = ['/dashboard'];
+  const protectedRoutes = ['/dashboard', '/admin'];
   const isProtectedRoute = protectedRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   );
@@ -23,11 +24,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  // Note: Role-based redirects (seller -> /pos) are handled in page components
+  // because we need to fetch user data from API, which requires client-side code
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/login'],
 };
 
 

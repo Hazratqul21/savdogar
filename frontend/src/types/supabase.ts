@@ -22,6 +22,9 @@ export type PriceTierType = 'retail' | 'vip' | 'wholesaler' | 'bulk';
 /**
  * Tenant (Multi-tenant root)
  */
+export type SubscriptionPlan = 'trial' | 'standard' | 'pro';
+export type SubscriptionStatus = 'active' | 'suspended' | 'cancelled' | 'expired';
+
 export interface Tenant {
   id: number;
   name: string;
@@ -34,6 +37,12 @@ export interface Tenant {
   address?: string;
   phone?: string;
   email?: string;
+  // Subscription & Plan Limits
+  subscription_plan: SubscriptionPlan;
+  subscription_status: SubscriptionStatus;
+  trial_ends_at?: string; // ISO timestamp
+  max_users: number;
+  max_branches: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;

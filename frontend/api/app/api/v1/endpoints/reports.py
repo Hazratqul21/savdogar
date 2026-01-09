@@ -6,7 +6,8 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 
 from app.api import deps
-from app.models import Sale, SaleItem, Product, User
+from app.models import Sale, SaleItem, Product, User, UserRole
+from fastapi import HTTPException, status
 from app.services.export_service import (
     export_sales_to_pdf,
     export_sales_to_excel,
@@ -29,6 +30,12 @@ def get_sales_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get sales report for date range."""
+    # Restrict access for seller/cashier role
+    if current_user.role in [UserRole.CASHIER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Sellers cannot view sales reports."
+        )
     query = db.query(Sale)
     
     if start_date:
@@ -62,6 +69,12 @@ def get_inventory_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get inventory report."""
+    # Restrict access for seller/cashier role
+    if current_user.role in [UserRole.CASHIER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Sellers cannot view inventory reports."
+        )
     products = db.query(Product).all()
     
     total_value = sum(p.stock_quantity * p.cost_price for p in products)
@@ -85,6 +98,12 @@ def get_profit_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get profit report."""
+    # Restrict access for seller/cashier role - they cannot see profit/cost data
+    if current_user.role in [UserRole.CASHIER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Sellers cannot view profit reports."
+        )
     query = db.query(SaleItem).join(Sale)
     
     if start_date:

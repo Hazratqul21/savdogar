@@ -34,12 +34,16 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Construct database URL with SSL support."""
+        from urllib.parse import quote_plus
+        
         # Use explicit URL if provided
         url = self.DATABASE_URL or self.POSTGRES_URL
         
         if not url:
             # Construct from individual components
-            url = f"postgresql://{self.PGUSER}:{self.PGPASSWORD}@{self.PGHOST}:{self.PGPORT}/{self.PGDATABASE}"
+            # URL-encode password to handle special characters like [ ] @ : etc.
+            encoded_password = quote_plus(self.PGPASSWORD)
+            url = f"postgresql://{self.PGUSER}:{encoded_password}@{self.PGHOST}:{self.PGPORT}/{self.PGDATABASE}"
         
         # SSL support for cloud databases
         if "sslmode" not in (url or ""):

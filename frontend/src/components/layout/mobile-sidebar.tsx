@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -18,16 +18,40 @@ import {
   FileText,
 } from "lucide-react";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Boshqaruv paneli", href: "/admin" },
-  { icon: ShoppingCart, label: "POS Terminali", href: "/pos" },
-  { icon: Tag, label: "Label Studio", href: "/admin/labels" },
-  { icon: Receipt, label: "Fakturalar", href: "/admin/invoices" },
-  { icon: Box, label: "Ombor", href: "/admin/inventory" },
-  { icon: FileText, label: "Nakladnoy Skaner", href: "/admin/inventory/nakladnoy" },
-  { icon: Users, label: "Mijozlar", href: "/admin/customers" },
-  { icon: Settings, label: "Sozlamalar", href: "/admin/settings" },
-];
+// Menu items configuration - some items are restricted for 'seller' role
+const getAllMenuItems = (userRole?: string) => {
+    const allItems = [
+        { icon: LayoutDashboard, label: "Boshqaruv paneli", href: "/admin", restricted: true },
+        { icon: ShoppingCart, label: "POS Terminali", href: "/pos", restricted: false },
+        { icon: Receipt, label: "Buyurtmalar tarixi", href: "/admin/invoices", restricted: false, sellerLabel: "Buyurtmalar tarixi" },
+        { icon: Tag, label: "Label Studio", href: "/admin/labels", restricted: true },
+        { icon: Receipt, label: "Fakturalar", href: "/admin/invoices", restricted: true, ownerLabel: "Fakturalar" },
+        { icon: Box, label: "Ombor", href: "/admin/inventory", restricted: true },
+        { icon: FileText, label: "Nakladnoy Skaner", href: "/admin/inventory/nakladnoy", restricted: true },
+        { icon: Users, label: "Mijozlar", href: "/admin/customers", restricted: true },
+        { icon: Settings, label: "Sozlamalar", href: "/admin/settings", restricted: true },
+    ];
+    
+    // Filter items based on role
+    if (userRole === 'seller' || userRole === 'cashier') {
+        // Sellers only see POS and Orders History
+        return allItems
+            .filter(item => !item.restricted || (item.sellerLabel && item.href === "/admin/invoices"))
+            .map(item => {
+                if (item.sellerLabel && item.href === "/admin/invoices") {
+                    return { ...item, label: item.sellerLabel };
+                }
+                return item;
+            });
+    }
+    // Owners/managers see all items
+    return allItems.map(item => {
+        if (item.ownerLabel && item.href === "/admin/invoices") {
+            return { ...item, label: item.ownerLabel };
+        }
+        return item;
+    });
+};
 
 /**
  * Mobile Sidebar - Hamburger menu for mobile devices
@@ -35,7 +59,23 @@ const menuItems = [
  */
 export function MobileSidebar() {
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState<any>({});
   const pathname = usePathname();
+
+  // Fetch user profile to get role
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { getSettings } = await import("@/lib/api");
+        const data = await getSettings();
+        setProfile(data.user);
+      } catch (e) {}
+    };
+    fetchProfile();
+  }, []);
+
+  // Get filtered menu items based on user role
+  const menuItems = getAllMenuItems(profile?.role);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

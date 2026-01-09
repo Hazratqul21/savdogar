@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Construct database URL with SSL support."""
-        from urllib.parse import quote_plus
+        from urllib.parse import quote_plus, urlparse, urlunparse
         
         # Use explicit URL if provided
         url = self.DATABASE_URL or self.POSTGRES_URL
@@ -45,12 +45,33 @@ class Settings(BaseSettings):
             encoded_password = quote_plus(self.PGPASSWORD)
             url = f"postgresql://{self.PGUSER}:{encoded_password}@{self.PGHOST}:{self.PGPORT}/{self.PGDATABASE}"
         
+        # Parse URL to handle parameters properly
+        parsed = urlparse(url)
+        query_params = {}
+        
+        # Parse existing query parameters
+        if parsed.query:
+            from urllib.parse import parse_qs
+            for key, values in parse_qs(parsed.query).items():
+                query_params[key] = values[0] if values else ""
+        
+        # Detect Supabase (contains .supabase.co)
+        is_supabase = "supabase.co" in parsed.netloc.lower()
+        
         # SSL support for cloud databases
-        if "sslmode" not in (url or ""):
-            if "?" in url:
-                url += "&sslmode=require"
+        if "sslmode" not in query_params:
+            if is_supabase:
+                # Supabase requires sslmode=require
+                query_params["sslmode"] = "require"
             else:
-                url += "?sslmode=require"
+                # Other cloud databases
+                query_params["sslmode"] = "require"
+        
+        # Reconstruct URL with parameters
+        from urllib.parse import urlencode
+        new_query = urlencode(query_params)
+        new_parsed = parsed._replace(query=new_query)
+        url = urlunparse(new_parsed)
         
         return url
     

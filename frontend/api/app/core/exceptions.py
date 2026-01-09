@@ -49,14 +49,24 @@ def handle_database_error(error: Exception) -> HTTPException:
     """Handle database-related errors with user-friendly messages."""
     error_msg = str(error).lower()
     
+    # SSL/Certificate errors (common with Supabase)
+    if "ssl" in error_msg or "certificate" in error_msg or "cert verify failed" in error_msg:
+        logger.error(f"Database SSL error: {error}", exc_info=True)
+        return APIError(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            message="Database SSL ulanishida xatolik. Iltimos, database sozlamalarini tekshiring.",
+            error_code="DB_SSL_ERROR",
+            details={"original_error": str(error)[:200]} if not settings.is_production() else None
+        )
+    
     # Database connection errors
-    if "connection" in error_msg or "timeout" in error_msg or "could not connect" in error_msg:
+    if "connection" in error_msg or "timeout" in error_msg or "could not connect" in error_msg or "connection refused" in error_msg:
         logger.error(f"Database connection error: {error}", exc_info=True)
         return APIError(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            message="Database serverga ulanib bo'lmadi. Iltimos, keyinroq urinib ko'ring.",
+            message="Database serverga ulanib bo'lmadi. Iltimos, keyinroq urinib ko'ring yoki database sozlamalarini tekshiring.",
             error_code="DB_CONNECTION_ERROR",
-            details={"original_error": str(error)} if not settings.is_production() else None
+            details={"original_error": str(error)[:200]} if not settings.is_production() else None
         )
     
     # Table/relation not found (migration issues)

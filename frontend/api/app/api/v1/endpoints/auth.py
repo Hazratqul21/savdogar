@@ -134,9 +134,15 @@ def login_access_token(
     except Exception as e:
         from app.core.exceptions import handle_database_error, handle_generic_error
         
-        # Check if it's a database error
+        # Check if it's a database error (connection, timeout, SSL, etc.)
         error_msg = str(e).lower()
-        if "connection" in error_msg or "timeout" in error_msg or "database" in error_msg:
+        db_error_keywords = [
+            "connection", "timeout", "database", "could not connect",
+            "ssl", "certificate", "supabase", "postgres", "psycopg",
+            "operationalerror", "interfaceerror", "connectionpool"
+        ]
+        
+        if any(keyword in error_msg for keyword in db_error_keywords):
             raise handle_database_error(e)
         
         # Generic error

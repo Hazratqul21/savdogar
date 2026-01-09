@@ -4,6 +4,11 @@ Uses Mangum to convert FastAPI ASGI app to AWS Lambda/API Gateway format
 """
 import sys
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add current directory (frontend/api) to Python path for imports
 api_dir = os.path.dirname(os.path.abspath(__file__))
@@ -24,3 +29,5 @@ handler = Mangum(
     # Enable CORS preflight handling
     enable_lifespan=False,
 )
+
+logger.info("Mangum handler initialized for Vercel serverless functions")

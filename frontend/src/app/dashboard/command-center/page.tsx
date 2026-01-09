@@ -1,12 +1,11 @@
 "use client";
 
-import CommandCenterDashboard from "@/pages/dashboard/index";
+import CommandCenterDashboard from "@/components/dashboard/CommandCenterDashboard";
 
 /**
  * Command Center Dashboard (App Router version)
  * 
- * This is the App Router version that imports from pages/dashboard/index.tsx
- * For Next.js App Router, you can also create a fully App Router version if needed.
+ * This page uses the CommandCenterDashboard component from components/dashboard
  */
 export default function CommandCenterPage() {
   return <CommandCenterDashboard />;

@@ -15,4 +15,12 @@ from app.main import app
 
 # Create Mangum handler for Vercel serverless functions
 # lifespan="off" because Vercel handles function lifecycle
-handler = Mangum(app, lifespan="off")
+# Vercel routes /api/* to this handler and passes full path including /api prefix
+# FastAPI app has routes at /api/v1/*, so paths should match correctly
+handler = Mangum(
+    app, 
+    lifespan="off",
+    text_mime_types=["application/json", "text/plain", "application/x-www-form-urlencoded"],
+    # Enable CORS preflight handling
+    enable_lifespan=False,
+)

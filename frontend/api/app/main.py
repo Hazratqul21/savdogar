@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.api import api_router
@@ -82,6 +82,34 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/verify", tags=["public"])
+
+# Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str, request: Request):
+    """Handle CORS preflight OPTIONS requests"""
+    from fastapi import Response
+    
+    # Get origin from request
+    origin = request.headers.get("origin", "*")
+    
+    # Check if origin is in allowed origins
+    allowed_origins = get_cors_origins()
+    if origin not in allowed_origins and "*" not in allowed_origins:
+        # If origin not allowed, use first allowed origin or *
+        origin = allowed_origins[0] if allowed_origins else "*"
+    elif "*" in allowed_origins:
+        origin = "*"
+    
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
 
 @app.get("/health")
 def health_check():

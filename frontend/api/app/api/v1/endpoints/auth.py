@@ -12,20 +12,9 @@ from app.models import User
 
 router = APIRouter()
 
-# Explicit OPTIONS handler for signup endpoint
-@router.options("/signup")
-async def signup_options():
-    """Handle CORS preflight for signup"""
-    from fastapi import Response
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
+# Note: OPTIONS handlers are handled by the global handler in main.py
+# These explicit handlers are kept as backup but may not be reached
+# if the global handler catches them first
 
 @router.post("/signup", response_model=user_schema.User)
 def signup(
@@ -94,21 +83,6 @@ def signup(
         
         # Generic error
         raise handle_generic_error(e, context="Ro'yxatdan o'tish")
-
-# Explicit OPTIONS handler for login endpoint
-@router.options("/login")
-async def login_options():
-    """Handle CORS preflight for login"""
-    from fastapi import Response
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
 
 @router.post("/login", response_model=user_schema.Token)
 def login_access_token(

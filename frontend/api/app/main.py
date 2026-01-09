@@ -21,10 +21,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SmartPOS CRM API",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Disable automatic OPTIONS handling - we'll handle it manually
+    # This ensures better control over CORS preflight requests
+    docs_url="/docs" if not settings.is_production() else None,
+    redoc_url="/redoc" if not settings.is_production() else None,
 )
 
-# Rate limiting
+# Rate limiting - MUST be first to catch all requests
 app.add_middleware(RateLimitMiddleware)
 
 # CORS Configuration - Dynamic based on environment
@@ -82,10 +86,15 @@ app.add_middleware(
 
 # Explicit OPTIONS handler for CORS preflight (fixes 405 errors)
 # MUST be defined BEFORE routers to catch OPTIONS requests first
+# This handler catches ALL OPTIONS requests before they reach route handlers
 @app.options("/{full_path:path}")
 async def options_handler(full_path: str, request: Request):
     """Handle CORS preflight OPTIONS requests for all paths"""
     from fastapi import Response
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"OPTIONS request received for path: {full_path}")
     
     # Get origin from request
     origin = request.headers.get("origin", "*")
@@ -98,7 +107,7 @@ async def options_handler(full_path: str, request: Request):
     elif "*" in allowed_origins:
         origin = "*"
     
-    return Response(
+    response = Response(
         status_code=200,
         headers={
             "Access-Control-Allow-Origin": origin,
@@ -108,6 +117,9 @@ async def options_handler(full_path: str, request: Request):
             "Access-Control-Max-Age": "3600",
         }
     )
+    
+    logger.info(f"OPTIONS response sent with origin: {origin}")
+    return response
 
 # Include routers AFTER OPTIONS handler
 app.include_router(api_router, prefix="/api/v1")

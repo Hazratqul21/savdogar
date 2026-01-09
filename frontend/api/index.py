@@ -22,11 +22,14 @@ from app.main import app
 # lifespan="off" because Vercel handles function lifecycle
 # Vercel routes /api/* to this handler and passes full path including /api prefix
 # FastAPI app has routes at /api/v1/*, so paths should match correctly
+# 
+# IMPORTANT: Vercel passes the full path including /api prefix to the handler
+# So /api/v1/auth/signup becomes /api/v1/auth/signup in the request
+# FastAPI routes are defined with /api/v1 prefix, so they match correctly
 handler = Mangum(
     app, 
     lifespan="off",
     text_mime_types=["application/json", "text/plain", "application/x-www-form-urlencoded"],
-    # Enable CORS preflight handling
     enable_lifespan=False,
 )
 

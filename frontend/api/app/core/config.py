@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Construct database URL with SSL support."""
-        from urllib.parse import quote_plus, urlparse, urlunparse
+        from urllib.parse import quote_plus, urlparse, urlunparse, unquote
         
         # Use explicit URL if provided
         url = self.DATABASE_URL or self.POSTGRES_URL
@@ -55,8 +55,26 @@ class Settings(BaseSettings):
             for key, values in parse_qs(parsed.query).items():
                 query_params[key] = values[0] if values else ""
         
-        # Detect Supabase (contains .supabase.co)
-        is_supabase = "supabase.co" in parsed.netloc.lower()
+        # Detect Supabase (contains .supabase.co or pooler.supabase.com)
+        is_supabase = "supabase.co" in parsed.netloc.lower() or "pooler.supabase.com" in parsed.netloc.lower()
+        is_session_pooler = ":6543" in url or "pooler.supabase.com" in parsed.netloc.lower()
+        
+        # Fix password encoding if needed (if password contains special chars and not encoded)
+        if parsed.password:
+            try:
+                # Try to decode - if it works, it was encoded, if not, encode it
+                decoded = unquote(parsed.password)
+                # If decoded password contains special chars that need encoding, re-encode
+                if any(char in decoded for char in ['@', ':', '/', '?', '#', '[', ']', '%']):
+                    if decoded == parsed.password:  # Was not encoded
+                        encoded_password = quote_plus(decoded)
+                        # Reconstruct netloc with encoded password
+                        auth = f"{parsed.username}:{encoded_password}" if parsed.username else encoded_password
+                        netloc = f"{auth}@{parsed.hostname}" + (f":{parsed.port}" if parsed.port else "")
+                        parsed = parsed._replace(netloc=netloc)
+            except Exception:
+                # If decoding fails, password might be already encoded, keep as is
+                pass
         
         # SSL support for cloud databases
         if "sslmode" not in query_params:

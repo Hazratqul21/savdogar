@@ -383,7 +383,7 @@ export default function SettingsPage() {
     );
 }
 
-function ChevronRight({ size }: { size: number }) {
+function ChevronRight({ size, className }: { size: number; className?: string }) {
     return (
         <svg
             width={size}
@@ -394,6 +394,7 @@ function ChevronRight({ size }: { size: number }) {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className={className}
         >
             <path d="m9 18 6-6-6-6" />
         </svg>

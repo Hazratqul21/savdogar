@@ -28,14 +28,11 @@ if is_cloud_db:
     # Supabase requires SSL with specific settings
     if is_supabase:
         # Supabase SSL configuration
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False  # Supabase uses dynamic hosts
-        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        # Supabase works best with sslmode=require in URL, no explicit SSL context needed
+        # psycopg2 handles SSL automatically when sslmode=require is in the URL
         connect_args["sslmode"] = "require"
-        connect_args["sslcert"] = None
-        connect_args["sslkey"] = None
-        connect_args["sslrootcert"] = None
-        logger.info("[DATABASE] Supabase SSL configuration applied.")
+        # Don't set ssl_context for Supabase - let psycopg2 handle it via URL
+        logger.info("[DATABASE] Supabase SSL configuration applied (sslmode=require).")
     else:
         # Other cloud databases
         if "sslmode" not in SQLALCHEMY_DATABASE_URL:
@@ -89,8 +86,8 @@ if pool_class != NullPool:
         "pool_timeout": pool_timeout,
     })
 
-# Add SSL context if configured
-if ssl_context:
+# Add SSL context if configured (only for non-Supabase databases that need it)
+if ssl_context and not is_supabase:
     engine_kwargs["connect_args"]["ssl_context"] = ssl_context
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_kwargs)
@@ -103,6 +100,7 @@ def get_db():
     """
     Dependency to get DB session.
     Closes session automatically after request.
+    Handles connection errors gracefully.
     
     Usage:
         @router.get("/items")
@@ -114,7 +112,14 @@ def get_db():
         yield db
     except Exception as e:
         db.rollback()
-        logger.error(f"Database session error: {e}", exc_info=True)
+        error_msg = str(e).lower()
+        
+        # Log connection errors with more detail for debugging
+        if any(keyword in error_msg for keyword in ["connection", "timeout", "ssl", "certificate", "could not connect", "operationalerror"]):
+            logger.error(f"Database connection error in session: {e}", exc_info=True)
+        else:
+            logger.error(f"Database session error: {e}", exc_info=True)
+        
         raise
     finally:
         db.close()

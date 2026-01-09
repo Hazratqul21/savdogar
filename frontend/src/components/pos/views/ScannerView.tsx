@@ -143,13 +143,11 @@ export function ScannerView() {
   };
 
   // Voice commands
-  const { isListening, startListening, stopListening } = useVoiceCommand({
-    onCommand: async (command) => {
-      if (command.toLowerCase().includes('search')) {
-        const query = command.replace(/search|find/gi, '').trim();
-        setSearchQuery(query);
-      }
-    },
+  const { isListening, startListening, stopListening } = useVoiceCommand(async (command) => {
+    if (command.toLowerCase().includes('search')) {
+      const query = command.replace(/search|find/gi, '').trim();
+      setSearchQuery(query);
+    }
   });
 
   /**

@@ -490,6 +490,7 @@ export function QuickAddProductModal({ isOpen, onClose, initialBarcode }: QuickA
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

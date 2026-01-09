@@ -11,9 +11,13 @@ import { QuickAddProductModal } from '@/components/pos/quick-add-modal';
 import { KeyboardGuide } from '@/components/pos/KeyboardGuide';
 import { useVoiceCommand } from '@/hooks/use-voice-command';
 import { MobileCartBar } from '@/components/pos/MobileCartBar';
-import { MobileBarcodeScanner } from '@/components/pos/MobileBarcodeScanner';
+import { MobileScannerButton } from '@/components/pos/MobileScannerButton';
 import { CartSidebar } from '@/components/pos/CartSidebar';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
+import { ToastComponent } from '@/components/inventory/Toast';
+import { ScanIndicator } from '@/components/pos/ScanIndicator';
+import { soundManager } from '@/lib/sound-manager';
 
 export function ScannerView() {
   const {
@@ -33,21 +37,15 @@ export function ScannerView() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { playBeep, playSuccess, playError } = usePosSound();
+  const { toasts, removeToast, error: showErrorToast } = useToast();
 
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [missingBarcode, setMissingBarcode] = useState("");
-  const [showMobileScanner, setShowMobileScanner] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  
+  // Scan indicator state
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [scanError, setScanError] = useState(false);
 
-  // Detect mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Auto-focus search on mount and blur
   useEffect(() => {
@@ -70,13 +68,80 @@ export function ScannerView() {
     };
   }, []);
 
-  // USB Barcode Scanner (Desktop)
+  // HID Barcode Scanner: Listen for USB scanner input
   useBarcodeScanner({
     onScan: async (barcode) => {
-      playBeep();
       await handleBarcodeScan(barcode);
     },
+    enabled: true,
+    maxGap: 50, // 50ms max gap for rapid input detection
+    ignoreInputFocus: true, // Don't intercept when user is typing in input fields
   });
+
+  /**
+   * Handle barcode scan: Search and add to cart
+   */
+  const handleBarcodeScan = async (barcode: string) => {
+    try {
+      if (!tenantId) {
+        playError();
+        setScanError(true);
+        showErrorToast('Tenant ID not set. Please select a business first.');
+        return;
+      }
+
+      // Step 1: Search by barcode
+      let variant = await searchProductsByBarcode(barcode, tenantId);
+
+      // Step 2: If not found, try SKU search
+      if (!variant) {
+        variant = await searchProductsBySku(barcode, tenantId);
+      }
+
+      // Step 3: Handle result
+      if (variant) {
+        // Found: Auto-add to cart (increment quantity if already exists)
+        addToCart(variant, 1);
+        
+        // Visual feedback: Green flash
+        setScanSuccess(true);
+        setTimeout(() => setScanSuccess(false), 1000);
+        
+        // Audio feedback: Success beep
+        soundManager.playBeep();
+        
+        // Optional: Play success sound
+        playSuccess();
+      } else {
+        // Not found: Visual feedback: Red flash
+        setScanError(true);
+        setTimeout(() => setScanError(false), 1000);
+        
+        // Audio feedback: Error buzzer
+        soundManager.playError();
+        playError();
+        
+        // Show toast notification
+        const truncatedBarcode = barcode.length > 8 
+          ? `${barcode.substring(0, 8)}...` 
+          : barcode;
+        showErrorToast(`Product not found: ${truncatedBarcode}`);
+        
+        // Show quick-add modal for missing products
+        setMissingBarcode(barcode);
+        setShowQuickAdd(true);
+      }
+    } catch (error) {
+      console.error('Barcode scan error:', error);
+      
+      // Error feedback
+      setScanError(true);
+      setTimeout(() => setScanError(false), 1000);
+      soundManager.playError();
+      playError();
+      showErrorToast('Error: Failed to search for product');
+    }
+  };
 
   // Voice commands
   const { isListening, startListening, stopListening } = useVoiceCommand({
@@ -88,25 +153,13 @@ export function ScannerView() {
     },
   });
 
-  const handleBarcodeScan = async (barcode: string) => {
-    try {
-      const variant = await searchProductsByBarcode(barcode);
-      if (variant) {
-        addToCart(variant, 1);
-        playSuccess();
-      } else {
-        setMissingBarcode(barcode);
-        setShowQuickAdd(true);
-        playError();
-      }
-    } catch (error) {
-      console.error('Barcode scan error:', error);
-      playError();
-    }
-  };
-
-  const handleMobileScan = (barcode: string) => {
-    handleBarcodeScan(barcode);
+  /**
+   * Handle mobile camera scan (same logic as USB scanner)
+   * This function is called by MobileScannerButton component
+   */
+  const handleMobileCameraScan = async (barcode: string) => {
+    // Use the same handleBarcodeScan function for consistency
+    await handleBarcodeScan(barcode);
   };
 
   // Semantic search
@@ -118,8 +171,11 @@ export function ScannerView() {
 
   return (
     <div className="h-full flex flex-col bg-slate-950">
-      {/* Mobile Cart Bar - Only on mobile */}
-      <MobileCartBar />
+      {/* Scan Indicator - Visual feedback for scans */}
+      <ScanIndicator success={scanSuccess} error={scanError} />
+      
+      {/* Mobile Cart Bar - Only on mobile (with scanner button) */}
+      <MobileCartBar onScan={handleMobileCameraScan} />
 
       {/* Header - Search Bar */}
       <div className="bg-slate-900 border-b border-slate-700 p-4">
@@ -146,20 +202,10 @@ export function ScannerView() {
           </div>
 
           {/* Mobile Camera Scanner Button */}
-          {isMobile && (
-            <button
-              onClick={() => setShowMobileScanner(true)}
-              className={cn(
-                "px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg",
-                "flex items-center gap-2 transition-colors",
-                "min-h-[44px]" // Thumb-friendly
-              )}
-              aria-label="Open camera scanner"
-            >
-              <Camera className="h-5 w-5" />
-              <span className="hidden sm:inline">Skaner</span>
-            </button>
-          )}
+          <MobileScannerButton
+            onScan={handleMobileCameraScan}
+            batchMode={true} // Keep camera open for batch scanning
+          />
 
           {/* Voice Search Button */}
           <button
@@ -236,9 +282,7 @@ export function ScannerView() {
               <div className="text-center">
                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-lg">Mahsulot qidirish yoki barcode skanerlash</p>
-                {isMobile && (
-                  <p className="text-sm mt-2">Yoki kamera tugmasini bosing</p>
-                )}
+                <p className="text-sm mt-2">Mobilda: Kamera tugmasini bosing</p>
               </div>
             </div>
           )}
@@ -249,14 +293,6 @@ export function ScannerView() {
           <CartSidebar />
         </div>
       </div>
-
-      {/* Mobile Barcode Scanner Modal */}
-      {showMobileScanner && (
-        <MobileBarcodeScanner
-          onScan={handleMobileScan}
-          onClose={() => setShowMobileScanner(false)}
-        />
-      )}
 
       {/* Quick Add Modal */}
       <QuickAddProductModal
@@ -269,6 +305,17 @@ export function ScannerView() {
         initialBarcode={missingBarcode}
       />
       <KeyboardGuide />
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <ToastComponent
+            key={toast.id}
+            toast={toast}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

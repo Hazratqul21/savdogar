@@ -18,7 +18,7 @@ class PromoGeneratorService:
         """
         
         try:
-            result = await openai_client.generate_json("You are a creative copywriter.", prompt)
+            result = await azure_openai.generate_json("You are a creative copywriter.", prompt)
             return result.get("post_content", "Xatolik yuz berdi")
         except Exception as e:
             return f"Xatolik: {str(e)}"

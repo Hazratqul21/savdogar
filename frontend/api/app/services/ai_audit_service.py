@@ -72,7 +72,7 @@ Analysis Request:
 Provide a systematic analysis following CFO guidelines."""
 
         try:
-            result = await openai_client.generate_json(
+            result = await azure_openai.generate_json(
                 system_prompt=self.cfo_system_prompt,
                 user_prompt=user_prompt
             )

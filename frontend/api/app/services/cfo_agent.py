@@ -35,7 +35,7 @@ class CFOAgentService:
         """
         
         system_prompt = "Siz tajribali moliyaviy direktor va biznes strategisiz."
-        report = await openai_client.generate_text(system_prompt, prompt)
+        report = await azure_openai.generate_text(system_prompt, prompt)
         
         return {
             "cfo_report": report,

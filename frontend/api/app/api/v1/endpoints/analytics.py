@@ -133,7 +133,7 @@ async def generate_debt_reminder(
     Telegram uchun mos bo'lsin. Link yoki emoji kiritmang. Matnni JSON formatda qaytaring: {{"message": "..."}}
     """
     from app.services.openai_client import openai_client
-    result = await openai_client.generate_json("You are a helpful assistant.", prompt)
+    result = await azure_openai.generate_json("You are a helpful assistant.", prompt)
     return result
 
 @router.get("/ai/price-optimize/{variant_id}")

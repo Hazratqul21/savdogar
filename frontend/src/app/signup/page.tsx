@@ -93,6 +93,7 @@ export default function SignupPage() {
                   <option value="fashion">Kiyim-kechak</option>
                   <option value="jewelry">Zargarlik / Aksessuarlar</option>
                   <option value="horeca">Kafe / Oshxona</option>
+                  <option value="tobacco">Tamaki va Alkogol mahsulotlari</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
               </div>

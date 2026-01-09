@@ -31,6 +31,7 @@ const businessTypes = [
     { value: 'jewelry', label: 'Zargarlik' },
     { value: 'cafe', label: 'Qahvaxona' },
     { value: 'kitchen', label: 'Oshxona' },
+    { value: 'tobacco', label: 'Tamaki va Alkogol mahsulotlari' },
 ];
 
 export default function SettingsPage() {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 export function useVoiceCommand(onCommand: (text: string) => void) {
     const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<any>(null);
 
     const startListening = useCallback(() => {
         if (!('webkitSpeechRecognition' in window)) {
@@ -26,8 +27,17 @@ export function useVoiceCommand(onCommand: (text: string) => void) {
             onCommand(transcript);
         };
 
+        recognitionRef.current = recognition;
         recognition.start();
     }, [onCommand]);
 
-    return { isListening, startListening };
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+            recognitionRef.current = null;
+        }
+    }, []);
+
+    return { isListening, startListening, stopListening };
 }

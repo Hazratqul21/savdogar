@@ -81,6 +81,8 @@ try:
     
 except Exception as e:
     logger.error(f"❌ Failed to initialize handler: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
     
     # Fallback handler for error cases
     def handler(event, context):
@@ -92,3 +94,7 @@ except Exception as e:
                 "Access-Control-Allow-Origin": "*",
             }
         }
+
+# Export handler for Vercel (required)
+# Vercel Python runtime looks for 'handler' function at module level
+__all__ = ['handler']

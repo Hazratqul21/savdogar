@@ -146,8 +146,10 @@ app.include_router(public_router, prefix="/verify", tags=["public"])
 
 # =============================================================================
 # Health Check Endpoint
+# Available at both /health and /api/health for compatibility
 # =============================================================================
 @app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """Health check endpoint with database status."""
     from datetime import datetime
@@ -174,6 +176,7 @@ async def health_check():
 
 
 @app.get("/health/diagnostic")
+@app.get("/api/health/diagnostic")
 async def diagnostic_check():
     """Diagnostic endpoint to check environment configuration (safe for production)."""
     from urllib.parse import urlparse

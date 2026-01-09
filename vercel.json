@@ -37,7 +37,11 @@
       }
     },
     {
-      "src": "/health",
+      "src": "/api/health/diagnostic",
+      "dest": "/frontend/api/index.py"
+    },
+    {
+      "src": "/api/health",
       "dest": "/frontend/api/index.py"
     },
     {
@@ -45,11 +49,15 @@
       "dest": "/frontend/api/index.py"
     },
     {
-      "src": "/docs",
+      "src": "/health",
       "dest": "/frontend/api/index.py"
     },
     {
-      "src": "/redoc",
+      "src": "/docs(.*)",
+      "dest": "/frontend/api/index.py"
+    },
+    {
+      "src": "/redoc(.*)",
       "dest": "/frontend/api/index.py"
     },
     {

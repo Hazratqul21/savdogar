@@ -1,0 +1,45 @@
+# Vercel Serverless Function Dependencies
+# Optimized for Vercel Python Runtime
+
+# Core Framework - REQUIRED for Vercel
+fastapi>=0.109.0
+uvicorn>=0.24.0
+mangum>=0.17.0
+
+# Configuration
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+alembic>=1.12.0
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# File Uploads
+python-multipart>=0.0.6
+
+# AI & OpenAI
+openai>=1.0.0
+
+# Image Processing
+pillow>=10.0.0
+
+# Storage
+supabase>=2.0.0
+
+# HTTP Client
+httpx>=0.25.0
+
+# Additional Services
+redis>=5.0.0
+qrcode>=7.0
+rapidfuzz>=3.0.0
+tenacity>=8.0.0
+openpyxl>=3.1.2
+reportlab>=4.0.0
+python-dateutil>=2.8.0

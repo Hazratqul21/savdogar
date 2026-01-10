@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
+import os
 
 from app.api.v1.api import api_router
 from app.api.v1.endpoints.receipts import public_router
@@ -23,12 +24,21 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
     logger.info("🚀 Starting SmartPOS CRM API...")
-    try:
-        from app.core.setup import auto_setup
-        await auto_setup()
-        logger.info("✅ Auto setup completed")
-    except Exception as e:
-        logger.error(f"⚠️ Auto setup failed: {e}")
+    
+    # Skip auto_setup in serverless environments (Vercel, AWS Lambda)
+    # Migrations should be run separately, not on every cold start
+    is_serverless = os.getenv("VERCEL") == "1" or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+    
+    if not is_serverless:
+        try:
+            from app.core.setup import auto_setup
+            await auto_setup()
+            logger.info("✅ Auto setup completed")
+        except Exception as e:
+            logger.error(f"⚠️ Auto setup failed: {e}")
+    else:
+        logger.info("⏭️ Skipping auto_setup (serverless environment)")
+    
     yield
     # Shutdown
     logger.info("👋 Shutting down SmartPOS CRM API...")

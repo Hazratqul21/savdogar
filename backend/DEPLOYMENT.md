@@ -94,9 +94,33 @@ POST https://your-backend.vercel.app/api/v1/auth/signup
 ## ❌ Troubleshooting
 
 ### "404 Not Found" xatosi
-1. Root directory `backend` ekanligini tekshiring
-2. `backend/api/index.py` mavjudligini tekshiring
-3. `backend/vercel.json` mavjudligini tekshiring
+1. **Root directory `backend` ekanligini tekshiring:**
+   - Vercel Dashboard → Settings → General → Root Directory
+   - Root Directory: `backend` bo'lishi KERAK!
+   - Agar boshqa bo'lsa, `backend` ga o'zgartiring va redeploy qiling
+
+2. **Handler export qilinganini tekshiring:**
+   - `backend/api/index.py` faylida `handler` o'zgaruvchisi bo'lishi kerak
+   - `__all__ = ['handler']` bo'lishi kerak
+   - Vercel Python runtime handler'ni avtomatik detect qiladi
+
+3. **Vercel Functions loglarini ko'ring:**
+   - Vercel Dashboard → Deployments → [Latest] → Functions → Logs
+   - Import errors, initialization errors, handler errors ko'rsatiladi
+   - Agar handler noto'g'ri bo'lsa, log'larda ko'rsatiladi
+
+4. **vercel.json routing tekshirish:**
+   - `vercel.json` da `routes` section barcha path'lar uchun `api/index.py` ga yo'naltirilishi kerak
+   - Catch-all route `"src": "/(.*)", "dest": "api/index.py"` bo'lishi kerak
+
+5. **Deployment qayta ishga tushirish:**
+   - Vercel Dashboard → Deployments → [Latest] → ... → Redeploy
+   - Yoki GitHub'ga yangi commit push qiling (avtomatik redeploy)
+
+6. **Test endpoints:**
+   - Root: `https://your-backend.vercel.app/` - 200 status qaytarishi kerak
+   - Health: `https://your-backend.vercel.app/health` - 200 status qaytarishi kerak
+   - Docs: `https://your-backend.vercel.app/docs` - Swagger UI ochilishi kerak
 
 ### "500 Internal Server Error"
 1. Environment variables to'g'ri sozlanganini tekshiring

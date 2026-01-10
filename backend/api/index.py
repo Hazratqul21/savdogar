@@ -133,4 +133,17 @@ except Exception as e:
 # Export handler for Vercel
 # =============================================================================
 # Vercel Python runtime looks for 'handler' at module level
+# Ensure handler is always defined (even if initialization failed)
+if 'handler' not in globals():
+    # Fallback handler if initialization completely failed
+    def handler(event, context=None):
+        return {
+            "statusCode": 500,
+            "body": '{"error": "Handler not initialized", "detail": "Failed to initialize application"}',
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            }
+        }
+
 __all__ = ['handler']

@@ -1,9 +1,18 @@
 {
   "version": 2,
+  "buildCommand": "",
+  "outputDirectory": ".vercel/output",
+  "installCommand": "pip install -r requirements.txt",
   "routes": [
     {
       "src": "/(.*)",
       "dest": "/api/index.py"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.py"
     }
   ],
   "headers": [
@@ -22,8 +31,8 @@
     "api/index.py": {
       "runtime": "python3.12",
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 1024,
+      "includeFiles": "**"
     }
-  },
-  "_comment": "Updated 2026-01-11 04:20 - Vercel deployment trigger"
+  }
 }

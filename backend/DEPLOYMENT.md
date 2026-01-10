@@ -62,25 +62,21 @@ ENVIRONMENT=production
 
 ## Vercel.json Configuration
 
-**MUHIM**: Yangi Vercel versiyasida (2024-2025) FastAPI uchun zero-configuration support bor.
+**MUHIM**: Yangi Vercel versiyasida (2024-2025) FastAPI uchun **zero-configuration** support bor.
 
-Minimal `vercel.json`:
+`vercel.json` **kerak emas** - Vercel avtomatik detect qiladi!
 
-```json
-{
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 60
-    }
-  }
-}
-```
+Vercel avtomatik ravishda:
+- `api/` papkasini topadi
+- `api/index.py` ni serverless function sifatida deploy qiladi
+- `requirements.txt` dan dependencies install qiladi
+
+Agar timeout config kerak bo'lsa (default 10s, max 300s), Vercel Dashboard → Functions → Settings dan sozlashingiz mumkin.
 
 **NOTA BENE**: 
-- `api/index.py` fayli `backend/api/` papkasida bo'lishi kerak (Vercel Python funksiyalari uchun `api/` papkasi talab qilinadi)
-- `builds` property deprecated - ishlatilmaydi
-- `rewrites` kerak emas - Vercel avtomatik detect qiladi
-- `memory` limit optional - default ishlatiladi
+- `api/index.py` fayli `backend/api/` papkasida bo'lishi kerak
+- `vercel.json` kerak emas - zero-config!
+- Root directory `backend` bo'lishi kerak
 
 ## File Structure
 
@@ -94,9 +90,8 @@ backend/
 │   ├── main.py           # FastAPI app
 │   ├── api/v1/endpoints/ # API endpoints
 │   └── ...
-├── requirements.txt      # Python dependencies
-├── vercel.json          # Vercel config (minimal)
-└── ...
+├── requirements.txt      # Python dependencies (MUHIM!)
+└── ...                   # vercel.json KERAK EMAS!
 ```
 
 **MUHIM**: `api/index.py` fayli mavjudligini tekshiring!
@@ -126,22 +121,21 @@ Deploy qilingandan keyin:
 
 ### Error: "The pattern 'api/index.py' defined in `functions` doesn't match any Serverless Functions"
 
-**Sabab**: `api/index.py` fayli topilmagan yoki `.vercelignore` da ignore qilingan.
+**Sabab**: `vercel.json` da `functions` property bor, lekin Vercel zero-config ishlatmoqda.
 
-**Yechim**:
-1. `backend/api/index.py` fayli mavjudligini tekshiring
-2. `.vercelignore` da `api/` ignore qilinmaganini tekshiring
-3. Git'da `backend/api/index.py` commit qilinganligini tekshiring
-4. Root directory `backend` bo'lishini tekshiring
+**Yechim**: 
+1. `backend/vercel.json` faylini **O'CHIRING** (kerak emas!)
+2. Vercel avtomatik detect qiladi
+3. Timeout config kerak bo'lsa, Vercel Dashboard → Functions → Settings dan sozlang
 
 ### Backend topilmayapti
 - Root directory `backend` bo'lishini tekshiring
-- `backend/vercel.json` fayli mavjudligini tekshiring
-- `backend/api/index.py` fayli mavjudligini tekshiring
+- `backend/api/index.py` fayli mavjudligini tekshiring (NOT `backend/index.py`)
+- `.vercelignore` da `api/` ignore qilinmaganini tekshiring
 
 ### Builds va Functions conflict xatosi
-- `vercel.json` da `builds` property yo'qligini tekshiring
-- Faqat `functions` bo'lishi kerak
+- `vercel.json` faylini **O'CHIRING** - kerak emas!
+- Vercel zero-config ishlatadi
 
 ### Database ulanishi xato
 - `DATABASE_URL` to'g'ri ekanligini tekshiring
@@ -156,8 +150,8 @@ Deploy qilingandan keyin:
 
 - [ ] Root directory: `backend`
 - [ ] `backend/api/index.py` mavjud (NOT `backend/index.py`)
-- [ ] `backend/vercel.json` da `builds` yo'q
-- [ ] `backend/vercel.json` da faqat `functions` bor
+- [ ] `backend/vercel.json` **YO'Q** (zero-config!)
+- [ ] `backend/requirements.txt` mavjud
 - [ ] `DATABASE_URL` sozlangan
 - [ ] `SECRET_KEY` sozlangan (min 32 character)
 - [ ] `OPENAI_API_KEY` sozlangan
@@ -165,3 +159,24 @@ Deploy qilingandan keyin:
 - [ ] `CORS_ORIGINS` frontend URL'ni o'z ichiga oladi
 - [ ] Health check muvaffaqiyatli (`/api/v1/health`)
 - [ ] API docs ochiladi (`/docs`)
+
+## Important Notes
+
+**Zero-Config FastAPI (2024-2025)**:
+- `vercel.json` **kerak emas** - Vercel avtomatik detect qiladi
+- `api/index.py` fayli `backend/api/` papkasida bo'lishi kerak
+- Vercel `api/` papkasini avtomatik topadi va deploy qiladi
+- Timeout va memory limit Vercel Dashboard dan sozlash mumkin
+
+**Legacy Config (eski versiyalar)**:
+- Agar `vercel.json` kerak bo'lsa (timeout config uchun), minimal versiya:
+```json
+{
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60
+    }
+  }
+}
+```
+Lekin yangi versiyada bu ham kerak emas - Dashboard dan sozlash mumkin!

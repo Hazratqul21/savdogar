@@ -1,0 +1,78 @@
+# Backend Vercel Ignore File
+# Only include necessary files for deployment
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (use cloud storage)
+uploads/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Migrations (not needed for serverless)
+# migrations/
+
+# Alembic (keep for now)
+# alembic/
+
+# Temporary files
+*.tmp
+*.temp
+*.pid
+
+# Certs (if any)
+certs/
+
+# Scripts not needed for deployment
+create_admin.py
+create_user.py
+create_user_via_mcp.py

@@ -1,0 +1,35 @@
+# Frontend Vercel Ignore File
+
+# Node
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Snapshots
+.snapshots/
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.tmp
+*.temp

@@ -1,133 +1,99 @@
 # Frontend Deployment Guide - Vercel
 
-Frontend'ni Vercel'da deploy qilish uchun quyidagi qadamlarni bajaring.
+Frontend (Next.js) ni Vercel'da deploy qilish uchun quyidagi qadamlarni bajaring.
 
-## Vercel'da Alohida Project Yaratish
+## 🚀 Tez Boshlash
 
 ### 1. Vercel Dashboard'ga kiring
 - https://vercel.com/dashboard ga kiring
 - "Add New" → "Project" ni bosing
 
 ### 2. GitHub Repository'ni ulang
-- Repository: `Hazratqul21/savdogar` ni tanlang
-- Framework Preset: **"Next.js"** ni tanlang
+- Repository'ni tanlang
+- Framework Preset: **"Next.js"** tanlang (avtomatik detect qiladi)
 
-### 3. Project Settings'ni sozlang
-
-#### ⚠️ MUHIM: Root Directory
+### 3. ⚠️ MUHIM: Root Directory
 ```
 frontend
 ```
-**CRITICAL**: Root directory `frontend` bo'lishi kerak, root emas! Agar root bo'lsa, 404 xatosi chiqadi.
+**CRITICAL**: Root directory `frontend` bo'lishi KERAK!
 
-#### Build & Output Settings
-- Framework Preset: **Next.js** (avtomatik tanlangan)
-- Build Command: `npm run build` (avtomatik)
-- Output Directory: `.next` (avtomatik)
-- Install Command: `npm install` (avtomatik)
-
-#### Environment Variables
-**REQUIRED** - Quyidagi environment variables'ni qo'shing:
+### 4. Environment Variables
+Vercel Dashboard → Settings → Environment Variables:
 
 ```env
-# REQUIRED: Backend API URL
+# Backend API URL (REQUIRED)
 NEXT_PUBLIC_API_URL=https://your-backend.vercel.app
-# Development uchun: http://localhost:8000
-# Production uchun: https://your-backend.vercel.app
 
-# OPTIONAL: Supabase (Global Catalog uchun)
-# Agar yo'q bo'lsa, Global Catalog features o'chadi, lekin app ishlaydi
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+# Supabase (Optional - for client-side storage)
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 
-**MUHIM**: `NEXT_PUBLIC_` prefix muhim - bu o'zgaruvchilarni browser'ga expose qiladi.
+**⚠️ MUHIM**: `NEXT_PUBLIC_API_URL` backend deploy URL'ini ko'rsatishi kerak!
 
-### 4. Deploy qiling
-- "Deploy" ni bosing
-- Vercel avtomatik ravishda Next.js build qiladi
+### 5. Deploy
+"Deploy" tugmasini bosing!
 
-## Troubleshooting
+## 📁 File Structure
 
-### 404 Error (Sahifa topilmadi)
+```
+frontend/
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   ├── components/       # React components
+│   ├── hooks/            # Custom hooks
+│   ├── lib/              # API, utils
+│   ├── providers/        # Context providers
+│   └── stores/           # Zustand stores
+├── public/               # Static files
+├── package.json          # 📦 Dependencies
+├── next.config.ts        # Next.js config
+├── vercel.json           # ⚙️ Vercel config
+└── .vercelignore         # 🚫 Ignored files
+```
 
-**Muammo**: Frontend deploy muvaffaqiyatli, lekin ochilganda 404 xatosi chiqadi.
+## ✅ Verification
 
-**Yechim**:
-1. **Root Directory tekshiring**:
-   - Vercel Dashboard → Project Settings → General
-   - Root Directory: `frontend` bo'lishi kerak (root emas!)
-   - Agar root bo'lsa, o'zgartiring va qayta deploy qiling
+Deploy'dan keyin:
 
-2. **Build Command tekshiring**:
-   - Build Command: `cd frontend && npm run build` emas!
-   - Agar root directory `frontend` bo'lsa, build command `npm run build` bo'lishi kerak (Vercel avtomatik qiladi)
+1. **Landing page** ochilishi kerak:
+   ```
+   https://your-frontend.vercel.app/
+   ```
 
-3. **Package.json tekshirish**:
-   - `frontend/package.json` da `"build": "next build"` bo'lishi kerak
+2. **Login page**:
+   ```
+   https://your-frontend.vercel.app/login
+   ```
 
-4. **Next.js config tekshiring**:
-   - `frontend/next.config.ts` mavjudligini tekshiring
-   - `output: 'standalone'` yoki `output: 'export'` yo'qligini tekshiring (default `server` bo'lishi kerak)
+3. **Signup page**:
+   ```
+   https://your-frontend.vercel.app/signup
+   ```
 
-### Environment Variables muammosi
+## ❌ Troubleshooting
 
-**Muammo**: API calls ishlamayapti yoki xatolik chiqyapti.
+### "404 Not Found" xatosi
+1. Root directory `frontend` ekanligini tekshiring
+2. `frontend/package.json` mavjudligini tekshiring
 
-**Yechim**:
-1. **Environment Variables qo'shing**:
-   - Vercel Dashboard → Project Settings → Environment Variables
-   - `NEXT_PUBLIC_API_URL` qo'shing (backend URL)
-   - Production, Preview, Development uchun alohida qo'shishingiz mumkin
+### API ulanmayapti
+1. `NEXT_PUBLIC_API_URL` to'g'ri sozlanganini tekshiring
+2. Backend deploy qilingan va ishlayotganini tekshiring
+3. CORS xatosini browser console'da tekshiring
 
-2. **Variable nomlarini tekshiring**:
-   - `NEXT_PUBLIC_` prefix bo'lishi kerak
-   - Katta-kichik harflarni tekshiring
+### Build xatosi
+1. `npm run build` local'da ishlayotganini tekshiring
+2. Dependencies to'liq install qilinganini tekshiring
+3. TypeScript xatolarini tekshiring
 
-3. **Redeploy qiling**:
-   - Environment variables o'zgargandan keyin redeploy qiling
+## 📋 Checklist
 
-### Build Error
-
-**Muammo**: Build xatosi chiqyapti.
-
-**Yechim**:
-1. **Build logs'ni tekshiring**:
-   - Vercel Dashboard → Deployments → Build Logs
-   - Xatolik qayerda ekanligini aniqlang
-
-2. **Dependencies tekshiring**:
-   - `frontend/package.json` da barcha dependencies mavjudligini tekshiring
-   - `npm install` local'da ishlashini tekshiring
-
-3. **TypeScript xatolari**:
-   - `npm run build` local'da ishlatib tekshiring
-   - TypeScript xatolarini tuzating
-
-## Production Checklist
-
-- [ ] Root directory: `frontend` (root emas!)
-- [ ] Framework Preset: `Next.js`
-- [ ] Build Command: `npm run build` (avtomatik)
-- [ ] Output Directory: `.next` (avtomatik)
+- [ ] Root directory: `frontend`
+- [ ] `frontend/package.json` mavjud
 - [ ] `NEXT_PUBLIC_API_URL` sozlangan (backend URL)
-- [ ] `NEXT_PUBLIC_SUPABASE_URL` sozlangan (agar Global Catalog kerak bo'lsa)
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` sozlangan (agar Global Catalog kerak bo'lsa)
-- [ ] Build muvaffaqiyatli
-- [ ] Homepage ochiladi (404 emas)
-- [ ] Login page ochiladi
-- [ ] API calls ishlaydi
-
-## Common Issues
-
-### Issue 1: 404 Error
-**Sabab**: Root directory noto'g'ri (root emas, `frontend` bo'lishi kerak)
-**Yechim**: Vercel Dashboard → Settings → Root Directory → `frontend` ni tanlang
-
-### Issue 2: API calls ishlamayapti
-**Sabab**: `NEXT_PUBLIC_API_URL` yo'q yoki noto'g'ri
-**Yechim**: Environment Variables qo'shing va redeploy qiling
-
-### Issue 3: Supabase warning
-**Sabab**: `NEXT_PUBLIC_SUPABASE_URL` yo'q
-**Yechim**: Bu warning, error emas. Agar Global Catalog kerak bo'lsa, qo'shing
+- [ ] Backend avval deploy qilingan
+- [ ] Backend health check ishlayapti
+- [ ] Landing page ochiladi
+- [ ] Login/Signup sahifalari ishlayapti

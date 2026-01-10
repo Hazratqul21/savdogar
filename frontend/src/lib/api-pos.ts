@@ -1,72 +1,26 @@
-import { getAuthHeaders } from './api';
-
-// API Base URL configuration
-// Frontend and backend are now deployed separately on Vercel
-// REQUIRED: Set NEXT_PUBLIC_API_URL environment variable to your backend URL
-// Development: Use localhost backend (http://localhost:8000)
-// Production: Use your deployed backend URL (e.g., https://your-backend.vercel.app)
-const getApiBaseUrl = (): string => {
-  // If explicitly set via environment variable, use it (REQUIRED for production)
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  
-  // Development: use localhost backend (only at runtime, not during build)
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return 'http://localhost:8000';
-  }
-  
-  // Build-time fallback: return empty string during build/SSR
-  // This prevents build errors when env var is not set at build time
-  if (typeof window === 'undefined') {
-    // Server-side (build-time or SSR): return empty string
-    // Runtime validation will happen when API is actually called on client-side
-    return '';
-  }
-  
-  // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
-  throw new Error(
-    'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please configure it in Vercel dashboard: Settings → Environment Variables'
-  );
-};
-
-// Get API base URL with runtime validation (safe for build-time)
-const getCachedApiBaseUrl = (): string => {
-  try {
-    return getApiBaseUrl();
-  } catch {
-    // Build-time: return empty string to allow build to complete
-    if (typeof window === 'undefined') {
-      return '';
-    }
-    // Runtime (client-side): rethrow error if env var is not set
-    throw new Error(
-      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-      'Please configure it in Vercel dashboard: Settings → Environment Variables'
-    );
-  }
-};
-
-// Module-level constant for build-time compatibility (may be empty string at build time)
-// In API functions, use getCachedApiBaseUrl() for runtime validation
-const API_BASE_URL = (() => {
-  try {
-    return getApiBaseUrl();
-  } catch {
-    // Build-time: return empty string to allow build to complete
-    return '';
-  }
-})();
-
-// ============================================
-// TYPE DEFINITIONS (Updated for products_v2 schema)
-// ============================================
-
 /**
- * Product Variant (from product_variants table)
- * ✅ UPDATED: Matches new Supabase schema (products_v2)
+ * POS API Client
+ * Uses centralized API configuration from api.ts
  */
+import { getAuthHeaders, getApiBaseUrl } from './api';
+
+// =============================================================================
+// API URL Helper
+// =============================================================================
+
+const getApiUrl = (): string => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    if (typeof window === 'undefined') return '';
+    throw new Error('NEXT_PUBLIC_API_URL is not configured');
+  }
+};
+
+// =============================================================================
+// Type Definitions
+// =============================================================================
+
 export interface ProductVariant {
   id: number;
   product_id: number;
@@ -153,13 +107,15 @@ export interface CheckoutRequest {
   payment_method: 'cash' | 'card' | 'transfer' | 'debt' | 'mixed' | 'payme' | 'click';
   debt_amount?: number;
   notes?: string;
-  metadata?: Record<string, any>; // Business-type-specific metadata
+  metadata?: Record<string, any>;
 }
 
+// =============================================================================
 // Product APIs
-// ✅ UPDATED: Use products_v2 endpoint (matches new Supabase schema)
+// =============================================================================
+
 export async function getProducts(tenantId: number): Promise<any[]> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/products_v2`, {
     headers: getAuthHeaders(),
   });
@@ -167,132 +123,85 @@ export async function getProducts(tenantId: number): Promise<any[]> {
   return response.json();
 }
 
-/**
- * Global Catalog Product Data (from crowdsourced catalog)
- * Re-export from supabase.ts for consistency
- */
 export type { GlobalCatalogProduct } from './supabase';
-export { searchGlobalCatalogByBarcode as searchGlobalCatalog, contributeToGlobalCatalogRPC as contributeToGlobalCatalog } from './supabase';
+export { 
+  searchGlobalCatalogByBarcode as searchGlobalCatalog, 
+  contributeToGlobalCatalogRPC as contributeToGlobalCatalog 
+} from './supabase';
 
-/**
- * Search products by barcode (from products_v2)
- * ✅ UPDATED: Uses products_v2 endpoint
- */
 export async function searchProductsByBarcode(barcode: string, tenantId: number): Promise<ProductVariant | null> {
-  // Search in product variants by barcode_aliases
   const products = await getProducts(tenantId);
 
   for (const product of products) {
     for (const variant of product.variants || []) {
       if (variant.barcode_aliases?.includes(barcode)) {
-        return {
-          id: variant.id,
-          product_id: variant.product_id,
-          tenant_id: variant.tenant_id || tenantId,
-          sku: variant.sku,
-          price: variant.price,
-          cost_price: variant.cost_price,
-          stock_quantity: variant.stock_quantity,
-          min_stock_level: variant.min_stock_level || 0,
-          max_stock_level: variant.max_stock_level,
-          primary_unit: variant.primary_unit || 'piece',
-          secondary_unit: variant.secondary_unit,
-          unit_conversion_factor: variant.unit_conversion_factor,
-          requires_serial_number: variant.requires_serial_number || false,
-          is_serialized: variant.is_serialized || false,
-          attributes: variant.attributes || {},
-          barcode_aliases: variant.barcode_aliases || [],
-          velocity_score: variant.velocity_score || 0,
-          embedding_vector: variant.embedding_vector,
-          is_active: variant.is_active !== false,
-          created_at: variant.created_at || new Date().toISOString(),
-          updated_at: variant.updated_at || new Date().toISOString(),
-          product: product,
-        };
+        return mapVariant(variant, product, tenantId);
       }
     }
   }
   return null;
 }
 
-/**
- * Search products by SKU (from products_v2)
- * ✅ UPDATED: Uses products_v2 endpoint
- */
 export async function searchProductsBySku(sku: string, tenantId: number): Promise<ProductVariant | null> {
-  if (!sku || sku.trim().length === 0) return null;
+  if (!sku?.trim()) return null;
 
   const products = await getProducts(tenantId);
+  const lowerSku = sku.toLowerCase();
 
-  // First try exact match
+  // Exact match first
   for (const product of products) {
     for (const variant of product.variants || []) {
-      if (variant.sku.toLowerCase() === sku.toLowerCase()) {
-        return {
-          id: variant.id,
-          product_id: variant.product_id,
-          tenant_id: variant.tenant_id || tenantId,
-          sku: variant.sku,
-          price: variant.price,
-          cost_price: variant.cost_price,
-          stock_quantity: variant.stock_quantity,
-          min_stock_level: variant.min_stock_level || 0,
-          max_stock_level: variant.max_stock_level,
-          primary_unit: variant.primary_unit || 'piece',
-          secondary_unit: variant.secondary_unit,
-          unit_conversion_factor: variant.unit_conversion_factor,
-          requires_serial_number: variant.requires_serial_number || false,
-          is_serialized: variant.is_serialized || false,
-          attributes: variant.attributes || {},
-          barcode_aliases: variant.barcode_aliases || [],
-          velocity_score: variant.velocity_score || 0,
-          embedding_vector: variant.embedding_vector,
-          is_active: variant.is_active !== false,
-          created_at: variant.created_at || new Date().toISOString(),
-          updated_at: variant.updated_at || new Date().toISOString(),
-          product: product,
-        };
+      if (variant.sku.toLowerCase() === lowerSku) {
+        return mapVariant(variant, product, tenantId);
       }
     }
   }
 
-  // Then try partial match
+  // Partial match
   for (const product of products) {
     for (const variant of product.variants || []) {
-      if (variant.sku.toLowerCase().includes(sku.toLowerCase())) {
-        return {
-          id: variant.id,
-          product_id: variant.product_id,
-          tenant_id: variant.tenant_id || tenantId,
-          sku: variant.sku,
-          price: variant.price,
-          cost_price: variant.cost_price,
-          stock_quantity: variant.stock_quantity,
-          min_stock_level: variant.min_stock_level || 0,
-          max_stock_level: variant.max_stock_level,
-          primary_unit: variant.primary_unit || 'piece',
-          secondary_unit: variant.secondary_unit,
-          unit_conversion_factor: variant.unit_conversion_factor,
-          requires_serial_number: variant.requires_serial_number || false,
-          is_serialized: variant.is_serialized || false,
-          attributes: variant.attributes || {},
-          barcode_aliases: variant.barcode_aliases || [],
-          velocity_score: variant.velocity_score || 0,
-          embedding_vector: variant.embedding_vector,
-          is_active: variant.is_active !== false,
-          created_at: variant.created_at || new Date().toISOString(),
-          updated_at: variant.updated_at || new Date().toISOString(),
-          product: product,
-        };
+      if (variant.sku.toLowerCase().includes(lowerSku)) {
+        return mapVariant(variant, product, tenantId);
       }
     }
   }
+  
   return null;
 }
 
-// Cart calculation
+function mapVariant(variant: any, product: any, tenantId: number): ProductVariant {
+  return {
+    id: variant.id,
+    product_id: variant.product_id,
+    tenant_id: variant.tenant_id || tenantId,
+    sku: variant.sku,
+    price: variant.price,
+    cost_price: variant.cost_price,
+    stock_quantity: variant.stock_quantity,
+    min_stock_level: variant.min_stock_level || 0,
+    max_stock_level: variant.max_stock_level,
+    primary_unit: variant.primary_unit || 'piece',
+    secondary_unit: variant.secondary_unit,
+    unit_conversion_factor: variant.unit_conversion_factor,
+    requires_serial_number: variant.requires_serial_number || false,
+    is_serialized: variant.is_serialized || false,
+    attributes: variant.attributes || {},
+    barcode_aliases: variant.barcode_aliases || [],
+    velocity_score: variant.velocity_score || 0,
+    embedding_vector: variant.embedding_vector,
+    is_active: variant.is_active !== false,
+    created_at: variant.created_at || new Date().toISOString(),
+    updated_at: variant.updated_at || new Date().toISOString(),
+    product: product,
+  };
+}
+
+// =============================================================================
+// Cart & Checkout APIs
+// =============================================================================
+
 export async function calculateCart(request: CartCalculationRequest): Promise<CartCalculationResult> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/sales/cart/calculate`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -302,9 +211,8 @@ export async function calculateCart(request: CartCalculationRequest): Promise<Ca
   return response.json();
 }
 
-// Checkout
 export async function checkout(request: CheckoutRequest): Promise<any> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/sales/checkout`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -317,9 +225,12 @@ export async function checkout(request: CheckoutRequest): Promise<any> {
   return response.json();
 }
 
+// =============================================================================
 // Customer APIs
+// =============================================================================
+
 export async function getCustomers(tenantId: number): Promise<Customer[]> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/customers`, {
     headers: getAuthHeaders(),
   });
@@ -327,9 +238,12 @@ export async function getCustomers(tenantId: number): Promise<Customer[]> {
   return response.json();
 }
 
-// AI Analytics & Brain Features
+// =============================================================================
+// AI Analytics APIs
+// =============================================================================
+
 export async function searchSemantic(query: string): Promise<ProductVariant[]> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/analytics/ai/semantic-search?query=${encodeURIComponent(query)}`, {
     headers: getAuthHeaders(),
   });
@@ -338,7 +252,7 @@ export async function searchSemantic(query: string): Promise<ProductVariant[]> {
 }
 
 export async function getStockAlerts(): Promise<any[]> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/analytics/ai/stock-alerts`, {
     headers: getAuthHeaders(),
   });
@@ -347,19 +261,10 @@ export async function getStockAlerts(): Promise<any[]> {
 }
 
 export async function getTenantInfo(): Promise<{ id: number; business_type: string; config: any }> {
-  const apiUrl = getCachedApiBaseUrl();
+  const apiUrl = getApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/tenants/me`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch tenant info');
   return response.json();
 }
-
-
-
-
-
-
-
-
-

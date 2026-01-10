@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "echo 'Build step - Vercel will auto-detect Python functions'",
   "routes": [
     {
       "src": "/(.*)",

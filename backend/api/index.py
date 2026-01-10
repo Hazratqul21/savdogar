@@ -12,13 +12,26 @@ import os
 # =============================================================================
 # CRITICAL: Set up Python path BEFORE any imports
 # =============================================================================
-# api/ folder is inside backend/, so we need to add backend/ to path
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))  # backend/api/
-BACKEND_DIR = os.path.dirname(CURRENT_DIR)  # backend/
+# This file is at: backend/api/index.py
+# When Vercel uses backend/ as root directory, we need to ensure
+# the backend directory is in Python path so imports like "from app.main" work.
+CURRENT_FILE = os.path.abspath(__file__)  # Full absolute path to this file
+CURRENT_DIR = os.path.dirname(CURRENT_FILE)  # backend/api/ (absolute)
+BACKEND_DIR = os.path.dirname(CURRENT_DIR)  # backend/ (absolute)
+
+# Normalize path to handle any symlinks or path variations
+BACKEND_DIR = os.path.realpath(BACKEND_DIR)
 
 # Add backend directory to Python path for proper imports
+# This ensures "from app.main import app" finds backend/app/main.py
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
+
+# Log path setup for debugging (before logger is configured)
+# This helps diagnose path issues in Vercel deployment
+print(f"[PATH SETUP] Current file: {CURRENT_FILE}")
+print(f"[PATH SETUP] Backend directory: {BACKEND_DIR}")
+print(f"[PATH SETUP] Python path: {sys.path[:3]}")
 
 # =============================================================================
 # Configure logging EARLY (before other imports)

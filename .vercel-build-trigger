@@ -1,0 +1,4 @@
+# Vercel Build Trigger
+# This file forces Vercel to rebuild on every commit
+# Updated: 2026-01-11 04:15:00
+trigger: f39d075

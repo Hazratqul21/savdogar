@@ -78,9 +78,10 @@ try:
     logger.info("=" * 60)
     
     # =============================================================================
-    # Create Mangum Handler
+    # Create Mangum Handler for Vercel
     # =============================================================================
     # Mangum wraps FastAPI ASGI app for AWS Lambda / Vercel Serverless
+    # Vercel Python runtime automatically detects 'handler' variable
     handler = Mangum(
         app,
         lifespan="off",  # Vercel manages function lifecycle

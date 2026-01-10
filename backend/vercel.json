@@ -11,7 +11,7 @@
   ],
   "routes": [
     {
-      "src": "/api/v1/(.*)",
+      "src": "/api/(.*)",
       "dest": "/api/index.py"
     },
     {
@@ -19,15 +19,11 @@
       "dest": "/api/index.py"
     },
     {
-      "src": "/health/diagnostic",
+      "src": "/docs(.*)",
       "dest": "/api/index.py"
     },
     {
-      "src": "/docs",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/redoc",
+      "src": "/redoc(.*)",
       "dest": "/api/index.py"
     },
     {
@@ -36,6 +32,10 @@
     },
     {
       "src": "/verify/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/",
       "dest": "/api/index.py"
     },
     {
@@ -58,8 +58,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "python3.9"
+      "memory": 1024
     }
   }
 }

@@ -148,3 +148,5 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Server ishga tushganda:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+
+# Force deployment - 2026-01-11 02:40:14

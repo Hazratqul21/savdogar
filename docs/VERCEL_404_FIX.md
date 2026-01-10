@@ -110,13 +110,15 @@ Next.js avtomatik frontend route'larni handle qiladi. Faqat API route'lar uchun 
 
 ## 🚀 Qadamlar
 
-### 1. Vercel Dashboard Tekshiruv
+### 1. Vercel Dashboard Tekshiruv - MUHIM! ⚠️
 
-1. **Settings → General → Root Directory:** `frontend` ✅
+1. **Settings → General → Root Directory:** `frontend` ✅ (to'g'ri!)
 2. **Settings → General → Framework Preset:** `Next.js` (auto-detect) ✅
-3. **Settings → General → Build Command:** OVERRIDE QILMANG (bo'sh qoldiring) ✅
-4. **Settings → General → Output Directory:** OVERRIDE QILMANG (bo'sh qoldiring) ✅
-5. **Settings → General → Install Command:** OVERRIDE QILMANG (bo'sh qoldiring) ✅
+3. **Settings → General → Build Command:** OVERRIDE QILMANG (bo'sh qoldiring yoki o'chiring) ✅
+4. **Settings → General → Output Directory:** OVERRIDE QILMANG (bo'sh qoldiring yoki o'chiring) ⚠️ **MUHIM!**
+5. **Settings → General → Install Command:** OVERRIDE QILMANG (bo'sh qoldiring yoki o'chiring) ✅
+
+⚠️ **MUHIM:** Agar Output Directory override qilingan bo'lsa, bu Next.js'ning avtomatik routing'iga xalaqit beradi va 404 xatolikka olib keladi!
 
 ### 2. Environment Variables
 

@@ -64,6 +64,7 @@ frontend/public/uploads/
 docs/
 *.md
 !README.md
+!backend/README.md
 
 # Snapshots
 .snapshots/

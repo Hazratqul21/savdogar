@@ -60,11 +60,19 @@ app = FastAPI(
 # =============================================================================
 # CORS Configuration
 # =============================================================================
-# Configure CORS to allow all origins for separate deployment
-# Frontend and backend are now deployed separately, so we allow all origins
+# Configure CORS to allow specific production domains
+# NOTE: When allow_credentials=True, wildcard "*" cannot be used for allow_origins
+origins = [
+    "http://localhost:3000",             # Local Development
+    "http://127.0.0.1:3000",             # Local Development (Backup)
+    "https://savdogar.vercel.app",       # Vercel Frontend
+    "https://savdo-gar.uz",              # Custom Domain (Root)
+    "https://www.savdo-gar.uz",          # Custom Domain (WWW)
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for separate frontend/backend deployment
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allow_headers=["*"],
@@ -90,18 +98,39 @@ async def options_handler(full_path: str, request: Request):
     logger = logging.getLogger(__name__)
     logger.info(f"✅ OPTIONS request received for path: {full_path}")
     
-    # Allow all origins for separate deployment
+    # Get origin from request headers
+    origin = request.headers.get("origin", "")
+    
+    # Define allowed origins (same as middleware)
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://savdogar.vercel.app",
+        "https://savdo-gar.uz",
+        "https://www.savdo-gar.uz",
+    ]
+    
+    # Check if origin is allowed
+    if origin in allowed_origins:
+        allow_origin = origin
+    else:
+        # For development, allow localhost origins
+        if origin.startswith("http://localhost") or origin.startswith("http://127.0.0.1"):
+            allow_origin = origin
+        else:
+            allow_origin = allowed_origins[0] if allowed_origins else "*"
+    
     response = Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": allow_origin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Max-Age": "3600",
         }
     )
-    logger.info(f"✅ OPTIONS response sent for path: {full_path}")
+    logger.info(f"✅ OPTIONS response sent for path: {full_path} from origin: {origin}")
     return response
 
 

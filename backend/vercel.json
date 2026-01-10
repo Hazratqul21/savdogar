@@ -24,11 +24,5 @@
       "maxDuration": 60,
       "memory": 1024
     }
-  },
-  "git": {
-    "deploymentEnabled": {
-      "master": true,
-      "main": true
-    }
   }
 }

@@ -147,4 +147,9 @@ if 'handler' not in globals():
             }
         }
 
+# CRITICAL: Ensure handler is callable and properly exported
+# Vercel Python runtime requires 'handler' to be defined at module level
+# Mangum handler wraps FastAPI and converts ASGI requests to Lambda events
+assert callable(handler), "Handler must be callable"
+
 __all__ = ['handler']

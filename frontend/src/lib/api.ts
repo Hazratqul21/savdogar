@@ -3,7 +3,8 @@
 // REQUIRED: Set NEXT_PUBLIC_API_URL environment variable to your backend URL
 // Development: Use localhost backend (http://localhost:8000)
 // Production: Use your deployed backend URL (e.g., https://your-backend.vercel.app)
-const getApiBaseUrl = (): string => {
+// API Base URL helper function
+export const getApiBaseUrl = (): string => {
   // If explicitly set via environment variable, use it (REQUIRED for production)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
@@ -15,21 +16,49 @@ const getApiBaseUrl = (): string => {
   }
   
   // Build-time fallback: return empty string during build/SSR
-  // Runtime validation will happen when API is actually called
+  // This prevents build errors when env var is not set at build time
   if (typeof window === 'undefined') {
     // Server-side (build-time or SSR): return empty string
-    // This prevents build errors when env var is not set
+    // Runtime validation will happen when API is actually called on client-side
     return '';
   }
   
   // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+    'Please configure it in Vercel dashboard: Settings → Environment Variables'
   );
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL with runtime validation
+// This function is called in each API function to ensure runtime validation
+let _cachedApiBaseUrl: string | null = null;
+const getCachedApiBaseUrl = (): string => {
+  if (_cachedApiBaseUrl === null) {
+    _cachedApiBaseUrl = getApiBaseUrl();
+  }
+  
+  // Runtime validation for client-side: ensure URL is set
+  if (_cachedApiBaseUrl === '' && typeof window !== 'undefined') {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+  
+  return _cachedApiBaseUrl;
+};
+
+// Module-level constant for build-time compatibility (may be empty string at build time)
+// In API functions, use getCachedApiBaseUrl() instead for runtime validation
+const API_BASE_URL = (() => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    return '';
+  }
+})();
 
 
 export function getAuthHeaders(): HeadersInit {
@@ -60,12 +89,15 @@ export interface TokenResponse {
 }
 
 export async function login(credentials: LoginRequest): Promise<TokenResponse> {
+  // Runtime validation: get API URL with validation
+  const apiUrl = getCachedApiBaseUrl();
+  
   try {
     const formData = new URLSearchParams();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -89,14 +121,11 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
 }
 
 export async function signup(userData: SignupRequest): Promise<any> {
-  // #region agent log
-  const signupUrl = `${API_BASE_URL}/api/v1/auth/signup`;
-  fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:82',message:'signup function entry',data:{apiBaseUrl:API_BASE_URL,fullUrl:signupUrl,hasUsername:!!userData.username,hasEmail:!!userData.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
+  // Runtime validation: get API URL with validation
+  const apiUrl = getCachedApiBaseUrl();
+  const signupUrl = `${apiUrl}/api/v1/auth/signup`;
+  
   try {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:85',message:'signup fetch before',data:{url:signupUrl,method:'POST'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     const response = await fetch(signupUrl, {
       method: 'POST',
       headers: {
@@ -159,7 +188,8 @@ export function removeToken(): void {
 }
 
 export async function getSettings(): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/settings/me`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/settings/me`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error("Sozlamalarni yuklashda xatolik");
@@ -167,7 +197,8 @@ export async function getSettings(): Promise<any> {
 }
 
 export async function updateProfile(data: any): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/settings/profile`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/settings/profile`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -177,7 +208,8 @@ export async function updateProfile(data: any): Promise<any> {
 }
 
 export async function updateTenant(data: any): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/settings/tenant`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/settings/tenant`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
@@ -202,11 +234,12 @@ export interface NakladnoyScanResult {
 }
 
 export async function scanNakladnoyImage(file: File): Promise<NakladnoyScanResult> {
+  const apiUrl = getCachedApiBaseUrl();
   const formData = new FormData();
   formData.append('file', file);
 
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/v1/nakladnoy/upload-scan`, {
+  const response = await fetch(`${apiUrl}/api/v1/nakladnoy/upload-scan`, {
     method: 'POST',
     headers: {
       ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -223,7 +256,8 @@ export async function scanNakladnoyImage(file: File): Promise<NakladnoyScanResul
 }
 
 export async function importNakladnoyToInventory(items: NakladnoyItem[]): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/nakladnoy/import-to-inventory`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/nakladnoy/import-to-inventory`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(items),
@@ -258,12 +292,13 @@ export async function scanInvoiceHybrid(
   file: File,
   mode: 'printed' | 'handwritten' = 'printed'
 ): Promise<HybridScanResponse> {
+  const apiUrl = getCachedApiBaseUrl();
   const formData = new FormData();
   formData.append('file', file);
 
   const token = getToken();
   const response = await fetch(
-    `${API_BASE_URL}/api/v1/invoice-scanner/scan?mode=${mode}`,
+    `${apiUrl}/api/v1/invoice-scanner/scan?mode=${mode}`,
     {
       method: 'POST',
       headers: {
@@ -315,12 +350,13 @@ export async function parseInvoice(
   file: File,
   isHandwritten: boolean = false
 ): Promise<ParseInvoiceResponse> {
+  const apiUrl = getCachedApiBaseUrl();
   const formData = new FormData();
   formData.append('file', file);
 
   const token = getToken();
   const response = await fetch(
-    `${API_BASE_URL}/api/v1/ai/parse-invoice?is_handwritten=${isHandwritten}`,
+    `${apiUrl}/api/v1/ai/parse-invoice?is_handwritten=${isHandwritten}`,
     {
       method: 'POST',
       headers: {

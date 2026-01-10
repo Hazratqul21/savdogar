@@ -17,21 +17,47 @@ const getApiBaseUrl = (): string => {
   }
   
   // Build-time fallback: return empty string during build/SSR
-  // Runtime validation will happen when API is actually called
+  // This prevents build errors when env var is not set at build time
   if (typeof window === 'undefined') {
     // Server-side (build-time or SSR): return empty string
-    // This prevents build errors when env var is not set
+    // Runtime validation will happen when API is actually called on client-side
     return '';
   }
   
   // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+    'Please configure it in Vercel dashboard: Settings → Environment Variables'
   );
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL with runtime validation (safe for build-time)
+const getCachedApiBaseUrl = (): string => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    // Runtime (client-side): rethrow error if env var is not set
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+};
+
+// Module-level constant for build-time compatibility (may be empty string at build time)
+// In API functions, use getCachedApiBaseUrl() for runtime validation
+const API_BASE_URL = (() => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    return '';
+  }
+})();
 
 export interface AIInsight {
   id: string;
@@ -52,7 +78,8 @@ export interface SalesDataPoint {
  */
 export async function getAIInsights(): Promise<AIInsight[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/analytics/ai/daily-strategy`, {
+    const apiUrl = getCachedApiBaseUrl();
+    const response = await fetch(`${apiUrl}/api/v1/analytics/ai/daily-strategy`, {
       headers: getAuthHeaders(),
     });
 
@@ -67,7 +94,7 @@ export async function getAIInsights(): Promise<AIInsight[]> {
 
     // Add fraud alerts if available
     try {
-      const fraudResponse = await fetch(`${API_BASE_URL}/api/v1/analytics/ai/fraud-check`, {
+      const fraudResponse = await fetch(`${apiUrl}/api/v1/analytics/ai/fraud-check`, {
         headers: getAuthHeaders(),
       });
       if (fraudResponse.ok) {
@@ -87,7 +114,7 @@ export async function getAIInsights(): Promise<AIInsight[]> {
 
     // Add stock alerts
     try {
-      const stockResponse = await fetch(`${API_BASE_URL}/api/v1/analytics/ai/stock-alerts`, {
+      const stockResponse = await fetch(`${apiUrl}/api/v1/analytics/ai/stock-alerts`, {
         headers: getAuthHeaders(),
       });
       if (stockResponse.ok) {
@@ -155,8 +182,9 @@ export async function getAIInsights(): Promise<AIInsight[]> {
 export async function getSalesData(days: number = 30): Promise<SalesDataPoint[]> {
   try {
     // Fetch actual sales data
+    const apiUrl = getCachedApiBaseUrl();
     const salesResponse = await fetch(
-      `${API_BASE_URL}/api/v1/sales?skip=0&limit=1000`,
+      `${apiUrl}/api/v1/sales?skip=0&limit=1000`,
       {
         headers: getAuthHeaders(),
       }

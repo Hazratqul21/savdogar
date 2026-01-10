@@ -17,21 +17,47 @@ const getApiBaseUrl = (): string => {
   }
   
   // Build-time fallback: return empty string during build/SSR
-  // Runtime validation will happen when API is actually called
+  // This prevents build errors when env var is not set at build time
   if (typeof window === 'undefined') {
     // Server-side (build-time or SSR): return empty string
-    // This prevents build errors when env var is not set
+    // Runtime validation will happen when API is actually called on client-side
     return '';
   }
   
   // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+    'Please configure it in Vercel dashboard: Settings → Environment Variables'
   );
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL with runtime validation (safe for build-time)
+const getCachedApiBaseUrl = (): string => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    // Runtime (client-side): rethrow error if env var is not set
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+};
+
+// Module-level constant for build-time compatibility (may be empty string at build time)
+// In API functions, use getCachedApiBaseUrl() for runtime validation
+const API_BASE_URL = (() => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    return '';
+  }
+})();
 
 // ============================================
 // TYPE DEFINITIONS (Updated for products_v2 schema)
@@ -133,7 +159,8 @@ export interface CheckoutRequest {
 // Product APIs
 // ✅ UPDATED: Use products_v2 endpoint (matches new Supabase schema)
 export async function getProducts(tenantId: number): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/products_v2`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/products_v2`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch products');
@@ -265,7 +292,8 @@ export async function searchProductsBySku(sku: string, tenantId: number): Promis
 
 // Cart calculation
 export async function calculateCart(request: CartCalculationRequest): Promise<CartCalculationResult> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/sales/cart/calculate`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/sales/cart/calculate`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -276,7 +304,8 @@ export async function calculateCart(request: CartCalculationRequest): Promise<Ca
 
 // Checkout
 export async function checkout(request: CheckoutRequest): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/sales/checkout`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/sales/checkout`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -290,7 +319,8 @@ export async function checkout(request: CheckoutRequest): Promise<any> {
 
 // Customer APIs
 export async function getCustomers(tenantId: number): Promise<Customer[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/customers`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/customers`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch customers');
@@ -299,7 +329,8 @@ export async function getCustomers(tenantId: number): Promise<Customer[]> {
 
 // AI Analytics & Brain Features
 export async function searchSemantic(query: string): Promise<ProductVariant[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/ai/semantic-search?query=${encodeURIComponent(query)}`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/analytics/ai/semantic-search?query=${encodeURIComponent(query)}`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to perform semantic search');
@@ -307,7 +338,8 @@ export async function searchSemantic(query: string): Promise<ProductVariant[]> {
 }
 
 export async function getStockAlerts(): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/analytics/ai/stock-alerts`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/analytics/ai/stock-alerts`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch stock alerts');
@@ -315,7 +347,8 @@ export async function getStockAlerts(): Promise<any[]> {
 }
 
 export async function getTenantInfo(): Promise<{ id: number; business_type: string; config: any }> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/tenants/me`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/tenants/me`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch tenant info');

@@ -20,21 +20,47 @@ const getApiBaseUrl = (): string => {
   }
   
   // Build-time fallback: return empty string during build/SSR
-  // Runtime validation will happen when API is actually called
+  // This prevents build errors when env var is not set at build time
   if (typeof window === 'undefined') {
     // Server-side (build-time or SSR): return empty string
-    // This prevents build errors when env var is not set
+    // Runtime validation will happen when API is actually called on client-side
     return '';
   }
   
   // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+    'Please configure it in Vercel dashboard: Settings → Environment Variables'
   );
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL with runtime validation (safe for build-time)
+const getCachedApiBaseUrl = (): string => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    // Runtime (client-side): rethrow error if env var is not set
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+};
+
+// Module-level constant for build-time compatibility (may be empty string at build time)
+// In API functions, use getCachedApiBaseUrl() for runtime validation
+const API_BASE_URL = (() => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    return '';
+  }
+})();
 
 export interface Tenant {
   id: number;
@@ -64,7 +90,8 @@ export interface UserInfo {
  * Get current user information (including role)
  */
 export async function getCurrentUser(): Promise<UserInfo> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
     headers: getAuthHeaders(),
   });
   
@@ -82,7 +109,8 @@ export async function getCurrentUser(): Promise<UserInfo> {
  * Get all tenants (Super Admin only)
  */
 export async function getAllTenants(): Promise<Tenant[]> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/tenants`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/admin/tenants`, {
     headers: getAuthHeaders(),
   });
   
@@ -103,7 +131,8 @@ export async function updateTenantStatus(
   tenantId: number,
   isActive: boolean
 ): Promise<Tenant> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/tenants/${tenantId}/status`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/admin/tenants/${tenantId}/status`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify({ is_active: isActive }),
@@ -120,7 +149,8 @@ export async function updateTenantStatus(
  * Get tenant details by ID
  */
 export async function getTenantById(tenantId: number): Promise<Tenant> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/admin/tenants/${tenantId}`, {
+  const apiUrl = getCachedApiBaseUrl();
+  const response = await fetch(`${apiUrl}/api/v1/admin/tenants/${tenantId}`, {
     headers: getAuthHeaders(),
   });
   

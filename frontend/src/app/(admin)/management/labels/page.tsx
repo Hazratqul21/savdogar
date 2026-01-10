@@ -23,25 +23,42 @@ const getApiBaseUrl = (): string => {
   }
   
   // Build-time fallback: return empty string during build/SSR
-  // Runtime validation will happen when API is actually called
+  // This prevents build errors when env var is not set at build time
   if (typeof window === 'undefined') {
     // Server-side (build-time or SSR): return empty string
-    // This prevents build errors when env var is not set
+    // Runtime validation will happen when API is actually called on client-side
     return '';
   }
   
   // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+    'Please configure it in Vercel dashboard: Settings → Environment Variables'
   );
 };
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL with runtime validation (safe for build-time)
+const getCachedApiBaseUrl = (): string => {
+  try {
+    return getApiBaseUrl();
+  } catch {
+    // Build-time: return empty string to allow build to complete
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    // Runtime (client-side): rethrow error if env var is not set
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+};
 
 async function downloadLabels(productIds: number[]) {
+  // Runtime validation: get API URL with validation
+  const apiUrl = getCachedApiBaseUrl();
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/v1/labels/generate`, {
+  const response = await fetch(`${apiUrl}/api/v1/labels/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

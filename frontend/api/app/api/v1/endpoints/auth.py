@@ -9,31 +9,48 @@ from app.core import security
 from app.core.config import settings
 from app.schemas import user as user_schema
 from app.models import User
+from app.models.user import UserRole
 
-router = APIRouter()
+router = APIRouter(tags=["authentication"])
 
 # Note: OPTIONS handlers are handled by the global handler in main.py
 # These explicit handlers are kept as backup but may not be reached
 # if the global handler catches them first
 
-@router.post("/signup", response_model=user_schema.User)
-def signup(
+@router.post(
+    "/signup",
+    response_model=user_schema.User,
+    status_code=status.HTTP_201_CREATED,
+    summary="User Registration",
+    description="Register a new user account. This is a public endpoint.",
+    response_description="User created successfully",
+    responses={
+        201: {"description": "User created successfully"},
+        400: {"description": "User already exists or validation failed"},
+        500: {"description": "Internal server error"},
+    }
+)
+async def signup(
     *,
     db: Session = Depends(deps.get_db),
     user_in: user_schema.UserCreate,
 ) -> Any:
     """
     Register a new user (public endpoint)
+    
+    This endpoint allows new users to register.
+    Returns 201 Created on success, 400 Bad Request if user already exists.
     """
     import logging
     logger = logging.getLogger(__name__)
     logger.info(f"✅ POST /api/v1/auth/signup called - username={user_in.username}, email={user_in.email}")
+    
     try:
         # Check if user with email exists
         user = db.query(User).filter(User.email == user_in.email).first()
         if user:
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bu email bilan foydalanuvchi allaqachon mavjud.",
             )
         
@@ -41,7 +58,7 @@ def signup(
         user = db.query(User).filter(User.username == user_in.username).first()
         if user:
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bu username bilan foydalanuvchi allaqachon mavjud.",
             )
         
@@ -50,15 +67,16 @@ def signup(
             user = db.query(User).filter(User.phone_number == user_in.phone_number).first()
             if user:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Bu telefon raqami bilan foydalanuvchi allaqachon mavjud.",
                 )
         
+        # Create new user
         user_obj = User(
             username=user_in.username,
             email=user_in.email,
             hashed_password=security.get_password_hash(user_in.password),
-            role=user_in.role,
+            role=user_in.role if user_in.role else UserRole.CASHIER,
             is_active=True,
             phone_number=user_in.phone_number,
             full_name=user_in.full_name,
@@ -66,10 +84,14 @@ def signup(
         db.add(user_obj)
         db.commit()
         db.refresh(user_obj)
+        
+        logger.info(f"✅ User created successfully: {user_obj.username} (ID: {user_obj.id})")
         return user_obj
+        
     except HTTPException:
         raise
     except Exception as e:
+        db.rollback()
         from app.core.exceptions import handle_database_error, handle_generic_error
         
         # Check if it's a database error (connection, timeout, SSL, etc.)

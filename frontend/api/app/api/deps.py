@@ -11,6 +11,17 @@ from app.core import security
 from app.core.config import settings
 from app.core.database import get_db
 
+# Export get_db for backward compatibility and cleaner imports
+__all__ = [
+    "get_db",
+    "get_current_user",
+    "get_current_active_user",
+    "get_current_admin",
+    "get_current_super_admin",
+    "get_user_organization",
+    "require_organization",
+]
+
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"/api/v1/auth/login"
 )

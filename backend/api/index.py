@@ -153,6 +153,7 @@ if 'handler' not in globals():
 assert callable(handler), "Handler must be callable"
 
 # Version tracking for Vercel deployment detection
-__version__ = "1.0.2-vercel-deploy-2026-01-11-04:20"
-__deployed_at__ = "2026-01-11T04:20:00Z"
+__version__ = "1.0.3-DEPLOYMENT_NOT_FOUND-FIX-2026-01-11"
+__deployed_at__ = "2026-01-11T04:45:00Z"
+__fix__ = "DEPLOYMENT_NOT_FOUND resolved with explicit vercel.json config"
 __all__ = ['handler']

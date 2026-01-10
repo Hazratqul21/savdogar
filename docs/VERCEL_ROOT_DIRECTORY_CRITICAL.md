@@ -31,7 +31,45 @@ Error: The pattern "api/index.py" defined in `functions` doesn't match any Serve
 7. **Install Command:** OVERRIDE QILMANG (bo'sh qoldiring yoki o'chiring)
 8. **Save** ni bosing ⚠️
 
-### Qadam 3: Tekshirish
+### Qadam 3: Settings → Environment Variables (PYTHONPATH sozlash) ⚠️
+
+1. **Settings** tab'da **Environment Variables** section'ga kiring
+2. **Add New** yoki **"+"** tugmasini bosing
+3. Quyidagi variable'larni qo'shing (har birini alohida qo'shing):
+
+**Variable 1: PYTHONPATH**
+- **Key:** `PYTHONPATH`
+- **Value:** `api` (faqat `api` yozing, `/api` yoki `./api` emas!)
+- **Environment:** Production, Preview, Development (hammasini tanlang) ✅
+- **Add** yoki **Save** ni bosing
+
+**Variable 2: DATABASE_URL**
+- **Key:** `DATABASE_URL`
+- **Value:** `postgresql://user:password@host:port/db?sslmode=require`
+- **Environment:** Production, Preview, Development (hammasini tanlang) ✅
+- **Add** yoki **Save** ni bosing
+
+**Variable 3: SECRET_KEY**
+- **Key:** `SECRET_KEY`
+- **Value:** `<your-secret-key-minimum-32-characters>`
+- **Environment:** Production, Preview, Development (hammasini tanlang) ✅
+- **Add** yoki **Save** ni bosing
+
+**Variable 4: FRONTEND_URL**
+- **Key:** `FRONTEND_URL`
+- **Value:** `https://your-project.vercel.app`
+- **Environment:** Production, Preview, Development (hammasini tanlang) ✅
+- **Add** yoki **Save** ni bosing
+
+**Variable 5: CORS_ORIGINS**
+- **Key:** `CORS_ORIGINS`
+- **Value:** `https://your-project.vercel.app`
+- **Environment:** Production, Preview, Development (hammasini tanlang) ✅
+- **Add** yoki **Save** ni bosing
+
+⚠️ **MUHIM:** `PYTHONPATH=api` (frontend/ dan nisbatan path, chunki Root Directory `frontend`)
+
+### Qadam 4: Tekshirish va Redeploy
 
 1. **Deployments** tab'ga kiring
 2. **Latest Deployment** ni toping
@@ -73,8 +111,24 @@ savdogar_project_ready/          # GitHub repository root
 └── ...
 ```
 
+## 🔑 PYTHONPATH Nega `api` (frontend dan nisbatan)?
+
+**Sabab:**
+- Root Directory `frontend` ga o'rnatilgan
+- Vercel `frontend/` papkasidan ish boshlaydi
+- `api/index.py` fayli `frontend/api/index.py` da joylashgan
+- Python `from app.main import app` qilganda, `app` modulini topishi uchun `PYTHONPATH` kerak
+- `PYTHONPATH=api` sozlasak, Python `frontend/api/` papkasini `sys.path` ga qo'shadi
+- Shuning uchun `from app.main import app` ishlaydi (chunki `app` `frontend/api/app/main.py` da)
+
+**Eslatma:**
+- ✅ `PYTHONPATH=api` (Root Directory `frontend` bo'lsa)
+- ❌ `PYTHONPATH=frontend/api` (Root Directory EMPTY bo'lsa, lekin bizda `frontend`)
+
 ## ⚠️ Eslatma
 
-**Root Directory ni `frontend` ga o'rnatmaguncha, deploy muvaffaqiyatsiz bo'ladi!**
+**1. Root Directory ni `frontend` ga o'rnatmaguncha, deploy muvaffaqiyatsiz bo'ladi!**
 
-Bu eng muhim sozlama! Root Directory ni to'g'ri o'rnatmagan holda, barcha boshqa sozlamalar ishlamaydi!
+**2. `PYTHONPATH=api` ni Environment Variables'da qo'shmaguncha, Python import xatolari bo'ladi!**
+
+Bu ikki sozlama eng muhim! Ularni to'g'ri o'rnatmagan holda, deploy va ishlash muvaffaqiyatsiz bo'ladi!

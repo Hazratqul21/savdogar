@@ -17,6 +17,7 @@ class UserCreate(UserBase):
     email: EmailStr
     phone_number: Optional[str] = None
     full_name: Optional[str] = None
+    business_type: Optional[str] = None  # For automatic tenant creation during signup
     
     @field_validator('password')
     @classmethod

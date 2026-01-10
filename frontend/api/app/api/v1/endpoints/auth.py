@@ -43,7 +43,7 @@ async def signup(
     """
     import logging
     logger = logging.getLogger(__name__)
-    logger.info(f"✅ POST /api/v1/auth/signup called - username={user_in.username}, email={user_in.email}")
+    logger.info(f"✅ POST /api/v1/auth/signup called - username={user_in.username}, email={user_in.email}, business_type={getattr(user_in, 'business_type', None)}")
     
     try:
         # Check if user with email exists
@@ -71,21 +71,53 @@ async def signup(
                     detail="Bu telefon raqami bilan foydalanuvchi allaqachon mavjud.",
                 )
         
+        # Handle tenant creation if business_type is provided
+        tenant_id = None
+        if hasattr(user_in, 'business_type') and user_in.business_type:
+            from app.models.tenant import Tenant, BusinessType
+            
+            # Try to parse business_type to BusinessType enum
+            try:
+                business_type_enum = BusinessType(user_in.business_type.lower())
+            except ValueError:
+                # If invalid business_type, use default RETAIL
+                business_type_enum = BusinessType.RETAIL
+                logger.warning(f"⚠️ Invalid business_type '{user_in.business_type}', using default: RETAIL")
+            
+            # Create tenant automatically for new signup
+            tenant_name = user_in.full_name or user_in.username or f"{user_in.email.split('@')[0]}'s Business"
+            tenant_obj = Tenant(
+                name=tenant_name,
+                business_type=business_type_enum,
+                email=user_in.email,
+                phone=user_in.phone_number,
+                config={},
+                subscription_plan="trial",
+                max_users=5,
+                max_branches=1,
+                is_active=True,
+            )
+            db.add(tenant_obj)
+            db.flush()  # Flush to get tenant ID
+            tenant_id = tenant_obj.id
+            logger.info(f"✅ Tenant created automatically: {tenant_name} (ID: {tenant_id}, business_type: {business_type_enum.value})")
+        
         # Create new user
         user_obj = User(
             username=user_in.username,
             email=user_in.email,
             hashed_password=security.get_password_hash(user_in.password),
-            role=user_in.role if user_in.role else UserRole.CASHIER,
+            role=user_in.role if user_in.role else UserRole.OWNER,  # First user becomes OWNER
             is_active=True,
             phone_number=user_in.phone_number,
             full_name=user_in.full_name,
+            tenant_id=tenant_id,  # Assign to created tenant if any
         )
         db.add(user_obj)
         db.commit()
         db.refresh(user_obj)
         
-        logger.info(f"✅ User created successfully: {user_obj.username} (ID: {user_obj.id})")
+        logger.info(f"✅ User created successfully: {user_obj.username} (ID: {user_obj.id}, tenant_id: {tenant_id})")
         return user_obj
         
     except HTTPException:

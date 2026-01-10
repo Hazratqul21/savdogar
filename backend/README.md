@@ -93,13 +93,18 @@ Backend faqat **2 ta OpenAI model** ishlatadi:
 
 ### Vercel
 
-```bash
-# Local test
-vercel dev
+Backend'ni Vercel'da deploy qilish uchun alohida project yaratish kerak.
 
-# Deploy
-vercel --prod
-```
+**MUHIM**: Root directory `backend` bo'lishi kerak!
+
+1. Vercel Dashboard → Add New Project
+2. GitHub repo'ni ulang
+3. Framework: "Other" yoki "Python"
+4. **Root Directory**: `backend` (not root!)
+5. Environment Variables'ni qo'shing (qarang: `DEPLOYMENT.md`)
+6. Deploy
+
+Batafsil qo'llanma: `DEPLOYMENT.md`
 
 Vercel config: `vercel.json`
 

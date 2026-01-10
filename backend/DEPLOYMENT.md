@@ -14,11 +14,11 @@ Backend'ni Vercel'da deploy qilish uchun quyidagi qadamlarni bajaring.
 
 ### 3. Project Settings'ni sozlang
 
-#### Root Directory
+#### ⚠️ MUHIM: Root Directory
 ```
 backend
 ```
-⚠️ **MUHIM**: Root directory `backend` bo'lishi kerak, root emas!
+**CRITICAL**: Root directory `backend` bo'lishi kerak, root emas!
 
 #### Build & Output Settings
 - Build Command: (bo'sh qoldiring - Vercel avtomatik Python detect qiladi)
@@ -58,31 +58,48 @@ ENVIRONMENT=production
 
 ### 4. Deploy qiling
 - "Deploy" ni bosing
-- Vercel avtomatik ravishda `backend/vercel.json` ni topadi va deploy qiladi
+- Vercel avtomatik ravishda `backend/api/index.py` ni topadi va deploy qiladi
 
 ## Vercel.json Configuration
 
-**MUHIM**: Yangi Vercel versiyasida `builds` deprecated. Faqat `rewrites` va `functions` ishlatiladi:
+**MUHIM**: Yangi Vercel versiyasida (2024-2025) FastAPI uchun zero-configuration support bor.
+
+Minimal `vercel.json`:
 
 ```json
 {
-  "version": 2,
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
-    }
-  ],
   "functions": {
     "api/index.py": {
-      "maxDuration": 60,
-      "memory": 1024
+      "maxDuration": 60
     }
   }
 }
 ```
 
-**NOTA BENE**: `index.py` fayli `backend/api/` papkasida bo'lishi kerak (Vercel Python funksiyalari uchun `api/` papkasi talab qilinadi).
+**NOTA BENE**: 
+- `api/index.py` fayli `backend/api/` papkasida bo'lishi kerak (Vercel Python funksiyalari uchun `api/` papkasi talab qilinadi)
+- `builds` property deprecated - ishlatilmaydi
+- `rewrites` kerak emas - Vercel avtomatik detect qiladi
+- `memory` limit optional - default ishlatiladi
+
+## File Structure
+
+Backend project strukturasi:
+
+```
+backend/
+├── api/
+│   └── index.py          # Vercel entry point (MUHIM!)
+├── app/
+│   ├── main.py           # FastAPI app
+│   ├── api/v1/endpoints/ # API endpoints
+│   └── ...
+├── requirements.txt      # Python dependencies
+├── vercel.json          # Vercel config (minimal)
+└── ...
+```
+
+**MUHIM**: `api/index.py` fayli mavjudligini tekshiring!
 
 ## Verification
 
@@ -107,14 +124,24 @@ Deploy qilingandan keyin:
 
 ## Troubleshooting
 
+### Error: "The pattern 'api/index.py' defined in `functions` doesn't match any Serverless Functions"
+
+**Sabab**: `api/index.py` fayli topilmagan yoki `.vercelignore` da ignore qilingan.
+
+**Yechim**:
+1. `backend/api/index.py` fayli mavjudligini tekshiring
+2. `.vercelignore` da `api/` ignore qilinmaganini tekshiring
+3. Git'da `backend/api/index.py` commit qilinganligini tekshiring
+4. Root directory `backend` bo'lishini tekshiring
+
 ### Backend topilmayapti
 - Root directory `backend` bo'lishini tekshiring
 - `backend/vercel.json` fayli mavjudligini tekshiring
-- `backend/api/index.py` fayli mavjudligini tekshiring (NOT `backend/index.py`)
+- `backend/api/index.py` fayli mavjudligini tekshiring
 
 ### Builds va Functions conflict xatosi
 - `vercel.json` da `builds` property yo'qligini tekshiring
-- Faqat `rewrites` va `functions` bo'lishi kerak
+- Faqat `functions` bo'lishi kerak
 
 ### Database ulanishi xato
 - `DATABASE_URL` to'g'ri ekanligini tekshiring
@@ -130,7 +157,7 @@ Deploy qilingandan keyin:
 - [ ] Root directory: `backend`
 - [ ] `backend/api/index.py` mavjud (NOT `backend/index.py`)
 - [ ] `backend/vercel.json` da `builds` yo'q
-- [ ] `backend/vercel.json` da faqat `rewrites` va `functions` bor
+- [ ] `backend/vercel.json` da faqat `functions` bor
 - [ ] `DATABASE_URL` sozlangan
 - [ ] `SECRET_KEY` sozlangan (min 32 character)
 - [ ] `OPENAI_API_KEY` sozlangan

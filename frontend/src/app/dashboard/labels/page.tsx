@@ -17,12 +17,20 @@ const getApiBaseUrl = (): string => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Development: use localhost backend
+  // Development: use localhost backend (only at runtime, not during build)
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:8000';
   }
   
-  // Production fallback: throw error if NEXT_PUBLIC_API_URL is not set
+  // Build-time fallback: return empty string during build/SSR
+  // Runtime validation will happen when API is actually called
+  if (typeof window === 'undefined') {
+    // Server-side (build-time or SSR): return empty string
+    // This prevents build errors when env var is not set
+    return '';
+  }
+  
+  // Runtime (client-side): throw error if NEXT_PUBLIC_API_URL is not set
   throw new Error(
     'NEXT_PUBLIC_API_URL environment variable is not set. ' +
     'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'

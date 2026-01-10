@@ -152,4 +152,6 @@ if 'handler' not in globals():
 # Mangum handler wraps FastAPI and converts ASGI requests to Lambda events
 assert callable(handler), "Handler must be callable"
 
+# Version tracking for Vercel deployment detection
+__version__ = "1.0.1-vercel-sync-2026-01-11"
 __all__ = ['handler']

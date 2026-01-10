@@ -24,5 +24,6 @@
       "maxDuration": 60,
       "memory": 1024
     }
-  }
+  },
+  "_comment": "Updated 2026-01-11 04:20 - Vercel deployment trigger"
 }

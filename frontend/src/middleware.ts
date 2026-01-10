@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Middleware for authentication and route protection
+ * 
+ * NOTE: In Next.js 16, middleware is deprecated in favor of route handlers,
+ * but it still works and is appropriate for simple auth checks like this.
+ */
 export function middleware(request: NextRequest) {
   // Token ni cookie dan olish
   const token = request.cookies.get('access_token')?.value;

@@ -55,8 +55,22 @@ const getCachedApiBaseUrl = (): string => {
 };
 
 async function downloadLabels(productIds: number[]) {
+  // Ensure this only runs on client-side (not during SSR/build)
+  if (typeof window === 'undefined') {
+    throw new Error('downloadLabels can only be called on client-side');
+  }
+  
   // Runtime validation: get API URL with validation
   const apiUrl = getCachedApiBaseUrl();
+  
+  // Validate API URL before making request
+  if (!apiUrl || apiUrl === '') {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+      'Please configure it in Vercel dashboard: Settings → Environment Variables'
+    );
+  }
+  
   const token = getToken();
   const response = await fetch(`${apiUrl}/api/v1/labels/generate`, {
     method: 'POST',

@@ -34,8 +34,28 @@ export const getApiBaseUrl = (): string => {
 // This function is called in each API function to ensure runtime validation
 let _cachedApiBaseUrl: string | null = null;
 const getCachedApiBaseUrl = (): string => {
+  // Build-time safety: return empty string during SSR/build
+  if (typeof window === 'undefined') {
+    // During build/SSR, getApiBaseUrl returns empty string if env var not set
+    // This is safe - runtime validation happens on client-side
+    if (_cachedApiBaseUrl === null) {
+      try {
+        _cachedApiBaseUrl = getApiBaseUrl();
+      } catch {
+        _cachedApiBaseUrl = '';
+      }
+    }
+    return _cachedApiBaseUrl || '';
+  }
+  
+  // Client-side: cache and validate
   if (_cachedApiBaseUrl === null) {
-    _cachedApiBaseUrl = getApiBaseUrl();
+    try {
+      _cachedApiBaseUrl = getApiBaseUrl();
+    } catch (error) {
+      // Re-throw on client-side if env var not set
+      throw error;
+    }
   }
   
   // Runtime validation for client-side: ensure URL is set

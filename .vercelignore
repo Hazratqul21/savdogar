@@ -60,7 +60,7 @@ frontend/public/uploads/
 .git/
 .gitignore
 
-# Documentation
+# Documentation (but keep README.md)
 docs/
 *.md
 !README.md

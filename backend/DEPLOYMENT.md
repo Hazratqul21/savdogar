@@ -21,7 +21,7 @@ backend
 ⚠️ **MUHIM**: Root directory `backend` bo'lishi kerak, root emas!
 
 #### Build & Output Settings
-- Build Command: (bo'sh qoldiring - `@vercel/python` avtomatik build qiladi)
+- Build Command: (bo'sh qoldiring - Vercel avtomatik Python detect qiladi)
 - Output Directory: (bo'sh qoldiring)
 - Install Command: (bo'sh qoldiring, Vercel `requirements.txt` dan avtomatik install qiladi)
 
@@ -60,6 +60,30 @@ ENVIRONMENT=production
 - "Deploy" ni bosing
 - Vercel avtomatik ravishda `backend/vercel.json` ni topadi va deploy qiladi
 
+## Vercel.json Configuration
+
+**MUHIM**: Yangi Vercel versiyasida `builds` deprecated. Faqat `rewrites` va `functions` ishlatiladi:
+
+```json
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.py"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}
+```
+
+**NOTA BENE**: `index.py` fayli `backend/api/` papkasida bo'lishi kerak (Vercel Python funksiyalari uchun `api/` papkasi talab qilinadi).
+
 ## Verification
 
 Deploy qilingandan keyin:
@@ -86,7 +110,11 @@ Deploy qilingandan keyin:
 ### Backend topilmayapti
 - Root directory `backend` bo'lishini tekshiring
 - `backend/vercel.json` fayli mavjudligini tekshiring
-- `backend/index.py` fayli mavjudligini tekshiring
+- `backend/api/index.py` fayli mavjudligini tekshiring (NOT `backend/index.py`)
+
+### Builds va Functions conflict xatosi
+- `vercel.json` da `builds` property yo'qligini tekshiring
+- Faqat `rewrites` va `functions` bo'lishi kerak
 
 ### Database ulanishi xato
 - `DATABASE_URL` to'g'ri ekanligini tekshiring
@@ -100,6 +128,9 @@ Deploy qilingandan keyin:
 ## Production Checklist
 
 - [ ] Root directory: `backend`
+- [ ] `backend/api/index.py` mavjud (NOT `backend/index.py`)
+- [ ] `backend/vercel.json` da `builds` yo'q
+- [ ] `backend/vercel.json` da faqat `rewrites` va `functions` bor
 - [ ] `DATABASE_URL` sozlangan
 - [ ] `SECRET_KEY` sozlangan (min 32 character)
 - [ ] `OPENAI_API_KEY` sozlangan

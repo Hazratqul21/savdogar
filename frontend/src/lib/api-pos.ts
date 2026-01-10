@@ -1,11 +1,12 @@
 import { getAuthHeaders } from './api';
 
 // API Base URL configuration
-// Vercel deployment: Use empty string (routes are handled by vercel.json)
-// Development: Use localhost backend
-// External deployment: Use NEXT_PUBLIC_API_URL environment variable
+// Frontend and backend are now deployed separately on Vercel
+// REQUIRED: Set NEXT_PUBLIC_API_URL environment variable to your backend URL
+// Development: Use localhost backend (http://localhost:8000)
+// Production: Use your deployed backend URL (e.g., https://your-backend.vercel.app)
 const getApiBaseUrl = (): string => {
-  // If explicitly set via environment variable, use it
+  // If explicitly set via environment variable, use it (REQUIRED for production)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
@@ -15,9 +16,11 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:8000';
   }
   
-  // Production (Vercel): use empty string
-  // Vercel routes /api/* to backend, so we just use /api/v1/... directly
-  return '';
+  // Production fallback: throw error if NEXT_PUBLIC_API_URL is not set
+  throw new Error(
+    'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+  );
 };
 
 const API_BASE_URL = getApiBaseUrl();

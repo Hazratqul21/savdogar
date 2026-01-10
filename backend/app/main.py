@@ -49,51 +49,11 @@ app = FastAPI(
 # =============================================================================
 # CORS Configuration
 # =============================================================================
-def get_cors_origins() -> list[str]:
-    """Get allowed CORS origins based on environment."""
-    origins = []
-    
-    # If CORS_ORIGINS is explicitly set, use it
-    if settings.CORS_ORIGINS:
-        origins.extend([origin.strip() for origin in settings.CORS_ORIGINS.split(",")])
-    
-    # Add FRONTEND_URL if set
-    if settings.FRONTEND_URL:
-        origins.append(settings.FRONTEND_URL)
-        # Also add www variant
-        if not settings.FRONTEND_URL.startswith("http://localhost"):
-            if "www." not in settings.FRONTEND_URL:
-                origins.append(settings.FRONTEND_URL.replace("https://", "https://www."))
-    
-    # Development origins
-    if settings.is_development():
-        origins.extend([
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:3001",
-        ])
-    
-    # Remove duplicates and empty strings
-    origins = list(set(filter(None, origins)))
-    
-    # Fallback: allow all origins if none configured (with warning)
-    if not origins:
-        if settings.is_production():
-            logger.warning(
-                "⚠️ No CORS origins configured in production. "
-                "Set CORS_ORIGINS or FRONTEND_URL environment variable."
-            )
-        # Return ["*"] for permissive CORS (monorepo same-origin requests work)
-        return ["*"]
-    
-    return origins
-
-
-# Add CORS middleware
+# Configure CORS to allow all origins for separate deployment
+# Frontend and backend are now deployed separately, so we allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
+    allow_origins=["*"],  # Allow all origins for separate frontend/backend deployment
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allow_headers=["*"],
@@ -119,21 +79,11 @@ async def options_handler(full_path: str, request: Request):
     logger = logging.getLogger(__name__)
     logger.info(f"✅ OPTIONS request received for path: {full_path}")
     
-    origin = request.headers.get("origin", "*")
-    allowed_origins = get_cors_origins()
-    
-    # Determine which origin to send back
-    if "*" in allowed_origins:
-        response_origin = "*"
-    elif origin in allowed_origins:
-        response_origin = origin
-    else:
-        response_origin = allowed_origins[0] if allowed_origins else "*"
-    
+    # Allow all origins for separate deployment
     response = Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": response_origin,
+            "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Credentials": "true",

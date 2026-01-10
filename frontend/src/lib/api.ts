@@ -1,32 +1,24 @@
 // API Base URL configuration
-// Vercel deployment: Use empty string (routes are handled by vercel.json)
-// Development: Use localhost backend
-// External deployment: Use NEXT_PUBLIC_API_URL environment variable
+// Frontend and backend are now deployed separately on Vercel
+// REQUIRED: Set NEXT_PUBLIC_API_URL environment variable to your backend URL
+// Development: Use localhost backend (http://localhost:8000)
+// Production: Use your deployed backend URL (e.g., https://your-backend.vercel.app)
 const getApiBaseUrl = (): string => {
-  // If explicitly set via environment variable, use it
+  // If explicitly set via environment variable, use it (REQUIRED for production)
   if (process.env.NEXT_PUBLIC_API_URL) {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:8',message:'API_BASE_URL from env',data:{apiUrl:process.env.NEXT_PUBLIC_API_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
   // Development: use localhost backend
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:14',message:'API_BASE_URL localhost',data:{hostname:window.location.hostname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     return 'http://localhost:8000';
   }
   
-  // Production (Vercel): use empty string
-  // Vercel routes /api/* to backend, so we just use /api/v1/... directly
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7244/ingest/c32e21c4-955b-4bd3-ad02-aa07e2117d26',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:20',message:'API_BASE_URL empty (production)',data:{hostname:window.location.hostname,origin:window.location.origin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  }
-  // #endregion
-  return '';
+  // Production fallback: throw error if NEXT_PUBLIC_API_URL is not set
+  throw new Error(
+    'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+  );
 };
 
 const API_BASE_URL = getApiBaseUrl();

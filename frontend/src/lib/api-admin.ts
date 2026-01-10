@@ -5,9 +5,28 @@
 
 import { getAuthHeaders } from "./api";
 
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:8000'
-  : process.env.NEXT_PUBLIC_API_URL || '';
+// API Base URL configuration
+// Frontend and backend are now deployed separately on Vercel
+// REQUIRED: Set NEXT_PUBLIC_API_URL environment variable to your backend URL
+const getApiBaseUrl = (): string => {
+  // If explicitly set via environment variable, use it (REQUIRED for production)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Development: use localhost backend
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  
+  // Production fallback: throw error if NEXT_PUBLIC_API_URL is not set
+  throw new Error(
+    'NEXT_PUBLIC_API_URL environment variable is not set. ' +
+    'Please set it to your backend API URL (e.g., https://your-backend.vercel.app)'
+  );
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface Tenant {
   id: number;

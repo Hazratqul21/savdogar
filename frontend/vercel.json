@@ -49,7 +49,6 @@
     "api/index.py": {
       "maxDuration": 60,
       "memory": 1024,
-      "runtime": "python3.9",
       "includeFiles": "api/**"
     }
   }

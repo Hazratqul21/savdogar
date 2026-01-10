@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "installCommand": "cd frontend && npm install",
+  "outputDirectory": "frontend/.next",
+  "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/docs",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/docs/(.*)",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/redoc",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/redoc/(.*)",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/health",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/health/(.*)",
+      "destination": "/frontend/api/index.py"
+    },
+    {
+      "source": "/verify/(.*)",
+      "destination": "/frontend/api/index.py"
+    }
+  ],
+  "functions": {
+    "frontend/api/index.py": {
+      "maxDuration": 60,
+      "memory": 1024,
+      "includeFiles": "frontend/api/**"
+    }
+  }
+}

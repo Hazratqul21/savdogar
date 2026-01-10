@@ -1,88 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "installCommand": "cd frontend && npm install",
-  "outputDirectory": "frontend/.next",
-  "builds": [
+  "rewrites": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "frontend/api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/v1/(.*)",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
-        "Access-Control-Allow-Headers": "*"
-      }
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
-        "Access-Control-Allow-Headers": "*"
-      }
-    },
-    {
-      "src": "/api/health/diagnostic",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/health",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/health/diagnostic",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/health",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/docs(.*)",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/redoc(.*)",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/openapi.json",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "OPTIONS"]
-    },
-    {
-      "src": "/verify/(.*)",
-      "dest": "/frontend/api/index.py",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    },
-    {
-      "handle": "filesystem"
+      "source": "/api/(.*)",
+      "destination": "/frontend/api/index.py"
     }
   ],
   "functions": {
@@ -92,8 +12,5 @@
       "runtime": "python3.9",
       "includeFiles": "frontend/api/**"
     }
-  },
-  "env": {
-    "PYTHONPATH": "frontend/api"
   }
 }

@@ -1,18 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "",
-  "outputDirectory": ".vercel/output",
-  "installCommand": "pip install -r requirements.txt",
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/api/index.py"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
+      "dest": "api/index.py"
     }
   ],
   "headers": [
@@ -22,17 +19,8 @@
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD" },
         { "key": "Access-Control-Allow-Headers", "value": "*" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Max-Age", "value": "86400" }
+        { "key": "Access-Control-Allow-Credentials", "value": "true" }
       ]
     }
-  ],
-  "functions": {
-    "api/index.py": {
-      "runtime": "python3.12",
-      "maxDuration": 60,
-      "memory": 1024,
-      "includeFiles": "**"
-    }
-  }
+  ]
 }

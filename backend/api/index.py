@@ -15,8 +15,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("vercel-api")
 
-# Add current directory to Python path for imports
-api_dir = os.path.dirname(os.path.abspath(__file__))
+# Add backend directory to Python path for imports
+# Vercel root directory is 'backend', so we need to add parent directory
+api_dir = os.path.dirname(os.path.abspath(__file__))  # backend/api/
+backend_dir = os.path.dirname(api_dir)  # backend/
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 if api_dir not in sys.path:
     sys.path.insert(0, api_dir)
 

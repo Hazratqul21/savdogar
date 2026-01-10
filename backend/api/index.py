@@ -82,6 +82,7 @@ try:
     # =============================================================================
     # Mangum wraps FastAPI ASGI app for AWS Lambda / Vercel Serverless
     # Vercel Python runtime automatically detects 'handler' variable
+    # Mangum handler is callable and handles event/context format conversion
     handler = Mangum(
         app,
         lifespan="off",  # Vercel manages function lifecycle

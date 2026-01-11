@@ -116,7 +116,7 @@ export interface CheckoutRequest {
 
 export async function getProducts(tenantId: number): Promise<any[]> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/products_v2`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/products?limit=1000`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch products');

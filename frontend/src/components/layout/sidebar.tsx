@@ -20,7 +20,8 @@ import {
     BarChart3,
     UserPlus,
     Shield,
-    Clock
+    Clock,
+    Coffee
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,13 @@ const EXCLUDED_FEATURES: Record<string, string[]> = {
     cafe: ["inventory", "customers", "team"],
     // Oshxona: ombor, mijozlar kerak emas
     kitchen: ["inventory", "customers"],
+    // Retail/Wholesale: modifikatorlar kerak emas
+    retail: ["modifiers"],
+    wholesale: ["modifiers"],
+    fashion: ["modifiers"],
+    jewelry: ["modifiers"],
+    tobacco: ["modifiers"],
+    plumbing_hvac: ["modifiers"],
 };
 
 // Menu items with permission requirements
@@ -82,6 +90,13 @@ const MENU_ITEMS = [
         href: "/dashboard/customers", 
         permission: "customers",
         feature: "customers"
+    },
+    { 
+        icon: Coffee, 
+        label: "Modifikatorlar", 
+        href: "/dashboard/modifiers", 
+        permission: "products",
+        feature: "modifiers"  // Only for cafe/horeca
     },
     { 
         icon: BarChart3, 

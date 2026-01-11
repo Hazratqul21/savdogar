@@ -39,3 +39,6 @@ from .inventory_log import InventoryLog
 
 # ✅ Shift Management (Z-Report)
 from .shift import Shift, CashMovement, ShiftStatus
+
+# ✅ Cafe Modifiers
+from .modifier import ModifierGroup, ModifierOption, ProductModifier

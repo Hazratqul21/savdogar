@@ -112,6 +112,19 @@ export function getAuthHeaders(): HeadersInit {
  * Handle API errors with user-friendly messages
  */
 async function handleApiError(response: Response, defaultMessage: string): Promise<never> {
+  // Handle 403 Forbidden (token expired or invalid)
+  if (response.status === 403) {
+    // Clear token and redirect to login
+    removeToken();
+    if (typeof window !== 'undefined') {
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?expired=true';
+      }
+    }
+    throw new Error("Sessiya muddati tugagan. Iltimos, qayta kiring.");
+  }
+
   try {
     const error = await response.json();
     throw new Error(error.detail || error.error || defaultMessage);

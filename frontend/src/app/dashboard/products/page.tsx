@@ -21,7 +21,7 @@ import {
     CheckCircle2,
     XCircle
 } from "lucide-react";
-import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
+import { getAuthHeaders, getApiBaseUrl, removeToken } from "@/lib/api";
 import { contributeToGlobalCatalogRPC, searchGlobalCatalogByBarcode } from "@/lib/supabase";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { BarcodeAddModal } from "@/components/products/BarcodeAddModal";
@@ -75,6 +75,14 @@ async function createProduct(data: any) {
         body: JSON.stringify(data),
     });
     if (!response.ok) {
+        // Handle 403 Forbidden (token expired)
+        if (response.status === 403) {
+            removeToken();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login?expired=true';
+            }
+            throw new Error("Sessiya muddati tugagan. Iltimos, qayta kiring.");
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || errorData.message || "Failed to create product");
     }

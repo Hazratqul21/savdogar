@@ -23,13 +23,19 @@ class OpenAIService:
     """Service for OpenAI Vision API integration (direct API, not Azure)."""
     
     def __init__(self):
-        if not settings.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY must be set in environment variables")
+        self.enabled = bool(settings.OPENAI_API_KEY)
+        
+        if not self.enabled:
+            logger.warning("⚠️ OPENAI_API_KEY not set - AI features disabled")
+            self.client = None
+            self.model = None
+            return
         
         self.client = OpenAI(
             api_key=settings.OPENAI_API_KEY
         )
         self.model = "gpt-4o"  # Use gpt-4o model
+        logger.info("✅ OpenAI service initialized")
     
     def convert_heic_to_jpeg(self, image_path: str) -> str:
         """
@@ -105,6 +111,10 @@ class OpenAIService:
         Returns:
             Dictionary containing extracted receipt data
         """
+        if not self.enabled:
+            logger.warning("OpenAI service is disabled - returning empty result")
+            return {"error": "OpenAI service is disabled. Please set OPENAI_API_KEY.", "items": []}
+        
         converted_path = None
         try:
             # Check if image is HEIC/HEIF and convert if necessary
@@ -244,6 +254,10 @@ MUHIM:
     
     def test_connection(self) -> bool:
         """Test OpenAI connection."""
+        if not self.enabled:
+            logger.warning("OpenAI service is disabled - connection test skipped")
+            return False
+        
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -257,14 +271,25 @@ MUHIM:
             return False
 
 
-# Singleton instance
-openai_service = OpenAIService()
+# Singleton instance - now gracefully handles missing API key
+try:
+    openai_service = OpenAIService()
+    if openai_service.enabled:
+        logger.info("✅ OpenAI service ready")
+    else:
+        logger.warning("⚠️ OpenAI service disabled (no API key)")
+except Exception as e:
+    logger.error(f"❌ OpenAI service initialization failed: {e}")
+    openai_service = None
 
 
 def test_connection():
     """Test function for OpenAI connection."""
-    service = OpenAIService()
-    if service.test_connection():
+    if openai_service is None:
+        print("❌ OpenAI service not initialized!")
+        return False
+    
+    if openai_service.test_connection():
         print("✅ OpenAI ulanishi muvaffaqiyatli!")
         return True
     else:

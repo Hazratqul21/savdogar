@@ -30,6 +30,18 @@ def detect_product_category(
     Returns:
         Dictionary with suggested category and confidence
     """
+    # Check if OpenAI service is available
+    if openai_service is None or not openai_service.enabled:
+        logger.warning("OpenAI service not available - category detection skipped")
+        return {
+            'category_id': None,
+            'category_name': None,
+            'is_existing': False,
+            'confidence': 0,
+            'reason': 'AI service not available',
+            'should_create': False
+        }
+    
     try:
         # Get existing categories
         categories = db.query(Category).all()

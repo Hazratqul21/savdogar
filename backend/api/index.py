@@ -1,7 +1,8 @@
 """
 Vercel Serverless Function Entry Point
 =====================================
-FastAPI ASGI handler for Vercel Python runtime.
+FastAPI + Mangum for Vercel Python runtime.
+Mangum wraps ASGI apps for AWS Lambda / Vercel compatibility.
 """
 import sys
 import os
@@ -16,6 +17,12 @@ if BACKEND_DIR not in sys.path:
 # Import FastAPI app
 from app.main import app
 
-# Vercel Python 4.x REQUIRES 'handler' variable for ASGI apps
-# This is the CRITICAL export that Vercel looks for
-handler = app
+# Use Mangum for Lambda/Vercel compatibility
+from mangum import Mangum
+
+# Create Mangum handler - THIS is what Vercel will call
+# lifespan="off" prevents issues with cold starts
+handler = Mangum(app, lifespan="off")
+
+# Also export app for local development
+__all__ = ["handler", "app"]

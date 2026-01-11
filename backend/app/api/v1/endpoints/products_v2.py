@@ -341,7 +341,119 @@ def get_expiring_products(
     }
 
 
+@router.get("/low-stock")
+def get_low_stock_products(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Kam qolgan mahsulotlarni olish.
+    stock_quantity <= min_stock_level bo'lgan variantlar.
+    """
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    # Kam qolgan variantlarni topish
+    low_stock_variants = db.query(ProductVariant).filter(
+        and_(
+            ProductVariant.tenant_id == current_user.tenant_id,
+            ProductVariant.is_active == True,
+            ProductVariant.stock_quantity <= ProductVariant.min_stock_level
+        )
+    ).order_by(ProductVariant.stock_quantity.asc()).all()
+    
+    result = []
+    for variant in low_stock_variants:
+        product = db.query(ProductV2).filter(ProductV2.id == variant.product_id).first()
+        
+        # Status
+        if (variant.stock_quantity or 0) <= 0:
+            status = "out_of_stock"
+        else:
+            status = "low_stock"
+        
+        result.append({
+            "variant_id": variant.id,
+            "product_id": variant.product_id,
+            "product_name": product.name if product else "Noma'lum",
+            "sku": variant.sku,
+            "stock_quantity": variant.stock_quantity or 0,
+            "min_stock_level": variant.min_stock_level or 0,
+            "status": status,
+            "price": variant.price,
+            "cost_price": variant.cost_price,
+            "primary_unit": variant.primary_unit or "dona"
+        })
+    
+    # Summary
+    out_of_stock_count = len([r for r in result if r["status"] == "out_of_stock"])
+    low_stock_count = len([r for r in result if r["status"] == "low_stock"])
+    
+    return {
+        "summary": {
+            "out_of_stock_count": out_of_stock_count,
+            "low_stock_count": low_stock_count,
+            "total_items": len(result)
+        },
+        "items": result
+    }
 
 
+@router.post("/{product_id}/variants/{variant_id}/stock")
+def adjust_stock(
+    *,
+    db: Session = Depends(deps.get_db),
+    product_id: int,
+    variant_id: int,
+    quantity: float,
+    adjustment_type: str = "add",  # "add" or "subtract" or "set"
+    reason: str = None,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Stock miqdorini o'zgartirish.
+    adjustment_type: "add" (qo'shish), "subtract" (ayirish), "set" (o'rnatish)
+    """
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    # Variantni topish
+    variant = db.query(ProductVariant).filter(
+        and_(
+            ProductVariant.id == variant_id,
+            ProductVariant.product_id == product_id,
+            ProductVariant.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not variant:
+        raise HTTPException(status_code=404, detail="Variant topilmadi")
+    
+    old_quantity = variant.stock_quantity or 0
+    
+    if adjustment_type == "add":
+        new_quantity = old_quantity + quantity
+    elif adjustment_type == "subtract":
+        new_quantity = old_quantity - quantity
+        if new_quantity < 0:
+            raise HTTPException(status_code=400, detail="Yetarli stock yo'q")
+    elif adjustment_type == "set":
+        new_quantity = quantity
+    else:
+        raise HTTPException(status_code=400, detail="Noto'g'ri adjustment_type")
+    
+    variant.stock_quantity = new_quantity
+    
+    db.commit()
+    db.refresh(variant)
+    
+    return {
+        "message": "Stock yangilandi",
+        "variant_id": variant.id,
+        "old_quantity": old_quantity,
+        "new_quantity": new_quantity,
+        "adjustment": quantity,
+        "adjustment_type": adjustment_type
+    }
 
 

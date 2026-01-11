@@ -86,8 +86,181 @@ def read_customer_ledger(
     return ledger
 
 
+@router.post("/{customer_id}/pay-debt", response_model=schemas.Customer)
+def pay_customer_debt(
+    *,
+    db: Session = Depends(deps.get_db),
+    customer_id: int,
+    amount: float,
+    payment_method: str = "cash",
+    notes: str = None,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Mijoz qarzini to'lash"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="To'lov summasi musbat bo'lishi kerak")
+    
+    # Mijozni topish
+    customer = db.query(CustomerV2).filter(
+        and_(
+            CustomerV2.id == customer_id,
+            CustomerV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+    
+    current_debt = customer.current_debt or 0
+    
+    if amount > current_debt:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"To'lov summasi qarzdan ortiq. Joriy qarz: {current_debt}"
+        )
+    
+    # Qarzni kamaytirish
+    customer.current_debt = current_debt - amount
+    
+    # Ledger yozuvi
+    ledger_entry = CustomerLedger(
+        customer_id=customer_id,
+        tenant_id=current_user.tenant_id,
+        transaction_type="payment",
+        amount=-amount,  # Minus - qarz kamaydi
+        balance_after=customer.current_debt,
+        description=f"Qarz to'lash ({payment_method})" + (f" - {notes}" if notes else ""),
+        created_by=current_user.id,
+    )
+    db.add(ledger_entry)
+    
+    db.commit()
+    db.refresh(customer)
+    
+    return customer
 
 
+@router.get("/{customer_id}", response_model=schemas.Customer)
+def get_customer(
+    *,
+    db: Session = Depends(deps.get_db),
+    customer_id: int,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Bitta mijozni olish"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    customer = db.query(CustomerV2).filter(
+        and_(
+            CustomerV2.id == customer_id,
+            CustomerV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+    
+    return customer
+
+
+@router.patch("/{customer_id}", response_model=schemas.Customer)
+def update_customer(
+    *,
+    db: Session = Depends(deps.get_db),
+    customer_id: int,
+    customer_in: schemas.CustomerUpdate,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Mijozni yangilash"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    customer = db.query(CustomerV2).filter(
+        and_(
+            CustomerV2.id == customer_id,
+            CustomerV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+    
+    update_data = customer_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(customer, field, value)
+    
+    db.commit()
+    db.refresh(customer)
+    
+    return customer
+
+
+@router.delete("/{customer_id}")
+def delete_customer(
+    *,
+    db: Session = Depends(deps.get_db),
+    customer_id: int,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Mijozni o'chirish (soft delete)"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    customer = db.query(CustomerV2).filter(
+        and_(
+            CustomerV2.id == customer_id,
+            CustomerV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+    
+    # Soft delete
+    customer.is_active = False
+    db.commit()
+    
+    return {"message": "Mijoz o'chirildi", "deleted_id": customer_id}
+
+
+@router.get("/debtors/list")
+def get_debtors(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Qarzdorlar ro'yxati"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    debtors = db.query(CustomerV2).filter(
+        and_(
+            CustomerV2.tenant_id == current_user.tenant_id,
+            CustomerV2.current_debt > 0,
+            CustomerV2.is_active == True
+        )
+    ).order_by(CustomerV2.current_debt.desc()).all()
+    
+    total_debt = sum(c.current_debt or 0 for c in debtors)
+    
+    return {
+        "total_debt": total_debt,
+        "debtors_count": len(debtors),
+        "debtors": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "phone": c.phone,
+                "current_debt": c.current_debt,
+                "credit_limit": c.credit_limit,
+                "max_debt_allowed": c.max_debt_allowed,
+            }
+            for c in debtors
+        ]
+    }
 
 
 

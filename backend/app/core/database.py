@@ -17,7 +17,15 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Database URL Configuration
 # =============================================================================
-SQLALCHEMY_DATABASE_URL = settings.database_url
+_raw_url = settings.database_url
+
+# FIX: SQLAlchemy 2.0 requires 'postgresql://' not 'postgres://'
+# Supabase and Heroku use 'postgres://' which is deprecated
+if _raw_url and _raw_url.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = _raw_url.replace("postgres://", "postgresql://", 1)
+    logging.info("🔧 Fixed database URL: postgres:// -> postgresql://")
+else:
+    SQLALCHEMY_DATABASE_URL = _raw_url
 
 # Detect database type
 is_supabase = any([

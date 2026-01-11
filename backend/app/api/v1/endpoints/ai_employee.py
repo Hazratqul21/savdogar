@@ -136,7 +136,7 @@ async def generate_employee_insights(
 
         prompt = f"""
     Xodim tahlili: {employee.full_name or employee.username}
-    Lavozimi: {employee.role.value}
+    Lavozimi: {employee.role}
     
     Ma'lumotlar (Oylik - {current_month.strftime('%Y-%m')}):
     - Savdo: {combined_data['total_sales']:,.0f} so'm

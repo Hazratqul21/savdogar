@@ -87,7 +87,7 @@ async def get_team_members(
             email=member.email,
             full_name=member.full_name,
             phone_number=member.phone_number,
-            role=member.role.value if member.role else "cashier",
+            role=member.role if member.role else "cashier",  # role is now a string
             role_label=get_role_label(member.role) if member.role else "Kassir",
             is_active=member.is_active,
             created_at=member.created_at if hasattr(member, 'created_at') else None
@@ -167,7 +167,7 @@ async def create_team_member(
         email=new_user.email,
         full_name=new_user.full_name,
         phone_number=new_user.phone_number,
-        role=new_user.role.value,
+        role=new_user.role,  # role is now a string
         role_label=get_role_label(new_user.role),
         is_active=new_user.is_active,
         created_at=None
@@ -232,7 +232,7 @@ async def update_team_member(
         email=member.email,
         full_name=member.full_name,
         phone_number=member.phone_number,
-        role=member.role.value,
+        role=member.role,  # role is now a string
         role_label=get_role_label(member.role),
         is_active=member.is_active,
         created_at=None

@@ -52,7 +52,7 @@ async def get_my_profile(
             "username": current_user.username,
             "email": current_user.email,
             "full_name": current_user.full_name,
-            "role": current_user.role.value if current_user.role else None,
+            "role": current_user.role if current_user.role else None,  # role is now a string
             "role_label": get_role_label(current_user.role) if current_user.role else None,
             "permissions": get_role_permissions(current_user.role) if current_user.role else [],
             "user_settings": current_user.user_settings or {}
@@ -60,7 +60,7 @@ async def get_my_profile(
         "tenant": {
             "id": tenant.id if tenant else None,
             "name": tenant.name if tenant else None,
-            "business_type": tenant.business_type.value if tenant and tenant.business_type else None,
+            "business_type": tenant.business_type if tenant and tenant.business_type else None,  # business_type is now a string
             "base_currency": tenant.base_currency if tenant else "UZS",
             "usd_to_uzs_rate": tenant.usd_to_uzs_rate if tenant else 12800.0,
             "address": tenant.address if tenant else None,
@@ -139,12 +139,14 @@ async def update_onboarding(
     if update_data.completed is not None:
         tenant.onboarding_completed = update_data.completed
     
-    # Update business type
+    # Update business type (now stored as string, not enum)
     if update_data.business_type is not None:
-        try:
-            tenant.business_type = BusinessType(update_data.business_type.lower())
-        except ValueError:
-            pass  # Keep existing if invalid
+        # Validate against allowed values
+        from app.models.tenant import BusinessType
+        valid_types = [e.value for e in BusinessType]
+        business_type_lower = update_data.business_type.lower()
+        if business_type_lower in valid_types:
+            tenant.business_type = business_type_lower
     
     # Update store info
     if update_data.store_name is not None:
@@ -164,7 +166,7 @@ async def update_onboarding(
         "tenant": {
             "id": tenant.id,
             "name": tenant.name,
-            "business_type": tenant.business_type.value if tenant.business_type else None,
+            "business_type": tenant.business_type if tenant.business_type else None,  # business_type is now a string
             "address": tenant.address,
             "phone": tenant.phone,
         }

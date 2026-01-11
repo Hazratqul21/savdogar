@@ -19,7 +19,8 @@ import {
     Receipt,
     BarChart3,
     UserPlus,
-    Shield
+    Shield,
+    Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,13 @@ const MENU_ITEMS = [
         href: "/dashboard/sales", 
         permission: "reports",
         feature: "sales"
+    },
+    { 
+        icon: Clock, 
+        label: "Smena", 
+        href: "/dashboard/shift", 
+        permission: "pos",
+        feature: "shift"
     },
     { 
         icon: Users, 

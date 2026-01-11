@@ -36,3 +36,6 @@ from .audit_log import AuditLog, AuditSeverity, AuditCategory
 
 # ✅ Inventory Logging (AI Scanner)
 from .inventory_log import InventoryLog
+
+# ✅ Shift Management (Z-Report)
+from .shift import Shift, CashMovement, ShiftStatus

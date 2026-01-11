@@ -76,7 +76,7 @@ def seed_demo_data() -> bool:
         if not tenant_retail:
             tenant_retail = Tenant(
                 name="Makro Market",
-                business_type=BusinessType.RETAIL,
+                business_type="retail",  # Now stored as string
                 base_currency="UZS",
                 usd_to_uzs_rate=12800.0,
                 is_active=True
@@ -93,7 +93,7 @@ def seed_demo_data() -> bool:
                 username="retail_admin",
                 email="retail@demo.com",
                 hashed_password=get_password_hash("123"),
-                role=UserRole.OWNER,
+                role="owner",  # Now stored as string
                 is_active=True,
                 tenant_id=tenant_retail.id,
                 full_name="Retail Admin"
@@ -164,7 +164,7 @@ def seed_demo_data() -> bool:
         if not tenant_horeca:
             tenant_horeca = Tenant(
                 name="Rayhon Milliy",
-                business_type=BusinessType.HORECA,
+                business_type="horeca",  # Now stored as string
                 base_currency="UZS",
                 usd_to_uzs_rate=12800.0,
                 is_active=True
@@ -181,7 +181,7 @@ def seed_demo_data() -> bool:
                 username="horeca_admin",
                 email="horeca@demo.com",
                 hashed_password=get_password_hash("123"),
-                role=UserRole.OWNER,
+                role="owner",  # Now stored as string
                 is_active=True,
                 tenant_id=tenant_horeca.id,
                 full_name="Horeca Admin"
@@ -230,7 +230,7 @@ def seed_demo_data() -> bool:
         if not tenant_plumbing:
             tenant_plumbing = Tenant(
                 name="Master Santexnika",
-                business_type=BusinessType.PLUMBING_HVAC,
+                business_type="plumbing_hvac",  # Now stored as string
                 base_currency="UZS",
                 usd_to_uzs_rate=12800.0,
                 is_active=True
@@ -247,7 +247,7 @@ def seed_demo_data() -> bool:
                 username="plumbing_admin",
                 email="plumbing@demo.com",
                 hashed_password=get_password_hash("123"),
-                role=UserRole.OWNER,
+                role="owner",  # Now stored as string
                 is_active=True,
                 tenant_id=tenant_plumbing.id,
                 full_name="Plumbing Admin"

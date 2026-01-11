@@ -195,11 +195,11 @@ def calculate_cart_total(
         tax_amount += item_tax
         discount_amount += item_discount
     
-    # Adaptive Logic: Horeca Service Charge
+    # Adaptive Logic: Horeca Service Charge (business_type is now a string)
     service_charge = 0.0
-    from app.models.tenant import Tenant, BusinessType
+    from app.models.tenant import Tenant
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    if tenant and tenant.business_type == BusinessType.HORECA:
+    if tenant and tenant.business_type == "horeca":
         service_charge = subtotal * 0.10 # 10% xizmat haqi
         
     total = subtotal + tax_amount + service_charge
@@ -286,8 +286,8 @@ def checkout(
             if not customer:
                 raise HTTPException(status_code=404, detail="Mijoz topilmadi")
         
-        # ✅ Business Logic: Tobacco Age Verification
-        if business_type == BusinessType.TOBACCO:
+        # ✅ Business Logic: Tobacco Age Verification (business_type is now a string)
+        if business_type == "tobacco":
             if business_logic.requires_age_verification(business_type, tenant_config):
                 age_verified = checkout_data.metadata.get("age_verified") if hasattr(checkout_data, 'metadata') else False
                 if not age_verified:
@@ -422,7 +422,7 @@ def checkout(
             if variant.is_serialized:
                 # Stock is managed by serial numbers, not quantity
                 pass
-            elif tenant.business_type in [BusinessType.KITCHEN, BusinessType.CAFE] and product.recipe and "ingredients" in product.recipe:
+            elif tenant.business_type in ["kitchen", "cafe"] and product.recipe and "ingredients" in product.recipe:
                 for ing in product.recipe["ingredients"]:
                      # Deduct ingredient: qty * portions
                      ing_qty = item_detail["quantity"] * ing["qty"]
@@ -444,8 +444,8 @@ def checkout(
                 }
             )
             
-            # ✅ Tobacco: Handle unit conversion if needed
-            if business_type == BusinessType.TOBACCO:
+            # ✅ Tobacco: Handle unit conversion if needed (business_type is now a string)
+            if business_type == "tobacco":
                 unit_sold = checkout_data.metadata.get("unit_sold", "pack") if checkout_data.metadata else "pack"
                 conversion_result = business_logic.apply_tobacco_unit_conversion(
                     db=db,

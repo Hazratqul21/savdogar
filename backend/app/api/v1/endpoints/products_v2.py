@@ -165,6 +165,77 @@ def read_product(
     
     return product
 
+
+@router.delete("/{product_id}")
+def delete_product(
+    *,
+    db: Session = Depends(deps.get_db),
+    product_id: int,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Mahsulotni o'chirish"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    product = db.query(ProductV2).filter(
+        and_(
+            ProductV2.id == product_id,
+            ProductV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Mahsulot topilmadi")
+    
+    # Delete variants first
+    db.query(ProductVariant).filter(ProductVariant.product_id == product_id).delete()
+    
+    # Delete product
+    db.delete(product)
+    db.commit()
+    
+    return {"message": "Mahsulot o'chirildi", "deleted_id": product_id}
+
+
+@router.patch("/{product_id}", response_model=schemas.Product)
+def update_product(
+    *,
+    db: Session = Depends(deps.get_db),
+    product_id: int,
+    product_in: schemas.ProductUpdate,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Mahsulotni yangilash"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    product = db.query(ProductV2).filter(
+        and_(
+            ProductV2.id == product_id,
+            ProductV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Mahsulot topilmadi")
+    
+    # Update fields
+    update_data = product_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(product, field):
+            setattr(product, field, value)
+    
+    db.commit()
+    db.refresh(product)
+    
+    # Load variants
+    product.variants = db.query(ProductVariant).filter(
+        ProductVariant.product_id == product.id
+    ).all()
+    
+    return product
+
+
 @router.post("/variants/{variant_id}/price-tiers", response_model=schemas.PriceTier)
 def create_price_tier(
     *,

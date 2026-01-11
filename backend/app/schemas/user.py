@@ -8,7 +8,7 @@ class UserBase(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = True
-    role: Optional[UserRole] = UserRole.CASHIER
+    role: Optional[UserRole] = None  # Default None - will be set by backend
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
@@ -18,6 +18,7 @@ class UserCreate(UserBase):
     phone_number: Optional[str] = None
     full_name: Optional[str] = None
     business_type: Optional[str] = None  # For automatic tenant creation during signup
+    role: Optional[UserRole] = None  # Signup sets None, backend assigns owner
     
     @field_validator('password')
     @classmethod

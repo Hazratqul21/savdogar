@@ -104,13 +104,9 @@ async def signup(
             logger.info(f"✅ Tenant created automatically: {tenant_name} (ID: {tenant_id}, business_type: {business_type_str})")
         
         # Create new user
-        # Determine role - convert to lowercase string
-        user_role = "owner"  # First user becomes owner
-        if user_in.role:
-            if isinstance(user_in.role, str):
-                user_role = user_in.role.lower()
-            elif hasattr(user_in.role, 'value'):
-                user_role = user_in.role.value
+        # ✅ FIX: First user of a tenant ALWAYS becomes owner
+        # Ignore any role sent from frontend during signup
+        user_role = "owner"  # Signup creates owner, team members get different roles via /team endpoint
         
         user_obj = User(
             username=user_in.username,

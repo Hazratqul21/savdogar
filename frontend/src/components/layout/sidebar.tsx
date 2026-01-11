@@ -104,7 +104,7 @@ const ADMIN_ITEM = {
     label: "Super Admin",
     href: "/admin",
     permission: "*",
-    description: "Barcha tenantlar"
+    feature: "admin"
 };
 
 export function Sidebar() {

@@ -53,7 +53,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    redirect_slashes=False,  # Disable automatic redirect for trailing slashes (Vercel compatibility)
+    redirect_slashes=True,  # Enable automatic redirect for trailing slashes
 )
 
 

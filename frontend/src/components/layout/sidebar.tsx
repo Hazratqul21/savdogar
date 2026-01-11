@@ -146,11 +146,13 @@ export function Sidebar() {
     }, []);
 
     // Filter menu items based on permissions AND business type
-    const excludedFeatures = EXCLUDED_FEATURES[businessType] || [];
+    // Super admin sees ALL menu items regardless of business type
+    const isSuperAdmin = permissions.role === "super_admin";
+    const excludedFeatures = isSuperAdmin ? [] : (EXCLUDED_FEATURES[businessType] || []);
     const visibleMenuItems = MENU_ITEMS.filter(item => {
         // Check permission first
         if (!permissions.hasPermission(item.permission)) return false;
-        // Check if feature is excluded for this business type
+        // Check if feature is excluded for this business type (skip for super_admin)
         if (excludedFeatures.includes(item.feature)) return false;
         return true;
     });

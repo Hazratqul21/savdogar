@@ -92,4 +92,5 @@ class Token(BaseModel):
     token_type: str
 
 class TokenPayload(BaseModel):
-    sub: Optional[int] = None
+    sub: Optional[str] = None  # JWT stores sub as string
+    exp: Optional[int] = None  # Expiration timestamp

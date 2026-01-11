@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from app.api import deps
 from app.models import User
-from app.models.product_v2 import ProductVariant, ProductV2
+from app.models.product_v2 import ProductVariant, ProductV2, ProductType
 from app.models.pricing import PriceTier, PriceTierType
 from app.models.customer_v2 import CustomerV2, CustomerTier
 from app.models.sale_v2 import SaleV2, SaleItemV2, PaymentMethod, SaleStatus

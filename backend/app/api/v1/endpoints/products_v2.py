@@ -121,8 +121,8 @@ def read_products(
             ProductVariant.product_id == product.id
         ).all()
     
-    # Hide cost_price for seller/cashier role
-    is_seller = current_user.role in [UserRole.CASHIER]
+    # Hide cost_price for seller/cashier role (role is now a string)
+    is_seller = current_user.role == "cashier"
     if is_seller:
         for product in products:
             product.cost_price = None
@@ -156,8 +156,8 @@ def read_product(
         ProductVariant.product_id == product.id
     ).all()
     
-    # Hide cost_price for seller/cashier role
-    is_seller = current_user.role in [UserRole.CASHIER]
+    # Hide cost_price for seller/cashier role (role is now a string)
+    is_seller = current_user.role == "cashier"
     if is_seller:
         product.cost_price = None
         for variant in product.variants:

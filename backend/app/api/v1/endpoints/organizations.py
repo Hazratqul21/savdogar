@@ -76,8 +76,8 @@ def read_organization(
     """Get organization by ID."""
     query = db.query(Organization).filter(Organization.id == id)
     
-    # Non-super-admin can only see their own organization
-    if current_user.role != UserRole.SUPER_ADMIN:
+    # Non-super-admin can only see their own organization (role is now a string)
+    if current_user.role != "super_admin":
         if current_user.organization_id != id:
             raise HTTPException(status_code=403, detail="Not authorized to view this organization")
         query = query.filter(Organization.is_active == True)
@@ -98,8 +98,8 @@ def update_organization(
     """Update organization."""
     query = db.query(Organization).filter(Organization.id == id)
     
-    # Non-super-admin can only update their own organization
-    if current_user.role != UserRole.SUPER_ADMIN:
+    # Non-super-admin can only update their own organization (role is now a string)
+    if current_user.role != "super_admin":
         if current_user.organization_id != id:
             raise HTTPException(status_code=403, detail="Not authorized to update this organization")
         query = query.filter(Organization.is_active == True)

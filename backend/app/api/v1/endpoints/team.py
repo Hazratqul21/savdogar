@@ -135,14 +135,14 @@ async def create_team_member(
         if existing_email:
             raise HTTPException(status_code=400, detail="Bu email band")
     
-    # Parse role
-    try:
-        role = UserRole(member_data.role.lower())
-    except ValueError:
-        role = UserRole.CASHIER
+    # Parse role (role is now a string)
+    role_str = member_data.role.lower() if member_data.role else "cashier"
+    valid_roles = ["manager", "cashier", "warehouse_manager"]
+    if role_str not in valid_roles:
+        role_str = "cashier"
     
     # Don't allow creating super_admin or owner
-    if role in [UserRole.SUPER_ADMIN, UserRole.OWNER]:
+    if role_str in ["super_admin", "owner"]:
         raise HTTPException(status_code=400, detail="Bu rolni berish mumkin emas")
     
     # Create user
@@ -152,7 +152,7 @@ async def create_team_member(
         hashed_password=get_password_hash(member_data.password),
         full_name=member_data.full_name,
         phone_number=member_data.phone_number,
-        role=role,
+        role=role_str,  # Store as string
         tenant_id=current_user.tenant_id,
         is_active=True
     )
@@ -214,14 +214,13 @@ async def update_team_member(
     if update_data.is_active is not None:
         member.is_active = update_data.is_active
     
-    # Update role
+    # Update role (role is now a string)
     if update_data.role is not None:
-        try:
-            new_role = UserRole(update_data.role.lower())
-            if new_role not in [UserRole.SUPER_ADMIN, UserRole.OWNER]:
-                member.role = new_role
-        except ValueError:
-            pass  # Keep existing role
+        new_role = update_data.role.lower()
+        valid_roles = ["manager", "cashier", "warehouse_manager"]
+        if new_role in valid_roles:
+            member.role = new_role
+        # Don't allow changing to super_admin or owner
     
     db.commit()
     db.refresh(member)
@@ -283,12 +282,14 @@ async def get_available_roles(
     Mavjud rollar va ularning ruxsatlari.
     Onboarding wizard uchun.
     """
+    # Role is now a string
+    available_roles = ["manager", "cashier", "warehouse_manager"]
     roles = []
-    for role in [UserRole.MANAGER, UserRole.CASHIER, UserRole.WAREHOUSE_MANAGER]:
+    for role_str in available_roles:
         roles.append({
-            "value": role.value,
-            "label": get_role_label(role),
-            "permissions": get_role_permissions(role)
+            "value": role_str,
+            "label": get_role_label(role_str),
+            "permissions": get_role_permissions(role_str)
         })
     
     return {"roles": roles}

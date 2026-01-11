@@ -55,10 +55,11 @@ def read_employees(
     """
     Retrieve employees. Only for Owner/Manager.
     """
-    if current_user.role not in [UserRole.OWNER, UserRole.MANAGER, UserRole.SUPER_ADMIN]:
+    # Role is now a string
+    if current_user.role not in ["owner", "manager", "super_admin"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
-    employees = db.query(User).filter(User.role != UserRole.SUPER_ADMIN).offset(skip).limit(limit).all()
+    employees = db.query(User).filter(User.role != "super_admin").offset(skip).limit(limit).all()
     return employees
 
 @router.post("/", response_model=EmployeeResponse)
@@ -70,7 +71,8 @@ def create_employee(
     """
     Create new employee. Only for Owner.
     """
-    if current_user.role not in [UserRole.OWNER, UserRole.SUPER_ADMIN]:
+    # Role is now a string
+    if current_user.role not in ["owner", "super_admin"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     user = db.query(User).filter(User.username == employee_in.username).first()
@@ -111,7 +113,8 @@ def read_employee(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    if current_user.role not in [UserRole.OWNER, UserRole.MANAGER, UserRole.SUPER_ADMIN] and current_user.id != employee_id:
+    # Role is now a string
+    if current_user.role not in ["owner", "manager", "super_admin"] and current_user.id != employee_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     return user
@@ -130,7 +133,8 @@ def update_employee(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    if current_user.role not in [UserRole.OWNER, UserRole.SUPER_ADMIN] and current_user.id != employee_id:
+    # Role is now a string
+    if current_user.role not in ["owner", "super_admin"] and current_user.id != employee_id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
         
     update_data = employee_in.dict(exclude_unset=True)

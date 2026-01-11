@@ -112,8 +112,8 @@ async def generate_employee_insights(
     
     Fetches real sales and attendance data from database.
     """
-    # Permission check
-    if current_user.role not in [UserRole.OWNER, UserRole.SUPER_ADMIN]:
+    # Permission check (role is now a string)
+    if current_user.role not in ["owner", "super_admin"]:
         raise handle_permission_error("Bu funksiyani faqat egasi yoki super admin ishlata oladi")
 
     # Get employee
@@ -210,8 +210,8 @@ def get_employee_insights(
     
     Employees can view their own insights, owners can view any employee's insights.
     """
-    # Permission check: employee can view own, owner can view any
-    if current_user.role not in [UserRole.OWNER, UserRole.SUPER_ADMIN] and current_user.id != employee_id:
+    # Permission check: employee can view own, owner can view any (role is now a string)
+    if current_user.role not in ["owner", "super_admin"] and current_user.id != employee_id:
         raise handle_permission_error("Siz faqat o'z tahlilingizni ko'rishingiz mumkin")
     
     # Check if employee exists

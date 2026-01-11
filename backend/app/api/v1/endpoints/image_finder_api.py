@@ -17,7 +17,8 @@ def find_and_set_image(
     """
     Mahsulot uchun internetdan rasm topish va saqlash
     """
-    if current_user.role not in [UserRole.OWNER, UserRole.MANAGER, UserRole.SUPER_ADMIN]:
+    # Role is now a string
+    if current_user.role not in ["owner", "manager", "super_admin"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     product = db.query(Product).filter(Product.id == product_id).first()

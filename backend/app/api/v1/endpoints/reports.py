@@ -30,8 +30,8 @@ def get_sales_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get sales report for date range."""
-    # Restrict access for seller/cashier role
-    if current_user.role in [UserRole.CASHIER]:
+    # Restrict access for seller/cashier role (role is now a string)
+    if current_user.role == "cashier":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Sellers cannot view sales reports."
@@ -69,8 +69,8 @@ def get_inventory_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get inventory report."""
-    # Restrict access for seller/cashier role
-    if current_user.role in [UserRole.CASHIER]:
+    # Restrict access for seller/cashier role (role is now a string)
+    if current_user.role == "cashier":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Sellers cannot view inventory reports."
@@ -98,8 +98,8 @@ def get_profit_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Get profit report."""
-    # Restrict access for seller/cashier role - they cannot see profit/cost data
-    if current_user.role in [UserRole.CASHIER]:
+    # Restrict access for seller/cashier role - they cannot see profit/cost data (role is now a string)
+    if current_user.role == "cashier":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. Sellers cannot view profit reports."

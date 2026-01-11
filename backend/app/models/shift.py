@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 import enum
 
-from app.db.base_class import Base
+from app.core.database import Base
 
 
 class ShiftStatus(str, enum.Enum):

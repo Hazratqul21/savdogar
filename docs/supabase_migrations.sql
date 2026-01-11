@@ -3,6 +3,7 @@
 -- ===========================================
 -- Run this SQL in Supabase SQL Editor
 -- Created: 2025-01-11
+-- Backend handles tenant isolation via tenant_id
 
 -- ===========================================
 -- 1. SHIFTS TABLE (Smena/Z-Report)
@@ -63,21 +64,6 @@ CREATE INDEX IF NOT EXISTS idx_shifts_cashier ON shifts(cashier_id);
 CREATE INDEX IF NOT EXISTS idx_shifts_status ON shifts(status);
 CREATE INDEX IF NOT EXISTS idx_shifts_opened_at ON shifts(opened_at);
 
--- RLS
-ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own tenant shifts"
-ON shifts FOR SELECT
-USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()::integer));
-
-CREATE POLICY "Users can insert own tenant shifts"
-ON shifts FOR INSERT
-WITH CHECK (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()::integer));
-
-CREATE POLICY "Users can update own tenant shifts"
-ON shifts FOR UPDATE
-USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()::integer));
-
 -- ===========================================
 -- 2. CASH MOVEMENTS TABLE
 -- ===========================================
@@ -87,7 +73,7 @@ CREATE TABLE IF NOT EXISTS cash_movements (
     shift_id INTEGER NOT NULL REFERENCES shifts(id) ON DELETE CASCADE,
     
     -- Movement type
-    movement_type VARCHAR(20) NOT NULL, -- 'in' or 'out'
+    movement_type VARCHAR(20) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     
     -- Reason
@@ -102,13 +88,6 @@ CREATE TABLE IF NOT EXISTS cash_movements (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_cash_movements_shift ON cash_movements(shift_id);
 CREATE INDEX IF NOT EXISTS idx_cash_movements_tenant ON cash_movements(tenant_id);
-
--- RLS
-ALTER TABLE cash_movements ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own tenant cash movements"
-ON cash_movements FOR ALL
-USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()::integer));
 
 -- ===========================================
 -- 3. MODIFIER GROUPS TABLE (Cafe)
@@ -141,13 +120,6 @@ CREATE TABLE IF NOT EXISTS modifier_groups (
 CREATE INDEX IF NOT EXISTS idx_modifier_groups_tenant ON modifier_groups(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_modifier_groups_active ON modifier_groups(is_active);
 
--- RLS
-ALTER TABLE modifier_groups ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own tenant modifier groups"
-ON modifier_groups FOR ALL
-USING (tenant_id IN (SELECT tenant_id FROM users WHERE id = auth.uid()::integer));
-
 -- ===========================================
 -- 4. MODIFIER OPTIONS TABLE
 -- ===========================================
@@ -178,17 +150,6 @@ CREATE TABLE IF NOT EXISTS modifier_options (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_modifier_options_group ON modifier_options(group_id);
 
--- RLS (inherits from group's tenant)
-ALTER TABLE modifier_options ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage modifier options via groups"
-ON modifier_options FOR ALL
-USING (group_id IN (
-    SELECT id FROM modifier_groups WHERE tenant_id IN (
-        SELECT tenant_id FROM users WHERE id = auth.uid()::integer
-    )
-));
-
 -- ===========================================
 -- 5. PRODUCT MODIFIERS TABLE (Link)
 -- ===========================================
@@ -210,17 +171,6 @@ CREATE TABLE IF NOT EXISTS product_modifiers (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_product_modifiers_product ON product_modifiers(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_modifiers_group ON product_modifiers(modifier_group_id);
-
--- RLS
-ALTER TABLE product_modifiers ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage product modifiers"
-ON product_modifiers FOR ALL
-USING (product_id IN (
-    SELECT id FROM products_v2 WHERE tenant_id IN (
-        SELECT tenant_id FROM users WHERE id = auth.uid()::integer
-    )
-));
 
 -- ===========================================
 -- 6. ADD EXPIRY DATE TO PRODUCT VARIANTS
@@ -244,8 +194,23 @@ GRANT ALL ON product_modifiers TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
 -- ===========================================
+-- 8. SIMPLE RLS (Backend handles tenant filtering)
+-- ===========================================
+ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cash_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modifier_groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modifier_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_modifiers ENABLE ROW LEVEL SECURITY;
+
+-- Allow all authenticated users (backend filters by tenant_id)
+CREATE POLICY "allow_authenticated_shifts" ON shifts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_authenticated_cash_movements" ON cash_movements FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_authenticated_modifier_groups" ON modifier_groups FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_authenticated_modifier_options" ON modifier_options FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "allow_authenticated_product_modifiers" ON product_modifiers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ===========================================
 -- DONE!
 -- ===========================================
--- Run this SQL in Supabase SQL Editor
--- After running, verify tables are created:
+-- Verify tables:
 -- SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';

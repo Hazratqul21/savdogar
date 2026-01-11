@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, Boolean, Enum, Index
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, Boolean, Enum, Index, Date
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
 import uuid
+from datetime import date
 
 class ProductType(str, enum.Enum):
     """Mahsulot turlari"""
@@ -100,6 +101,10 @@ class ProductVariant(Base):
     # ✅ PART 2: Serialized Inventory Support
     requires_serial_number = Column(Boolean, default=False, index=True)  # Serial number kerekmi? (Boilers uchun)
     is_serialized = Column(Boolean, default=False, index=True)  # Serial number bilan kuzatiladimi?
+    
+    # ✅ Expiry Date Tracking (Oziq-ovqat uchun)
+    expiry_date = Column(Date, nullable=True, index=True)  # Yaroqlilik muddati
+    batch_number = Column(String, nullable=True)  # Partiya raqami
     
     # Attributes (JSONB) - Bu muhim!
     # Fashion: {"size": "XL", "color": "Red", "fabric": "Cotton", "material_code": "COT-001"}

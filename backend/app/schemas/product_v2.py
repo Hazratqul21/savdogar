@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator
-from datetime import datetime
+from datetime import datetime, date
 from app.models.product_v2 import ProductType
 from app.models.pricing import PriceTierType
 
@@ -50,6 +50,10 @@ class ProductVariantCreate(BaseModel):
     unit_conversion_factor: Optional[float] = Field(None, description="Conversion factor between units")
     requires_serial_number: Optional[bool] = Field(False, description="Requires serial number tracking (boilers, equipment)")
     is_serialized: Optional[bool] = Field(False, description="Is serialized inventory")
+    
+    # ✅ Expiry Date Tracking
+    expiry_date: Optional[date] = Field(None, description="Yaroqlilik muddati")
+    batch_number: Optional[str] = Field(None, description="Partiya raqami")
 
 class ProductVariantUpdate(BaseModel):
     """Variant yangilash"""
@@ -80,6 +84,10 @@ class ProductVariant(BaseModel):
     unit_conversion_factor: Optional[float] = None
     requires_serial_number: Optional[bool] = False
     is_serialized: Optional[bool] = False
+    
+    # ✅ Expiry Date Tracking
+    expiry_date: Optional[date] = None
+    batch_number: Optional[str] = None
     
     class Config:
         from_attributes = True

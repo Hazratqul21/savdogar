@@ -275,6 +275,70 @@ def create_price_tier(
     return tier_obj
 
 
+@router.get("/expiring")
+def get_expiring_products(
+    db: Session = Depends(deps.get_db),
+    days: int = 7,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Muddati yaqinlashayotgan mahsulotlarni olish.
+    days - necha kun ichida muddati tugaydigan mahsulotlar
+    """
+    from datetime import date, timedelta
+    
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    # Bugungi sana va limit sana
+    today = date.today()
+    limit_date = today + timedelta(days=days)
+    
+    # Muddati tugagan va yaqinlashayotgan variantlarni olish
+    expiring_variants = db.query(ProductVariant).filter(
+        and_(
+            ProductVariant.tenant_id == current_user.tenant_id,
+            ProductVariant.expiry_date != None,
+            ProductVariant.expiry_date <= limit_date,
+            ProductVariant.is_active == True,
+            ProductVariant.stock_quantity > 0  # Faqat omborida bor bo'lganlar
+        )
+    ).order_by(ProductVariant.expiry_date.asc()).all()
+    
+    result = []
+    for variant in expiring_variants:
+        product = db.query(ProductV2).filter(ProductV2.id == variant.product_id).first()
+        days_until_expiry = (variant.expiry_date - today).days
+        
+        result.append({
+            "variant_id": variant.id,
+            "product_id": variant.product_id,
+            "product_name": product.name if product else "Noma'lum",
+            "sku": variant.sku,
+            "stock_quantity": variant.stock_quantity,
+            "expiry_date": variant.expiry_date.isoformat(),
+            "days_until_expiry": days_until_expiry,
+            "batch_number": variant.batch_number,
+            "status": "expired" if days_until_expiry < 0 else "expiring_soon",
+            "price": variant.price,
+            "cost_price": variant.cost_price,
+            "potential_loss": variant.stock_quantity * variant.cost_price if days_until_expiry < 0 else 0
+        })
+    
+    # Summary
+    expired_count = len([r for r in result if r["status"] == "expired"])
+    expiring_count = len([r for r in result if r["status"] == "expiring_soon"])
+    total_potential_loss = sum(r["potential_loss"] for r in result)
+    
+    return {
+        "summary": {
+            "expired_count": expired_count,
+            "expiring_soon_count": expiring_count,
+            "total_items": len(result),
+            "total_potential_loss": total_potential_loss
+        },
+        "items": result
+    }
 
 
 

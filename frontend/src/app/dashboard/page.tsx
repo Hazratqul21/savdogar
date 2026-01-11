@@ -14,7 +14,9 @@ import {
     ArrowRight,
     Loader2,
     DollarSign,
-    Receipt
+    Receipt,
+    AlertTriangle,
+    Clock
 } from "lucide-react";
 import Link from "next/link";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -39,6 +41,17 @@ async function getRecentSales() {
     });
     if (!response.ok) {
         return [];
+    }
+    return response.json();
+}
+
+async function getExpiringProducts() {
+    const apiUrl = getApiBaseUrl();
+    const response = await fetch(`${apiUrl}/api/v1/v2/products/expiring?days=7`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        return { summary: { expired_count: 0, expiring_soon_count: 0, total_items: 0 }, items: [] };
     }
     return response.json();
 }
@@ -86,6 +99,14 @@ export default function DashboardPage() {
         queryKey: ["recent-sales"],
         queryFn: getRecentSales,
         retry: 1,
+    });
+
+    // Fetch expiring products (only for retail/grocery business types)
+    const { data: expiringData } = useQuery({
+        queryKey: ["expiring-products"],
+        queryFn: getExpiringProducts,
+        retry: 1,
+        enabled: businessType === "retail" || businessType === "grocery",
     });
 
     useEffect(() => {
@@ -190,6 +211,50 @@ export default function DashboardPage() {
                         iconColor="text-red-600"
                         alert={stats?.low_stock_products > 0}
                     />
+                </div>
+            )}
+
+            {/* Expiry Alert - Only for retail/grocery */}
+            {(businessType === "retail" || businessType === "grocery") && expiringData?.summary?.total_items > 0 && (
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold text-orange-800">Muddati yaqinlashayotgan mahsulotlar</h3>
+                            <p className="text-sm text-orange-700 mt-1">
+                                {expiringData.summary.expired_count > 0 && (
+                                    <span className="font-bold text-red-600">{expiringData.summary.expired_count} ta muddati o'tgan, </span>
+                                )}
+                                {expiringData.summary.expiring_soon_count} ta mahsulot 7 kun ichida eskiradi
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {expiringData.items.slice(0, 3).map((item: any) => (
+                                    <span 
+                                        key={item.variant_id}
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                            item.status === "expired" 
+                                                ? "bg-red-100 text-red-700" 
+                                                : "bg-orange-100 text-orange-700"
+                                        }`}
+                                    >
+                                        <Clock className="w-3 h-3" />
+                                        {item.product_name} - {item.days_until_expiry < 0 ? "Muddati o'tgan" : `${item.days_until_expiry} kun`}
+                                    </span>
+                                ))}
+                                {expiringData.items.length > 3 && (
+                                    <Link 
+                                        href="/dashboard/inventory?tab=expiring"
+                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    >
+                                        +{expiringData.items.length - 3} ta ko'proq
+                                        <ArrowRight className="w-3 h-3" />
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

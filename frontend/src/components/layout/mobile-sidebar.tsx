@@ -21,17 +21,25 @@ import {
   Shield,
 } from "lucide-react";
 
+// Business types that DON'T need certain features
+const EXCLUDED_FEATURES: Record<string, string[]> = {
+  // Qahvaxona: ombor, mijozlar bazasi, jamoa kerak emas
+  cafe: ["inventory", "customers", "team"],
+  // Oshxona: ombor, mijozlar kerak emas
+  kitchen: ["inventory", "customers"],
+};
+
 // Menu items with permission requirements (same as sidebar)
 const MENU_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "dashboard" },
-  { icon: ShoppingCart, label: "POS Terminali", href: "/pos", permission: "pos" },
-  { icon: Package, label: "Mahsulotlar", href: "/dashboard/products", permission: "products" },
-  { icon: Warehouse, label: "Ombor", href: "/dashboard/inventory", permission: "inventory" },
-  { icon: Receipt, label: "Sotuvlar", href: "/dashboard/sales", permission: "reports" },
-  { icon: Users, label: "Mijozlar", href: "/dashboard/customers", permission: "customers" },
-  { icon: BarChart3, label: "Hisobotlar", href: "/dashboard/reports", permission: "reports" },
-  { icon: UserPlus, label: "Jamoa", href: "/dashboard/team", permission: "team" },
-  { icon: Settings, label: "Sozlamalar", href: "/dashboard/settings", permission: "settings" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "dashboard", feature: "dashboard" },
+  { icon: ShoppingCart, label: "POS Terminali", href: "/pos", permission: "pos", feature: "pos" },
+  { icon: Package, label: "Mahsulotlar", href: "/dashboard/products", permission: "products", feature: "products" },
+  { icon: Warehouse, label: "Ombor", href: "/dashboard/inventory", permission: "inventory", feature: "inventory" },
+  { icon: Receipt, label: "Sotuvlar", href: "/dashboard/sales", permission: "reports", feature: "sales" },
+  { icon: Users, label: "Mijozlar", href: "/dashboard/customers", permission: "customers", feature: "customers" },
+  { icon: BarChart3, label: "Hisobotlar", href: "/dashboard/reports", permission: "reports", feature: "reports" },
+  { icon: UserPlus, label: "Jamoa", href: "/dashboard/team", permission: "team", feature: "team" },
+  { icon: Settings, label: "Sozlamalar", href: "/dashboard/settings", permission: "settings", feature: "settings" },
 ];
 
 /**
@@ -41,17 +49,29 @@ const MENU_ITEMS = [
 export function MobileSidebar() {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<any>({});
+  const [businessType, setBusinessType] = useState<string>("retail");
   const pathname = usePathname();
   const router = useRouter();
   const permissions = usePermissions();
 
-  // Fetch user profile
+  // Fetch user profile and business type
   useEffect(() => {
+    // Get business type from localStorage
+    const storedBusinessType = localStorage.getItem("business_type");
+    if (storedBusinessType) {
+      setBusinessType(storedBusinessType);
+    }
+
     const fetchProfile = async () => {
       try {
         const { getSettings } = await import("@/lib/api");
         const data = await getSettings();
         setProfile(data.user || {});
+        // Also update business type from API
+        if (data.tenant?.business_type) {
+          setBusinessType(data.tenant.business_type);
+          localStorage.setItem("business_type", data.tenant.business_type);
+        }
       } catch (e) {
         console.error("Failed to fetch profile:", e);
       }
@@ -59,9 +79,14 @@ export function MobileSidebar() {
     fetchProfile();
   }, []);
 
-  // Filter menu items based on permissions
+  // Filter menu items based on permissions AND business type
+  const excludedFeatures = EXCLUDED_FEATURES[businessType] || [];
   const visibleMenuItems = MENU_ITEMS.filter(item => {
-    return permissions.hasPermission(item.permission);
+    // Check permission first
+    if (!permissions.hasPermission(item.permission)) return false;
+    // Check if feature is excluded for this business type
+    if (excludedFeatures.includes(item.feature)) return false;
+    return true;
   });
 
   // Add super admin link if user is super_admin
@@ -70,7 +95,8 @@ export function MobileSidebar() {
       icon: Shield,
       label: "Super Admin",
       href: "/admin",
-      permission: "*"
+      permission: "*",
+      feature: "admin"
     });
   }
 

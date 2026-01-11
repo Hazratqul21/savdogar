@@ -23,6 +23,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Business types that DON'T need certain features
+const EXCLUDED_FEATURES: Record<string, string[]> = {
+    // Qahvaxona: ombor, mijozlar bazasi, jamoa kerak emas
+    cafe: ["inventory", "customers", "team"],
+    // Oshxona: ombor, mijozlar kerak emas
+    kitchen: ["inventory", "customers"],
+};
+
 // Menu items with permission requirements
 const MENU_ITEMS = [
     { 
@@ -30,63 +38,63 @@ const MENU_ITEMS = [
         label: "Dashboard", 
         href: "/dashboard", 
         permission: "dashboard",
-        description: "Statistika va tahlillar"
+        feature: "dashboard"
     },
     { 
         icon: ShoppingCart, 
         label: "POS Terminali", 
         href: "/pos", 
         permission: "pos",
-        description: "Sotuv qilish"
+        feature: "pos"
     },
     { 
         icon: Package, 
         label: "Mahsulotlar", 
         href: "/dashboard/products", 
         permission: "products",
-        description: "Mahsulotlarni boshqarish"
+        feature: "products"
     },
     { 
         icon: Warehouse, 
         label: "Ombor", 
         href: "/dashboard/inventory", 
         permission: "inventory",
-        description: "Ombor qoldiqlari"
+        feature: "inventory"
     },
     { 
         icon: Receipt, 
         label: "Sotuvlar", 
         href: "/dashboard/sales", 
         permission: "reports",
-        description: "Sotuvlar tarixi"
+        feature: "sales"
     },
     { 
         icon: Users, 
         label: "Mijozlar", 
         href: "/dashboard/customers", 
         permission: "customers",
-        description: "Mijozlar bazasi"
+        feature: "customers"
     },
     { 
         icon: BarChart3, 
         label: "Hisobotlar", 
         href: "/dashboard/reports", 
         permission: "reports",
-        description: "Savdo va moliya hisobotlari"
+        feature: "reports"
     },
     { 
         icon: UserPlus, 
         label: "Jamoa", 
         href: "/dashboard/team", 
         permission: "team",
-        description: "Xodimlarni boshqarish"
+        feature: "team"
     },
     { 
         icon: Settings, 
         label: "Sozlamalar", 
         href: "/dashboard/settings", 
         permission: "settings",
-        description: "Tizim sozlamalari"
+        feature: "settings"
     },
 ];
 
@@ -102,6 +110,7 @@ const ADMIN_ITEM = {
 export function Sidebar() {
     const [collapsed, setCollapsed] = useState(true);
     const [profile, setProfile] = useState<any>({});
+    const [businessType, setBusinessType] = useState<string>("retail");
     const pathname = usePathname();
     const router = useRouter();
     const permissions = usePermissions();
@@ -112,12 +121,23 @@ export function Sidebar() {
             setCollapsed(false);
         }
 
+        // Get business type from localStorage
+        const storedBusinessType = localStorage.getItem("business_type");
+        if (storedBusinessType) {
+            setBusinessType(storedBusinessType);
+        }
+
         // Fetch profile
         const fetchProfile = async () => {
             try {
                 const { getSettings } = await import("@/lib/api");
                 const data = await getSettings();
                 setProfile(data.user || {});
+                // Also update business type from API
+                if (data.tenant?.business_type) {
+                    setBusinessType(data.tenant.business_type);
+                    localStorage.setItem("business_type", data.tenant.business_type);
+                }
             } catch (e) {
                 console.error("Failed to fetch profile:", e);
             }
@@ -125,9 +145,14 @@ export function Sidebar() {
         fetchProfile();
     }, []);
 
-    // Filter menu items based on permissions
+    // Filter menu items based on permissions AND business type
+    const excludedFeatures = EXCLUDED_FEATURES[businessType] || [];
     const visibleMenuItems = MENU_ITEMS.filter(item => {
-        return permissions.hasPermission(item.permission);
+        // Check permission first
+        if (!permissions.hasPermission(item.permission)) return false;
+        // Check if feature is excluded for this business type
+        if (excludedFeatures.includes(item.feature)) return false;
+        return true;
     });
 
     // Add super admin link if user is super_admin

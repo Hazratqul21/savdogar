@@ -1,10 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signup, login, saveToken } from "@/lib/api";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Check, X } from "lucide-react";
+
+// Password strength calculator
+function calculatePasswordStrength(password: string): {
+  score: number;
+  label: string;
+  color: string;
+  bgColor: string;
+  requirements: { met: boolean; text: string }[];
+} {
+  const requirements = [
+    { met: password.length >= 8, text: "Kamida 8 ta belgi" },
+    { met: /[A-Z]/.test(password), text: "Katta harf (A-Z)" },
+    { met: /[a-z]/.test(password), text: "Kichik harf (a-z)" },
+    { met: /[0-9]/.test(password), text: "Raqam (0-9)" },
+    { met: /[!@#$%^&*(),.?":{}|<>]/.test(password), text: "Maxsus belgi (!@#$%)" },
+  ];
+
+  const metCount = requirements.filter((r) => r.met).length;
+
+  if (password.length === 0) {
+    return { score: 0, label: "", color: "", bgColor: "bg-gray-200", requirements };
+  }
+
+  if (metCount <= 1) {
+    return { score: 1, label: "Juda zaif", color: "text-red-600", bgColor: "bg-red-500", requirements };
+  }
+
+  if (metCount === 2) {
+    return { score: 2, label: "Zaif", color: "text-orange-500", bgColor: "bg-orange-500", requirements };
+  }
+
+  if (metCount === 3) {
+    return { score: 3, label: "O'rtacha", color: "text-yellow-500", bgColor: "bg-yellow-500", requirements };
+  }
+
+  if (metCount === 4) {
+    return { score: 4, label: "Kuchli", color: "text-green-500", bgColor: "bg-green-500", requirements };
+  }
+
+  return { score: 5, label: "Juda kuchli", color: "text-green-600", bgColor: "bg-green-600", requirements };
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,10 +59,27 @@ export default function SignupPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Calculate password strength
+  const passwordStrength = useMemo(
+    () => calculatePasswordStrength(formData.password),
+    [formData.password]
+  );
+
+  // Check if password meets minimum requirements (first 4)
+  const passwordValid = passwordStrength.requirements.slice(0, 4).every((r) => r.met);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate password before submitting
+    if (!passwordValid) {
+      setError("Parol talablarga javob bermayapti. Iltimos, kuchli parol yarating.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -134,22 +192,73 @@ export default function SignupPage() {
               />
             </div>
 
+            {/* Password field with visibility toggle and strength indicator */}
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Parol Yarating</label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={6}
-                className="w-full px-4 py-3 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 pr-12 rounded-lg bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                  placeholder="••••••••"
+                />
+                {/* Eye icon to toggle password visibility */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* Password strength indicator */}
+              {formData.password.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  {/* Strength bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-gray-500">Parol kuchliligi:</span>
+                      <span className={`text-xs font-bold ${passwordStrength.color}`}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${passwordStrength.bgColor}`}
+                        style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {passwordStrength.requirements.slice(0, 4).map((req, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-1.5 text-xs ${
+                          req.met ? "text-green-600" : "text-gray-400"
+                        }`}
+                      >
+                        {req.met ? (
+                          <Check size={14} className="text-green-500" />
+                        ) : (
+                          <X size={14} className="text-gray-300" />
+                        )}
+                        <span>{req.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !passwordValid}
               className="w-full py-4 rounded-lg bg-blue-600 text-white font-semibold text-lg hover:bg-blue-700 transition-colors md:col-span-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "TAYYORLANMOQDA..." : "HISOB YARATISH"}

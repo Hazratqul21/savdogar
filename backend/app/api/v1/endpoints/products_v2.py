@@ -22,15 +22,17 @@ def create_product(
     Yangi mahsulot yaratish
     Agar type = VARIABLE bo'lsa, variantlar avtomatik yaratiladi
     """
-    if not current_user.tenant_id:
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
         raise HTTPException(
             status_code=400,
-            detail="Foydalanuvchi tenant ga bog'lanmagan"
+            detail="Foydalanuvchi tenant yoki organizatsiyaga bog'lanmagan"
         )
     
     # Product yaratish
     product_obj = ProductV2(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         name=product_in.name,
         description=product_in.description,
         category_id=product_in.category_id,
@@ -53,7 +55,7 @@ def create_product(
         for variant_data in product_in.variants:
             variant_obj = ProductVariant(
                 product_id=product_obj.id,
-                tenant_id=current_user.tenant_id,
+                tenant_id=tenant_id,
                 sku=variant_data.sku,
                 price=variant_data.price or product_in.base_price,
                 cost_price=variant_data.cost_price or product_in.cost_price or product_in.base_price,
@@ -75,7 +77,7 @@ def create_product(
         # Simple product uchun bitta variant yaratish
         variant_obj = ProductVariant(
             product_id=product_obj.id,
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             sku=f"{product_in.name.upper().replace(' ', '-')}-001",
             price=product_in.base_price,
             cost_price=product_in.cost_price or product_in.base_price,
@@ -108,11 +110,13 @@ def read_products(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotlarni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     products = db.query(ProductV2).filter(
-        ProductV2.tenant_id == current_user.tenant_id
+        ProductV2.tenant_id == tenant_id
     ).offset(skip).limit(limit).all()
     
     # Variantlarni yuklash
@@ -139,13 +143,15 @@ def read_product(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Bitta mahsulotni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -174,13 +180,15 @@ def delete_product(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotni o'chirish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -206,13 +214,15 @@ def update_product(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotni yangilash"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -245,14 +255,16 @@ def create_price_tier(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Narx darajasi yaratish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Variantni tekshirish
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     
@@ -261,7 +273,7 @@ def create_price_tier(
     
     tier_obj = PriceTier(
         variant_id=variant_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         tier_type=tier_in.tier_type,
         min_quantity=tier_in.min_quantity,
         max_quantity=tier_in.max_quantity,
@@ -287,8 +299,10 @@ def get_expiring_products(
     """
     from datetime import date, timedelta
     
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Bugungi sana va limit sana
     today = date.today()
@@ -297,7 +311,7 @@ def get_expiring_products(
     # Muddati tugagan va yaqinlashayotgan variantlarni olish
     expiring_variants = db.query(ProductVariant).filter(
         and_(
-            ProductVariant.tenant_id == current_user.tenant_id,
+            ProductVariant.tenant_id == tenant_id,
             ProductVariant.expiry_date != None,
             ProductVariant.expiry_date <= limit_date,
             ProductVariant.is_active == True,
@@ -350,13 +364,15 @@ def get_low_stock_products(
     Kam qolgan mahsulotlarni olish.
     stock_quantity <= min_stock_level bo'lgan variantlar.
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Kam qolgan variantlarni topish
     low_stock_variants = db.query(ProductVariant).filter(
         and_(
-            ProductVariant.tenant_id == current_user.tenant_id,
+            ProductVariant.tenant_id == tenant_id,
             ProductVariant.is_active == True,
             ProductVariant.stock_quantity <= ProductVariant.min_stock_level
         )
@@ -414,15 +430,17 @@ def adjust_stock(
     Stock miqdorini o'zgartirish.
     adjustment_type: "add" (qo'shish), "subtract" (ayirish), "set" (o'rnatish)
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Variantni topish
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == variant_id,
             ProductVariant.product_id == product_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     

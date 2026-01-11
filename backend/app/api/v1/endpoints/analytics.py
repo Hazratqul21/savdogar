@@ -18,14 +18,16 @@ async def get_customer_habits(
 ):
     """Mijozning xarid odatlarini AI orqali tahlil qilish"""
     # ✅ SECURITY FIX: Tenant isolation check
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Verify customer belongs to user's tenant
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -64,9 +66,11 @@ async def get_daily_strategy(
     current_user: User = Depends(get_current_active_user)
 ):
     """Kechagi savdo tahlili va bugungi strategiya"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
-    return await DailyStrategyService.generate_daily_report(db, current_user.tenant_id)
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
+    return await DailyStrategyService.generate_daily_report(db, tenant_id)
 
 from app.services.stock_predictor import StockPredictorService
 
@@ -76,11 +80,13 @@ async def get_stock_alerts(
     current_user: User = Depends(get_current_active_user)
 ):
     """Tugash ehtimoli bor tovarlar ro'yxati"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     # Velocity ni yangilab olamiz (ishlab chiqarishda background task bo'lishi kerak)
-    StockPredictorService.calculate_velocity(db, current_user.tenant_id)
-    return StockPredictorService.get_stock_alerts(db, current_user.tenant_id)
+    StockPredictorService.calculate_velocity(db, tenant_id)
+    return StockPredictorService.get_stock_alerts(db, tenant_id)
 
 @router.post("/ai/generate-promo")
 async def generate_promo(
@@ -99,9 +105,11 @@ async def semantic_search(
     current_user: User = Depends(get_current_active_user)
 ):
     """Ma'no bo'yicha mahsulot qidirish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
-    return await ai_service.search_semantic(db, current_user.tenant_id, query)
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
+    return await ai_service.search_semantic(db, tenant_id, query)
 
 @router.post("/ai/debt-reminder/{customer_id}")
 async def generate_debt_reminder(
@@ -111,14 +119,16 @@ async def generate_debt_reminder(
 ):
     """Qarzni qaytarish bo'yicha AI tavsiya matni"""
     # ✅ SECURITY FIX: Tenant isolation check
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Verify customer belongs to user's tenant
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -144,8 +154,10 @@ async def get_price_optimization(
 ):
     """Mahsulot uchun optimal narx tavsiyasi"""
     # ✅ SECURITY FIX: Tenant isolation check
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     from app.models.product_v2 import ProductVariant
     from app.services.price_oracle import PriceOracleService
@@ -154,7 +166,7 @@ async def get_price_optimization(
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     

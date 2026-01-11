@@ -26,12 +26,14 @@ def create_modifier_group(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Yangi modifikator guruhi yaratish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Guruh yaratish
     group = ModifierGroup(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         name=group_in.name,
         display_name=group_in.display_name or group_in.name,
         is_required=group_in.is_required,
@@ -73,12 +75,14 @@ def get_modifier_groups(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Barcha modifikator guruhlarini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     groups = db.query(ModifierGroup).filter(
         and_(
-            ModifierGroup.tenant_id == current_user.tenant_id,
+            ModifierGroup.tenant_id == tenant_id,
             ModifierGroup.is_active == True
         )
     ).order_by(ModifierGroup.sort_order).all()
@@ -103,13 +107,15 @@ def get_modifier_group(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Bitta modifikator guruhini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     group = db.query(ModifierGroup).filter(
         and_(
             ModifierGroup.id == group_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -132,13 +138,15 @@ def update_modifier_group(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Modifikator guruhini yangilash"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     group = db.query(ModifierGroup).filter(
         and_(
             ModifierGroup.id == group_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -167,13 +175,15 @@ def delete_modifier_group(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Modifikator guruhini o'chirish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     group = db.query(ModifierGroup).filter(
         and_(
             ModifierGroup.id == group_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -198,14 +208,16 @@ def add_modifier_option(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Modifikator guruhiga variant qo'shish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Guruhni tekshirish
     group = db.query(ModifierGroup).filter(
         and_(
             ModifierGroup.id == group_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -237,13 +249,15 @@ def update_modifier_option(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Modifikator variantini yangilash"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     option = db.query(ModifierOption).join(ModifierGroup).filter(
         and_(
             ModifierOption.id == option_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -271,8 +285,10 @@ def add_modifier_to_product(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotga modifikator guruhi qo'shish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     from app.models.product_v2 import ProductV2
     
@@ -280,7 +296,7 @@ def add_modifier_to_product(
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -291,7 +307,7 @@ def add_modifier_to_product(
     group = db.query(ModifierGroup).filter(
         and_(
             ModifierGroup.id == modifier_in.modifier_group_id,
-            ModifierGroup.tenant_id == current_user.tenant_id
+            ModifierGroup.tenant_id == tenant_id
         )
     ).first()
     
@@ -336,8 +352,10 @@ def get_product_modifiers(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulot modifikatorlarini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     pms = db.query(ProductModifier).filter(
         and_(
@@ -371,8 +389,10 @@ def remove_modifier_from_product(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotdan modifikator guruhini o'chirish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     pm = db.query(ProductModifier).filter(
         and_(

@@ -27,14 +27,16 @@ def create_serial_number(
     """
     Bitta serial number yaratish
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Variantni tekshirish
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == serial_in.variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     
@@ -50,7 +52,7 @@ def create_serial_number(
     # Serial number uniqueness tekshirish (tenant ichida)
     existing = db.query(SerialNumber).filter(
         and_(
-            SerialNumber.tenant_id == current_user.tenant_id,
+            SerialNumber.tenant_id == tenant_id,
             SerialNumber.serial_number == serial_in.serial_number,
             SerialNumber.is_active == True
         )
@@ -64,7 +66,7 @@ def create_serial_number(
     
     # Serial number yaratish
     serial_obj = SerialNumber(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         variant_id=serial_in.variant_id,
         serial_number=serial_in.serial_number,
         manufacturer_serial=serial_in.manufacturer_serial,
@@ -92,14 +94,16 @@ def create_serial_numbers_bulk(
     Ko'p serial numberlarni bir vaqtda yaratish (shipment uchun)
     Masalan: 50 ta Ariston boiler uchun serial numberlar
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Variantni tekshirish
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == bulk_in.variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     
@@ -119,7 +123,7 @@ def create_serial_numbers_bulk(
         # Uniqueness tekshirish
         existing = db.query(SerialNumber).filter(
             and_(
-                SerialNumber.tenant_id == current_user.tenant_id,
+                SerialNumber.tenant_id == tenant_id,
                 SerialNumber.serial_number == serial_num,
                 SerialNumber.is_active == True
             )
@@ -130,7 +134,7 @@ def create_serial_numbers_bulk(
             continue
         
         serial_obj = SerialNumber(
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             variant_id=bulk_in.variant_id,
             serial_number=serial_num,
             batch_number=bulk_in.batch_number,
@@ -171,11 +175,13 @@ def read_serial_numbers(
     """
     Serial numberlarni olish (filtering bilan)
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     query = db.query(SerialNumber).filter(
-        SerialNumber.tenant_id == current_user.tenant_id
+        SerialNumber.tenant_id == tenant_id
     )
     
     if variant_id:
@@ -201,13 +207,15 @@ def read_serial_number(
     """
     Bitta serial numberni olish
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     serial = db.query(SerialNumber).filter(
         and_(
             SerialNumber.id == serial_id,
-            SerialNumber.tenant_id == current_user.tenant_id
+            SerialNumber.tenant_id == tenant_id
         )
     ).first()
     
@@ -227,13 +235,15 @@ def update_serial_number(
     """
     Serial numberni yangilash
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     serial = db.query(SerialNumber).filter(
         and_(
             SerialNumber.id == serial_id,
-            SerialNumber.tenant_id == current_user.tenant_id
+            SerialNumber.tenant_id == tenant_id
         )
     ).first()
     
@@ -245,7 +255,7 @@ def update_serial_number(
         # Check uniqueness if changing serial number
         existing = db.query(SerialNumber).filter(
             and_(
-                SerialNumber.tenant_id == current_user.tenant_id,
+                SerialNumber.tenant_id == tenant_id,
                 SerialNumber.serial_number == serial_in.serial_number,
                 SerialNumber.id != serial_id,
                 SerialNumber.is_active == True
@@ -307,14 +317,16 @@ def get_available_serial_numbers(
     """
     Sotilmagan serial numberlarni olish (sale uchun)
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Variantni tekshirish
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     
@@ -324,7 +336,7 @@ def get_available_serial_numbers(
     # Sotilmagan serial numberlar
     available = db.query(SerialNumber).filter(
         and_(
-            SerialNumber.tenant_id == current_user.tenant_id,
+            SerialNumber.tenant_id == tenant_id,
             SerialNumber.variant_id == variant_id,
             SerialNumber.is_sold == False,
             SerialNumber.is_active == True

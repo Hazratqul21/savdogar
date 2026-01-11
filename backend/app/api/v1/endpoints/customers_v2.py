@@ -18,11 +18,13 @@ def create_customer(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Yangi mijoz yaratish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     customer_obj = CustomerV2(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         name=customer_in.name,
         phone=customer_in.phone,
         email=customer_in.email,
@@ -48,11 +50,13 @@ def read_customers(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mijozlarni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     customers = db.query(CustomerV2).filter(
-        CustomerV2.tenant_id == current_user.tenant_id
+        CustomerV2.tenant_id == tenant_id
     ).offset(skip).limit(limit).all()
     
     return customers
@@ -65,14 +69,16 @@ def read_customer_ledger(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mijoz qarz kitobini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Mijozni tekshirish
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -97,8 +103,10 @@ def pay_customer_debt(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mijoz qarzini to'lash"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     if amount <= 0:
         raise HTTPException(status_code=400, detail="To'lov summasi musbat bo'lishi kerak")
@@ -107,7 +115,7 @@ def pay_customer_debt(
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -128,7 +136,7 @@ def pay_customer_debt(
     # Ledger yozuvi
     ledger_entry = CustomerLedger(
         customer_id=customer_id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         transaction_type="payment",
         amount=-amount,  # Minus - qarz kamaydi
         balance_after=customer.current_debt,
@@ -151,13 +159,15 @@ def get_customer(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Bitta mijozni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -176,13 +186,15 @@ def update_customer(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mijozni yangilash"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -207,13 +219,15 @@ def delete_customer(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mijozni o'chirish (soft delete)"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     customer = db.query(CustomerV2).filter(
         and_(
             CustomerV2.id == customer_id,
-            CustomerV2.tenant_id == current_user.tenant_id
+            CustomerV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -233,12 +247,14 @@ def get_debtors(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Qarzdorlar ro'yxati"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     debtors = db.query(CustomerV2).filter(
         and_(
-            CustomerV2.tenant_id == current_user.tenant_id,
+            CustomerV2.tenant_id == tenant_id,
             CustomerV2.current_debt > 0,
             CustomerV2.is_active == True
         )

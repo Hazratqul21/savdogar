@@ -24,13 +24,15 @@ def get_active_shift(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Joriy kassirning aktiv smenasini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Aktiv smenani topish
     active_shift = db.query(Shift).filter(
         and_(
-            Shift.tenant_id == current_user.tenant_id,
+            Shift.tenant_id == tenant_id,
             Shift.cashier_id == current_user.id,
             Shift.status == "open"
         )
@@ -42,7 +44,7 @@ def get_active_shift(
     # Joriy smena savdolarini hisoblash
     sales = db.query(SaleV2).filter(
         and_(
-            SaleV2.tenant_id == current_user.tenant_id,
+            SaleV2.tenant_id == tenant_id,
             SaleV2.cashier_id == current_user.id,
             SaleV2.created_at >= active_shift.opened_at
         )
@@ -68,13 +70,15 @@ def open_shift(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Yangi smena ochish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Mavjud ochiq smena bormi tekshirish
     existing_shift = db.query(Shift).filter(
         and_(
-            Shift.tenant_id == current_user.tenant_id,
+            Shift.tenant_id == tenant_id,
             Shift.cashier_id == current_user.id,
             Shift.status == "open"
         )
@@ -88,7 +92,7 @@ def open_shift(
     
     # Yangi smena yaratish
     shift = Shift(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         cashier_id=current_user.id,
         status="open",
         opening_cash=shift_in.opening_cash,
@@ -113,13 +117,15 @@ def close_shift(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Smenani yopish va Z-Report olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Aktiv smenani topish
     shift = db.query(Shift).filter(
         and_(
-            Shift.tenant_id == current_user.tenant_id,
+            Shift.tenant_id == tenant_id,
             Shift.cashier_id == current_user.id,
             Shift.status == "open"
         )
@@ -134,7 +140,7 @@ def close_shift(
     # Smena davomidagi savdolarni olish
     sales = db.query(SaleV2).filter(
         and_(
-            SaleV2.tenant_id == current_user.tenant_id,
+            SaleV2.tenant_id == tenant_id,
             SaleV2.cashier_id == current_user.id,
             SaleV2.created_at >= shift.opened_at,
             SaleV2.status == "completed"
@@ -233,13 +239,15 @@ def create_cash_movement(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Inkassatsiya yoki pul qo'shish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Aktiv smenani topish
     shift = db.query(Shift).filter(
         and_(
-            Shift.tenant_id == current_user.tenant_id,
+            Shift.tenant_id == tenant_id,
             Shift.cashier_id == current_user.id,
             Shift.status == "open"
         )
@@ -258,7 +266,7 @@ def create_cash_movement(
         )
     
     movement = CashMovement(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         shift_id=shift.id,
         movement_type=movement_in.movement_type,
         amount=movement_in.amount,
@@ -282,11 +290,13 @@ def get_shift_history(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Smenalar tarixini olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     shifts = db.query(Shift).filter(
-        Shift.tenant_id == current_user.tenant_id
+        Shift.tenant_id == tenant_id
     ).order_by(Shift.opened_at.desc()).offset(skip).limit(limit).all()
     
     result = []
@@ -306,13 +316,15 @@ def get_shift(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Bitta smenani olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     shift = db.query(Shift).filter(
         and_(
             Shift.id == shift_id,
-            Shift.tenant_id == current_user.tenant_id
+            Shift.tenant_id == tenant_id
         )
     ).first()
     
@@ -333,13 +345,15 @@ def get_z_report(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Smena uchun Z-Report olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     shift = db.query(Shift).filter(
         and_(
             Shift.id == shift_id,
-            Shift.tenant_id == current_user.tenant_id,
+            Shift.tenant_id == tenant_id,
             Shift.status == "closed"
         )
     ).first()

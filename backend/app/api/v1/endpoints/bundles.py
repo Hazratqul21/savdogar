@@ -27,14 +27,16 @@ def create_bundle(
     Bundle/Kit yaratish
     Masalan: "Heating System Kit" = 1 Boiler + 5 Radiators + 20m Pipe
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Productni tekshirish (BUNDLE type bo'lishi kerak)
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == bundle_in.product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -55,7 +57,7 @@ def create_bundle(
         variant = db.query(ProductVariant).filter(
             and_(
                 ProductVariant.id == component_data.component_variant_id,
-                ProductVariant.tenant_id == current_user.tenant_id
+                ProductVariant.tenant_id == tenant_id
             )
         ).first()
         
@@ -67,7 +69,7 @@ def create_bundle(
         
         # Component yaratish
         component_obj = ProductBundle(
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             product_id=bundle_in.product_id,
             component_variant_id=component_data.component_variant_id,
             quantity=component_data.quantity,
@@ -97,14 +99,16 @@ def get_bundle_components(
     """
     Bundle componentlarini olish
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Productni tekshirish
     product = db.query(ProductV2).filter(
         and_(
             ProductV2.id == product_id,
-            ProductV2.tenant_id == current_user.tenant_id
+            ProductV2.tenant_id == tenant_id
         )
     ).first()
     
@@ -115,7 +119,7 @@ def get_bundle_components(
     components = db.query(ProductBundle).filter(
         and_(
             ProductBundle.product_id == product_id,
-            ProductBundle.tenant_id == current_user.tenant_id,
+            ProductBundle.tenant_id == tenant_id,
             ProductBundle.is_active == True
         )
     ).order_by(ProductBundle.sequence).all()
@@ -133,13 +137,15 @@ def update_bundle_component(
     """
     Bundle componentni yangilash
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     component = db.query(ProductBundle).filter(
         and_(
             ProductBundle.id == component_id,
-            ProductBundle.tenant_id == current_user.tenant_id
+            ProductBundle.tenant_id == tenant_id
         )
     ).first()
     
@@ -174,13 +180,15 @@ def delete_bundle_component(
     """
     Bundle componentni o'chirish
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     component = db.query(ProductBundle).filter(
         and_(
             ProductBundle.id == component_id,
-            ProductBundle.tenant_id == current_user.tenant_id
+            ProductBundle.tenant_id == tenant_id
         )
     ).first()
     

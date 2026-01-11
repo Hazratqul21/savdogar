@@ -53,8 +53,10 @@ def export_sales(
     end_date: Optional[str] = Query(None, description="Tugash sanasi (YYYY-MM-DD)"),
 ) -> StreamingResponse:
     """Savdolar hisobotini Excel ga eksport qilish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Default dates
     if not end_date:
@@ -70,7 +72,7 @@ def export_sales(
     # Fetch sales
     sales = db.query(SaleV2).filter(
         and_(
-            SaleV2.tenant_id == current_user.tenant_id,
+            SaleV2.tenant_id == tenant_id,
             SaleV2.created_at >= start_dt,
             SaleV2.created_at <= end_dt,
             SaleV2.status == "completed"
@@ -132,13 +134,15 @@ def export_products(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> StreamingResponse:
     """Mahsulotlar ro'yxatini Excel ga eksport qilish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Fetch products
     products = db.query(ProductV2).filter(
         and_(
-            ProductV2.tenant_id == current_user.tenant_id,
+            ProductV2.tenant_id == tenant_id,
             ProductV2.is_active == True
         )
     ).all()
@@ -189,13 +193,15 @@ def export_inventory(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> StreamingResponse:
     """Ombor hisobotini Excel ga eksport qilish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Fetch variants with product info
     variants = db.query(ProductVariant).filter(
         and_(
-            ProductVariant.tenant_id == current_user.tenant_id,
+            ProductVariant.tenant_id == tenant_id,
             ProductVariant.is_active == True
         )
     ).all()
@@ -258,13 +264,15 @@ def export_customers(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> StreamingResponse:
     """Mijozlar ro'yxatini Excel ga eksport qilish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Fetch customers
     customers = db.query(CustomerV2).filter(
         and_(
-            CustomerV2.tenant_id == current_user.tenant_id,
+            CustomerV2.tenant_id == tenant_id,
             CustomerV2.is_active == True
         )
     ).all()
@@ -315,8 +323,10 @@ def export_daily_summary(
     end_date: Optional[str] = Query(None),
 ) -> StreamingResponse:
     """Kunlik hisobot - har bir kun uchun savdo statistikasi"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Default dates
     if not end_date:
@@ -351,7 +361,7 @@ def export_daily_summary(
         # Daily sales
         daily_sales = db.query(SaleV2).filter(
             and_(
-                SaleV2.tenant_id == current_user.tenant_id,
+                SaleV2.tenant_id == tenant_id,
                 SaleV2.created_at >= current_date,
                 SaleV2.created_at < next_date,
                 SaleV2.status == "completed"

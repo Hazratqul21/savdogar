@@ -83,8 +83,10 @@ async def trigger_daily_audit_scan(
     Trigger daily audit scan (can run in background)
     Scans transactions and inventory for anomalies
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     if scan_date is None:
         scan_date = date.today()
@@ -93,7 +95,7 @@ async def trigger_daily_audit_scan(
         # Run audit scan
         audit_logs = await ai_audit_service.daily_audit_scan(
             db=db,
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             scan_date=scan_date
         )
         
@@ -119,11 +121,13 @@ def get_audit_logs(
     """
     Get audit logs with filters
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     query = db.query(AuditLog).filter(
-        AuditLog.tenant_id == current_user.tenant_id
+        AuditLog.tenant_id == tenant_id
     )
     
     if severity:
@@ -149,13 +153,15 @@ def get_audit_log(
     """
     Get single audit log
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     log = db.query(AuditLog).filter(
         and_(
             AuditLog.id == log_id,
-            AuditLog.tenant_id == current_user.tenant_id
+            AuditLog.tenant_id == tenant_id
         )
     ).first()
     
@@ -175,13 +181,15 @@ def resolve_audit_log(
     """
     Mark audit log as resolved
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     log = db.query(AuditLog).filter(
         and_(
             AuditLog.id == log_id,
-            AuditLog.tenant_id == current_user.tenant_id
+            AuditLog.tenant_id == tenant_id
         )
     ).first()
     
@@ -213,14 +221,16 @@ async def fix_inventory(
     AI suggests stock correction based on sales history.
     If approved, creates a draft inbound document.
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Verify variant belongs to tenant
     variant = db.query(ProductVariant).filter(
         and_(
             ProductVariant.id == variant_id,
-            ProductVariant.tenant_id == current_user.tenant_id
+            ProductVariant.tenant_id == tenant_id
         )
     ).first()
     
@@ -231,7 +241,7 @@ async def fix_inventory(
         # Get AI suggestion
         suggestion = await ai_audit_service.suggest_stock_correction(
             db=db,
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             variant_id=variant_id
         )
         
@@ -244,7 +254,7 @@ async def fix_inventory(
             
             # Create audit log for this correction
             audit_log = AuditLog(
-                tenant_id=current_user.tenant_id,
+                tenant_id=tenant_id,
                 category=AuditCategory.STOCK_CORRECTION,
                 severity=AuditSeverity.MEDIUM,
                 title=f"Stock Correction: {variant.sku}",
@@ -308,8 +318,10 @@ async def parse_invoice(
     Parses raw text or image invoice into structured JSON.
     Uses GlobalCatalog (if available) for fuzzy product matching.
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     try:
         # Use existing AI service invoice parsing

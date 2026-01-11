@@ -226,12 +226,14 @@ def calculate_cart(
     Savatcha jami summasini hisoblash
     PriceTiers ni tekshiradi
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     return calculate_cart_total(
         db=db,
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         items=items,
         customer_id=customer_id,
     )
@@ -247,14 +249,16 @@ def checkout(
     Checkout - Sotuvni yakunlash
     ACID transaction - ombor va qarz boshqaruvi
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Get tenant and business type
     from app.models.tenant import Tenant, BusinessType
     from app.services.business_logic import business_logic
     
-    tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant topilmadi")
     
@@ -268,7 +272,7 @@ def checkout(
         # Savatchani hisoblash
         cart_result = calculate_cart_total(
             db=db,
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             items=checkout_data.items,
             customer_id=checkout_data.customer_id,
         )
@@ -279,7 +283,7 @@ def checkout(
             customer = db.query(CustomerV2).filter(
                 and_(
                     CustomerV2.id == checkout_data.customer_id,
-                    CustomerV2.tenant_id == current_user.tenant_id
+                    CustomerV2.tenant_id == tenant_id
                 )
             ).first()
             
@@ -344,7 +348,7 @@ def checkout(
         
         # Sale yaratish
         sale_obj = SaleV2(
-            tenant_id=current_user.tenant_id,
+            tenant_id=tenant_id,
             cashier_id=current_user.id,
             customer_id=checkout_data.customer_id,
             branch_id=checkout_data.branch_id,
@@ -380,7 +384,7 @@ def checkout(
                 from app.models.serial_number import SerialNumber
                 serial = db.query(SerialNumber).filter(
                     and_(
-                        SerialNumber.tenant_id == current_user.tenant_id,
+                        SerialNumber.tenant_id == tenant_id,
                         SerialNumber.variant_id == variant.id,
                         SerialNumber.serial_number == cart_item.serial_number,
                         SerialNumber.is_sold == False
@@ -498,7 +502,7 @@ def checkout(
                 bundle_components = db.query(ProductBundle).filter(
                     and_(
                         ProductBundle.product_id == product.id,
-                        ProductBundle.tenant_id == current_user.tenant_id,
+                        ProductBundle.tenant_id == tenant_id,
                         ProductBundle.is_active == True
                     )
                 ).order_by(ProductBundle.sequence).all()
@@ -581,11 +585,13 @@ def read_sales(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Sotuvlarni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     sales = db.query(SaleV2).filter(
-        SaleV2.tenant_id == current_user.tenant_id
+        SaleV2.tenant_id == tenant_id
     ).order_by(SaleV2.created_at.desc()).offset(skip).limit(limit).all()
     
     # Items ni yuklash
@@ -605,13 +611,15 @@ def read_sale(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Bitta sotuvni olish"""
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     sale = db.query(SaleV2).filter(
         and_(
             SaleV2.id == sale_id,
-            SaleV2.tenant_id == current_user.tenant_id
+            SaleV2.tenant_id == tenant_id
         )
     ).first()
     

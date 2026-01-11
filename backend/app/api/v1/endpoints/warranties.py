@@ -28,14 +28,16 @@ def create_warranty(
     """
     Warranty yaratish (serial number uchun)
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Serial numberni tekshirish
     serial = db.query(SerialNumber).filter(
         and_(
             SerialNumber.id == warranty_in.serial_number_id,
-            SerialNumber.tenant_id == current_user.tenant_id
+            SerialNumber.tenant_id == tenant_id
         )
     ).first()
     
@@ -46,7 +48,7 @@ def create_warranty(
     if warranty_in.warranty_number:
         existing = db.query(Warranty).filter(
             and_(
-                Warranty.tenant_id == current_user.tenant_id,
+                Warranty.tenant_id == tenant_id,
                 Warranty.warranty_number == warranty_in.warranty_number
             )
         ).first()
@@ -58,7 +60,7 @@ def create_warranty(
     
     # Warranty yaratish
     warranty_obj = Warranty(
-        tenant_id=current_user.tenant_id,
+        tenant_id=tenant_id,
         serial_number_id=warranty_in.serial_number_id,
         warranty_type=warranty_in.warranty_type,
         start_date=warranty_in.start_date,
@@ -90,11 +92,13 @@ def read_warranties(
     """
     Warrantylarni olish (filtering bilan)
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     query = db.query(Warranty).filter(
-        Warranty.tenant_id == current_user.tenant_id
+        Warranty.tenant_id == tenant_id
     )
     
     if serial_number_id:
@@ -117,13 +121,15 @@ def read_warranty(
     """
     Bitta warrantyni olish
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     warranty = db.query(Warranty).filter(
         and_(
             Warranty.id == warranty_id,
-            Warranty.tenant_id == current_user.tenant_id
+            Warranty.tenant_id == tenant_id
         )
     ).first()
     
@@ -143,13 +149,15 @@ def update_warranty(
     """
     Warrantyni yangilash
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     warranty = db.query(Warranty).filter(
         and_(
             Warranty.id == warranty_id,
-            Warranty.tenant_id == current_user.tenant_id
+            Warranty.tenant_id == tenant_id
         )
     ).first()
     
@@ -189,15 +197,17 @@ def get_expiring_warranties(
     """
     Tez orada muddati tugaydigan warrantylar
     """
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    # Support both tenant_id (new) and organization_id (old) for backwards compatibility
+    tenant_id = current_user.tenant_id or current_user.organization_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     today = date.today()
     expiry_date = today + timedelta(days=days)
     
     warranties = db.query(Warranty).filter(
         and_(
-            Warranty.tenant_id == current_user.tenant_id,
+            Warranty.tenant_id == tenant_id,
             Warranty.status == WarrantyStatus.ACTIVE,
             Warranty.end_date >= today,
             Warranty.end_date <= expiry_date

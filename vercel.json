@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "backend/api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -15,24 +12,10 @@
       "dest": "backend/api/index.py"
     }
   ],
-  "headers": [
+  "rewrites": [
     {
       "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD" },
-        { "key": "Access-Control-Allow-Headers", "value": "*" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Max-Age", "value": "86400" }
-      ]
+      "destination": "/backend/api/index.py"
     }
-  ],
-  "functions": {
-    "backend/api/index.py": {
-      "runtime": "python3.12",
-      "maxDuration": 60,
-      "memory": 1024,
-      "includeFiles": "backend/**"
-    }
-  }
+  ]
 }

@@ -28,7 +28,13 @@ class Tenant(Base):
     name = Column(String, nullable=False, index=True)
     
     # New Business Logic
-    business_type = Column(Enum(BusinessType), default=BusinessType.RETAIL, nullable=False, index=True)
+    # Use values_callable to store enum VALUES ("retail") not NAMES ("RETAIL") in database
+    business_type = Column(
+        Enum(BusinessType, values_callable=lambda x: [e.value for e in x]),
+        default=BusinessType.RETAIL,
+        nullable=False,
+        index=True
+    )
     
     # Valyuta sozlamalari (Dollar kursiga bog'liq narxlar uchun)
     base_currency = Column(String, default="UZS")

@@ -19,7 +19,11 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.CASHIER)
+    # Use values_callable to store enum VALUES ("cashier") not NAMES ("CASHIER") in database
+    role = Column(
+        Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
+        default=UserRole.CASHIER
+    )
     is_active = Column(Boolean, default=True)
     
     # New Profile Fields

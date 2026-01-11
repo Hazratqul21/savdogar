@@ -60,25 +60,77 @@ app = FastAPI(
 # =============================================================================
 # CORS Configuration
 # =============================================================================
-# Configure CORS to allow specific production domains
+# Configure CORS to allow specific production domains and Vercel previews
 # NOTE: When allow_credentials=True, wildcard "*" cannot be used for allow_origins
 origins = [
-    "http://localhost:3000",             # Local Development
-    "http://127.0.0.1:3000",             # Local Development (Backup)
-    "https://savdogar.vercel.app",       # Vercel Frontend
-    "https://savdo-gar.uz",              # Custom Domain (Root)
-    "https://www.savdo-gar.uz",          # Custom Domain (WWW)
+    # Local Development
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    # Vercel Frontend - All possible URLs
+    "https://savdogar.vercel.app",
+    "https://www.savdogar.vercel.app",
+    # Custom Domain
+    "https://savdo-gar.uz",
+    "https://www.savdo-gar.uz",
+    # Vercel Preview Deployments (wildcard pattern handled in middleware)
 ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,  # Cache preflight for 1 hour
-)
+# Add additional origins from environment variable if set
+if settings.CORS_ORIGINS:
+    additional_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+    origins.extend(additional_origins)
+
+def get_cors_origin(request_origin: str) -> str:
+    """
+    Check if origin is allowed, including Vercel preview deployments.
+    """
+    if not request_origin:
+        return origins[0] if origins else "*"
+    
+    # Exact match
+    if request_origin in origins:
+        return request_origin
+    
+    # Allow all Vercel preview deployments (*.vercel.app)
+    if request_origin.endswith(".vercel.app"):
+        return request_origin
+    
+    # Allow localhost variations
+    if request_origin.startswith("http://localhost") or request_origin.startswith("http://127.0.0.1"):
+        return request_origin
+    
+    return origins[0] if origins else "*"
+
+# Custom CORS middleware to handle Vercel preview deployments
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class DynamicCORSMiddleware(BaseHTTPMiddleware):
+    """
+    Custom CORS middleware that supports dynamic origins including Vercel previews.
+    """
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin", "")
+        
+        # Handle preflight (OPTIONS) - already handled by options_handler
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Add CORS headers to response
+        allowed_origin = get_cors_origin(origin)
+        response.headers["Access-Control-Allow-Origin"] = allowed_origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token"
+        response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
+# Add custom CORS middleware (handles dynamic origins for Vercel previews)
+app.add_middleware(DynamicCORSMiddleware)
 
 # Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)
@@ -93,44 +145,27 @@ async def options_handler(full_path: str, request: Request):
     """
     Handle CORS preflight OPTIONS requests for all paths.
     This ensures all endpoints respond correctly to browser preflight checks.
+    Supports Vercel preview deployments dynamically.
     """
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"✅ OPTIONS request received for path: {full_path}")
     
     # Get origin from request headers
     origin = request.headers.get("origin", "")
     
-    # Define allowed origins (same as middleware)
-    allowed_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://savdogar.vercel.app",
-        "https://savdo-gar.uz",
-        "https://www.savdo-gar.uz",
-    ]
-    
-    # Check if origin is allowed
-    if origin in allowed_origins:
-        allow_origin = origin
-    else:
-        # For development, allow localhost origins
-        if origin.startswith("http://localhost") or origin.startswith("http://127.0.0.1"):
-            allow_origin = origin
-        else:
-            allow_origin = allowed_origins[0] if allowed_origins else "*"
+    # Use dynamic origin validation
+    allow_origin = get_cors_origin(origin)
     
     response = Response(
         status_code=200,
         headers={
             "Access-Control-Allow-Origin": allow_origin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
-            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token",
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Max-Age": "3600",
         }
     )
-    logger.info(f"✅ OPTIONS response sent for path: {full_path} from origin: {origin}")
+    logger.info(f"✅ OPTIONS response sent for path: {full_path} from origin: {origin} -> allowed: {allow_origin}")
     return response
 
 

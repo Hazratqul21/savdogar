@@ -10,8 +10,10 @@ interface UseBarcodeSccannerOptions {
     onScan: (barcode: string) => void;
     enabled?: boolean;
     minLength?: number;    // Minimal barcode uzunligi
+    maxLength?: number;    // Maksimal barcode uzunligi
     maxTime?: number;      // Maksimal vaqt (ms) raqamlar orasida
     maxGap?: number;       // Alias for maxTime
+    timeout?: number;      // Alias for maxTime
     endKey?: string;       // Oxirgi tugma (Enter)
     ignoreInputFocus?: boolean;  // Input field da skaner ishlamasin
 }
@@ -20,13 +22,15 @@ export function useBarcodeScanner({
     onScan,
     enabled = true,
     minLength = 4,
+    maxLength,
     maxTime,
     maxGap = 50,
+    timeout,
     endKey = "Enter",
     ignoreInputFocus = false
 }: UseBarcodeSccannerOptions) {
-    // Use maxGap as alias for maxTime
-    const effectiveMaxTime = maxTime ?? maxGap;
+    // Use maxGap/timeout as alias for maxTime
+    const effectiveMaxTime = maxTime ?? timeout ?? maxGap;
     const [isScanning, setIsScanning] = useState(false);
     const bufferRef = useRef<string>("");
     const lastKeyTimeRef = useRef<number>(0);
@@ -38,15 +42,23 @@ export function useBarcodeScanner({
     }, []);
     
     const processBarcode = useCallback((barcode: string) => {
-        if (barcode.length >= minLength) {
-            // Filter out only digits and some special chars commonly in barcodes
-            const cleanBarcode = barcode.replace(/[^0-9a-zA-Z-]/g, "");
-            if (cleanBarcode.length >= minLength) {
-                onScan(cleanBarcode);
-            }
+        // Filter out only digits and some special chars commonly in barcodes
+        const cleanBarcode = barcode.replace(/[^0-9a-zA-Z-]/g, "");
+        
+        // Check length constraints
+        if (cleanBarcode.length < minLength) {
+            clearBuffer();
+            return;
         }
+        
+        if (maxLength && cleanBarcode.length > maxLength) {
+            clearBuffer();
+            return;
+        }
+        
+        onScan(cleanBarcode);
         clearBuffer();
-    }, [onScan, minLength, clearBuffer]);
+    }, [onScan, minLength, maxLength, clearBuffer]);
     
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         if (!enabled) return;

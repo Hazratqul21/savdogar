@@ -22,6 +22,7 @@ import {
     XCircle
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
+import { contributeToGlobalCatalogRPC } from "@/lib/supabase";
 
 // Toast component
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -136,9 +137,32 @@ export default function ProductsPage() {
         retry: 1,
     });
 
-    // Create product mutation
+    // Create product mutation with global catalog contribution
     const createMutation = useMutation({
-        mutationFn: createProduct,
+        mutationFn: async (data: any) => {
+            // 1. Save to local inventory
+            const result = await createProduct(data);
+            
+            // 2. Contribute to global catalog (if has barcode)
+            // Global catalog is for barcode-identified products only
+            if (data.barcode && data.name) {
+                try {
+                    await contributeToGlobalCatalogRPC(
+                        data.barcode,
+                        data.name,
+                        data.category || undefined,
+                        data.image_url || undefined,
+                        data.description || undefined
+                    );
+                    console.log("✅ Global katalogga qo'shildi:", data.barcode);
+                } catch (e) {
+                    // Global contribution is secondary - don't fail if it doesn't work
+                    console.warn("Global katalogga qo'shishda xatolik:", e);
+                }
+            }
+            
+            return result;
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             setShowAddModal(false);

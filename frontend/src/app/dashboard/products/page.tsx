@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Package, 
     Plus, 
@@ -16,9 +17,41 @@ import {
     Box,
     AlertCircle,
     Coffee,
-    Check
+    Check,
+    CheckCircle2,
+    XCircle
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
+
+// Toast component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 2000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
+        >
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border ${
+                type === 'success' 
+                    ? "bg-green-50 border-green-200 text-green-700" 
+                    : "bg-red-50 border-red-200 text-red-700"
+            }`}>
+                {type === 'success' ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                ) : (
+                    <XCircle className="w-5 h-5 text-red-500" />
+                )}
+                <span className="font-medium text-sm">{message}</span>
+            </div>
+        </motion.div>
+    );
+}
 
 // API functions
 async function getProducts(search?: string) {
@@ -82,6 +115,12 @@ export default function ProductsPage() {
         }
     });
     
+    // Toast state
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    
+    // Track which product is being deleted
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    
     // Load business type
     useEffect(() => {
         const type = localStorage.getItem("business_type") || "retail";
@@ -105,6 +144,10 @@ export default function ProductsPage() {
             setShowAddModal(false);
             setNewProduct({ name: "", base_price: "", cost_price: "", type: "simple" });
             setCafeProduct({ name: "", hasSizes: true, prices: { small: "", medium: "", large: "" } });
+            setToast({ message: "Mahsulot qo'shildi ✓", type: 'success' });
+        },
+        onError: () => {
+            setToast({ message: "Xatolik yuz berdi", type: 'error' });
         },
     });
 
@@ -113,8 +156,19 @@ export default function ProductsPage() {
         mutationFn: deleteProduct,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["products"] });
+            setToast({ message: "Mahsulot o'chirildi", type: 'success' });
+            setDeletingId(null);
+        },
+        onError: () => {
+            setToast({ message: "O'chirishda xatolik", type: 'error' });
+            setDeletingId(null);
         },
     });
+    
+    const handleDelete = (id: number) => {
+        setDeletingId(id);
+        deleteMutation.mutate(id);
+    };
 
     const handleAddProduct = () => {
         if (isCafeMode) {
@@ -181,6 +235,17 @@ export default function ProductsPage() {
 
     return (
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <Toast 
+                        message={toast.message} 
+                        type={toast.type} 
+                        onClose={() => setToast(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Header */}
             <div className="flex items-center justify-between gap-2">
                 <div>
@@ -299,11 +364,16 @@ export default function ProductsPage() {
                                                     <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                                                         <Edit2 className="w-4 h-4 text-gray-600" />
                                                     </button>
-                                                    <button 
-                                                        onClick={() => deleteMutation.mutate(product.id)}
-                                                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                                                    <button
+                                                        onClick={() => handleDelete(product.id)}
+                                                        disabled={deletingId === product.id}
+                                                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                                     >
-                                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                                        {deletingId === product.id ? (
+                                                            <Loader2 className="w-4 h-4 text-red-600 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="w-4 h-4 text-red-600" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
@@ -445,7 +515,9 @@ export default function ProductsPage() {
                                             (!cafeProduct.prices.small && !cafeProduct.prices.medium && !cafeProduct.prices.large)}
                                         className="flex-1 px-3 py-2.5 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {createMutation.isPending ? "..." : (
+                                        {createMutation.isPending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
                                             <>
                                                 <Check className="w-4 h-4" />
                                                 Qo'shish
@@ -511,9 +583,13 @@ export default function ProductsPage() {
                                     <button
                                         onClick={handleAddProduct}
                                         disabled={createMutation.isPending || !newProduct.name || !newProduct.base_price}
-                                        className="flex-1 px-3 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                        className="flex-1 px-3 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {createMutation.isPending ? "..." : "Qo'shish"}
+                                        {createMutation.isPending ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            "Qo'shish"
+                                        )}
                                     </button>
                                 </div>
                             </>

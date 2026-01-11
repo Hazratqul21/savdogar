@@ -107,7 +107,7 @@ export function MobileSidebar() {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0">
+      <SheetContent side="left" className="w-[260px] sm:w-[280px] p-0">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
@@ -139,7 +139,7 @@ export function MobileSidebar() {
           </div>
 
           {/* Menu Items */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-0.5">
             {visibleMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -150,14 +150,14 @@ export function MobileSidebar() {
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                     isActive
                       ? "bg-blue-50 text-blue-700 font-medium"
                       : "text-gray-700 hover:bg-gray-100"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-sm">{item.label}</span>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="text-sm truncate">{item.label}</span>
                 </Link>
               );
             })}

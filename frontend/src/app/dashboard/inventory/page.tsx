@@ -86,24 +86,17 @@ export default function InventoryPage() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Ombor</h1>
-                    <p className="text-gray-600 mt-1">Ombor qoldiqlari va harakatlar</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Ombor</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Qoldiqlar va harakatlar</p>
                 </div>
-                <div className="flex gap-2">
-                    <Link
-                        href="/inventory/nakladnoy"
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                        <Upload className="w-4 h-4" />
-                        Nakladnoy import
-                    </Link>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <div className="flex gap-1.5 sm:gap-2">
+                    <button className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                         <Download className="w-4 h-4" />
-                        Export
+                        <span className="hidden sm:inline">Export</span>
                     </button>
                 </div>
             </div>

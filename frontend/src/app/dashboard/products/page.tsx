@@ -111,96 +111,88 @@ export default function ProductsPage() {
     }).length;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Mahsulotlar</h1>
-                    <p className="text-gray-600 mt-1">Mahsulotlarni boshqarish va qo'shish</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Mahsulotlar</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Mahsulotlarni boshqarish</p>
                 </div>
                 <button 
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Yangi mahsulot
+                    <span className="hidden sm:inline">Yangi</span>
                 </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Package className="w-5 h-5 text-blue-600" />
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="bg-white p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600">Jami mahsulotlar</p>
-                            <p className="text-xl font-bold text-gray-900">{totalProducts}</p>
+                            <p className="text-xs text-gray-600">Jami</p>
+                            <p className="text-base sm:text-xl font-bold text-gray-900">{totalProducts}</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <Box className="w-5 h-5 text-green-600" />
+                <div className="bg-white p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                            <Box className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600">Faol mahsulotlar</p>
-                            <p className="text-xl font-bold text-gray-900">{activeProducts}</p>
+                            <p className="text-xs text-gray-600">Faol</p>
+                            <p className="text-base sm:text-xl font-bold text-gray-900">{activeProducts}</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                            <AlertCircle className="w-5 h-5 text-red-600" />
+                <div className="bg-white p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-red-100 rounded-lg">
+                            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600">Kam qolgan</p>
-                            <p className="text-xl font-bold text-red-600">{lowStockProducts}</p>
+                            <p className="text-xs text-gray-600">Kam</p>
+                            <p className="text-base sm:text-xl font-bold text-red-600">{lowStockProducts}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Search */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Mahsulot qidirish..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <Filter className="w-4 h-4" />
-                        Filtr
-                    </button>
+            <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-2.5 sm:p-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Qidirish..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 sm:pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
                 </div>
             </div>
 
             {/* Products List */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 overflow-hidden">
                 {isLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                     </div>
                 ) : products.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
+                    <div className="overflow-x-auto -mx-3 sm:mx-0">
+                        <table className="w-full min-w-[500px] text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mahsulot</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shtrix kod</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Narxi</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qoldiq</th>
-                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amallar</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mahsulot</th>
+                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Narxi</th>
+                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qoldiq</th>
+                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -210,55 +202,37 @@ export default function ProductsPage() {
                                     
                                     return (
                                         <tr key={product.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                                        <Package className="w-5 h-5 text-gray-400" />
+                                            <td className="px-3 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                                                        <Package className="w-4 h-4 text-gray-400" />
                                                     </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">{product.name}</p>
-                                                        <p className="text-sm text-gray-500">{product.type}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
+                                                        <p className="text-xs text-gray-500 truncate">
+                                                            {variant?.barcode_aliases?.[0] || variant?.sku || product.type}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4">
-                                                <div className="flex items-center gap-2 text-gray-600">
-                                                    <Barcode className="w-4 h-4" />
-                                                    <span className="text-sm font-mono">
-                                                        {variant?.barcode_aliases?.[0] || variant?.sku || "-"}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <p className="font-medium text-gray-900">
+                                            <td className="px-3 py-3 text-right">
+                                                <p className="font-medium text-gray-900 text-sm">
                                                     {formatCurrency(variant?.price || product.base_price || 0)}
                                                 </p>
-                                                <p className="text-sm text-gray-500">
-                                                    Kelish: {formatCurrency(variant?.cost_price || product.cost_price || 0)}
-                                                </p>
                                             </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <span className={`font-medium ${isLowStock ? 'text-red-600' : 'text-gray-900'}`}>
+                                            <td className="px-3 py-3 text-right">
+                                                <span className={`font-medium text-sm ${isLowStock ? 'text-red-600' : 'text-gray-900'}`}>
                                                     {variant?.stock_quantity?.toFixed(0) || 0}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-4 text-center">
-                                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                                    product.is_active 
-                                                        ? 'bg-green-100 text-green-700' 
-                                                        : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {product.is_active ? 'Faol' : 'Nofaol'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                            <td className="px-3 py-3 text-right hidden sm:table-cell">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                                                         <Edit2 className="w-4 h-4 text-gray-600" />
                                                     </button>
                                                     <button 
                                                         onClick={() => deleteMutation.mutate(product.id)}
-                                                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                        className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                                                     >
                                                         <Trash2 className="w-4 h-4 text-red-600" />
                                                     </button>
@@ -271,15 +245,15 @@ export default function ProductsPage() {
                         </table>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
-                        <Package className="w-16 h-16 text-gray-300 mb-4" />
-                        <p className="text-gray-500 mb-4">Hali mahsulotlar yo'q</p>
+                    <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                        <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mb-3" />
+                        <p className="text-sm text-gray-500 mb-3">Mahsulotlar yo'q</p>
                         <button 
                             onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
                             <Plus className="w-4 h-4" />
-                            Birinchi mahsulotni qo'shing
+                            Qo'shish
                         </button>
                     </div>
                 )}
@@ -287,11 +261,11 @@ export default function ProductsPage() {
 
             {/* Add Product Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-md p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Yangi mahsulot</h2>
+                <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+                    <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Yangi mahsulot</h2>
                         
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Mahsulot nomi *
@@ -301,11 +275,11 @@ export default function ProductsPage() {
                                     value={newProduct.name}
                                     onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="Masalan: Coca-Cola 1L"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Sotish narxi *
@@ -315,7 +289,7 @@ export default function ProductsPage() {
                                         value={newProduct.base_price}
                                         onChange={(e) => setNewProduct(prev => ({ ...prev, base_price: e.target.value }))}
                                         placeholder="15000"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                                 <div>
@@ -327,25 +301,25 @@ export default function ProductsPage() {
                                         value={newProduct.cost_price}
                                         onChange={(e) => setNewProduct(prev => ({ ...prev, cost_price: e.target.value }))}
                                         placeholder="12000"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-2 sm:gap-3 mt-5 sm:mt-6">
                             <button
                                 onClick={() => setShowAddModal(false)}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                             >
-                                Bekor qilish
+                                Bekor
                             </button>
                             <button
                                 onClick={handleAddProduct}
                                 disabled={createMutation.isPending || !newProduct.name || !newProduct.base_price}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                className="flex-1 px-3 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                             >
-                                {createMutation.isPending ? "Saqlanmoqda..." : "Qo'shish"}
+                                {createMutation.isPending ? "..." : "Qo'shish"}
                             </button>
                         </div>
                     </div>

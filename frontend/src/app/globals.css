@@ -28,6 +28,87 @@ html, body {
   }
 }
 
+/* Mobile-First Typography - Smaller fonts on mobile */
+@media screen and (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.35 !important;
+  }
+  
+  h3 {
+    font-size: 1.1rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Reduce padding on cards */
+  .p-6 {
+    padding: 1rem !important;
+  }
+  
+  .p-4 {
+    padding: 0.75rem !important;
+  }
+  
+  /* Smaller gaps */
+  .gap-6 {
+    gap: 1rem !important;
+  }
+  
+  .gap-4 {
+    gap: 0.75rem !important;
+  }
+  
+  /* Table text smaller */
+  table {
+    font-size: 0.8125rem;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.75rem !important;
+  }
+}
+
+/* Mobile Table Scroll */
+.mobile-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+
+@media screen and (min-width: 640px) {
+  .mobile-table-wrapper {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Mobile Modal - Full width with margin */
+@media screen and (max-width: 640px) {
+  .modal-content {
+    width: calc(100% - 2rem) !important;
+    max-height: 85vh !important;
+    margin: 0.5rem !important;
+  }
+}
+
+/* Better touch targets */
+@media screen and (max-width: 640px) {
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -96,28 +96,28 @@ export default function SalesPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Sotuvlar tarixi</h1>
-                    <p className="text-gray-600 mt-1">Barcha sotuvlar va tranzaksiyalar</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Sotuvlar</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Sotuvlar tarixi</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <button className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                     <Download className="w-4 h-4" />
-                    Export
+                    <span className="hidden sm:inline">Export</span>
                 </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-green-600" />
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="bg-white p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-600">Jami savdo</p>
+                            <p className="text-xs text-gray-600">Savdo</p>
                             <p className="text-xl font-bold text-gray-900">{formatCurrency(totalAmount)}</p>
                         </div>
                     </div>
@@ -274,8 +274,8 @@ export default function SalesPage() {
 
             {/* Sale Details Modal */}
             {showDetails && selectedSale && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+                    <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-semibold text-gray-900">
                                 Chek #{selectedSale.receipt_number || selectedSale.id}

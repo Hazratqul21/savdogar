@@ -132,42 +132,44 @@ export default function SettingsPage() {
 
 
     return (
-        <div className="container mx-auto p-4 md:p-8 max-w-6xl">
-            <header className="mb-8 flex justify-between items-center">
+        <div className="space-y-4 sm:space-y-6">
+            <header className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        Tizim Sozlamalari
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
+                        Sozlamalar
                     </h1>
-                    <p className="text-gray-600 mt-2">Profil va biznesingizni mukammallashtiring.</p>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Profil va biznes sozlamalari</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={loading}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                    {loading ? <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full" /> : <Save size={18} />}
-                    Saqlash
+                    {loading ? <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full" /> : <Save size={16} />}
+                    <span className="hidden sm:inline">Saqlash</span>
                 </button>
             </header>
 
-            <div className="flex flex-col md:flex-row gap-8">
-                {/* Sidebar Tabs */}
-                <aside className="w-full md:w-64 space-y-2">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all relative group",
-                                activeTab === tab.id
-                                    ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600"
-                                    : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
-                            )}
-                        >
-                            <tab.icon size={20} className={cn(activeTab === tab.id ? "text-blue-600" : "text-gray-500")} />
-                            <span className={cn("font-medium", activeTab === tab.id && "font-semibold")}>{tab.label}</span>
-                        </button>
-                    ))}
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                {/* Sidebar Tabs - Horizontal scroll on mobile */}
+                <aside className="w-full md:w-56 overflow-x-auto">
+                    <div className="flex md:flex-col gap-1.5 min-w-max md:min-w-0">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={cn(
+                                    "flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg transition-all whitespace-nowrap text-sm",
+                                    activeTab === tab.id
+                                        ? "bg-blue-50 text-blue-600"
+                                        : "hover:bg-gray-50 text-gray-700 hover:text-gray-900"
+                                )}
+                            >
+                                <tab.icon size={18} className={cn(activeTab === tab.id ? "text-blue-600" : "text-gray-500")} />
+                                <span className={cn("font-medium", activeTab === tab.id && "font-semibold")}>{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </aside>
 
                 {/* Main Content Area */}

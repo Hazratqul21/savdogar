@@ -131,16 +131,16 @@ export default function TeamPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Jamoa</h1>
-                    <p className="text-gray-600 mt-1">Xodimlarni boshqarish va rol berish</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Jamoa</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Xodimlarni boshqarish</p>
                 </div>
                 <button 
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
                 >
                     <Plus className="w-4 h-4" />
                     Yangi xodim
@@ -318,8 +318,8 @@ export default function TeamPage() {
 
             {/* Add Member Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-md">
+                <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+                    <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-semibold text-gray-900">Yangi xodim</h2>
                             <button 

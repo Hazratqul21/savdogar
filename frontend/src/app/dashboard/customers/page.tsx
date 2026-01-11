@@ -99,25 +99,25 @@ export default function CustomersPage() {
     const totalDebt = customers.reduce((sum: number, c: any) => sum + Math.abs(Math.min(c.balance || 0, 0)), 0);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Mijozlar</h1>
-                    <p className="text-gray-600 mt-1">Mijozlar bazasi va qarz holati</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Mijozlar</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Mijozlar bazasi</p>
                 </div>
                 <button 
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
                 >
                     <Plus className="w-4 h-4" />
-                    Yangi mijoz
+                    <span className="hidden sm:inline">Yangi</span>
                 </button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="bg-white p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-100 rounded-lg">
                             <Users className="w-5 h-5 text-blue-600" />
@@ -262,8 +262,8 @@ export default function CustomersPage() {
 
             {/* Add Customer Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl w-full max-w-md">
+                <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+                    <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-lg font-semibold text-gray-900">Yangi mijoz</h2>
                             <button 

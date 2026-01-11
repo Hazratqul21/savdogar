@@ -128,25 +128,24 @@ export default function DashboardPage() {
     ].filter(action => permissions.hasPermission(action.permission));
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 md:space-y-8">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col gap-2 sm:gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                         Xush kelibsiz{tenantName ? `, ${tenantName}` : ""}!
                     </h1>
-                    <p className="text-gray-600 mt-1">
-                        Faoliyat turi: <span className="font-medium text-blue-600">
+                    <p className="text-sm sm:text-base text-gray-600 mt-1">
+                        <span className="font-medium text-blue-600">
                             {BUSINESS_TYPE_LABELS[businessType] || businessType}
                         </span>
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium">
+                <div className="hidden sm:flex items-center gap-3">
+                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm font-medium">
                         {new Date().toLocaleDateString('uz-UZ', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
+                            weekday: 'short', 
+                            month: 'short', 
                             day: 'numeric' 
                         })}
                     </div>
@@ -155,38 +154,38 @@ export default function DashboardPage() {
 
             {/* Stats Grid */}
             {statsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
                     <StatsCard 
                         title="Bugungi Savdo" 
                         value={formatCurrency(stats?.today_sales || 0)}
-                        icon={<DollarSign className="w-5 h-5" />}
+                        icon={<DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />}
                         iconBg="bg-green-100"
                         iconColor="text-green-600"
                         trend={stats?.today_sales > 0 ? "+12%" : undefined}
                         trendUp={true}
                     />
                     <StatsCard 
-                        title="Bugungi Tranzaksiyalar" 
+                        title="Tranzaksiyalar" 
                         value={stats?.today_transactions?.toString() || "0"}
-                        icon={<Receipt className="w-5 h-5" />}
+                        icon={<Receipt className="w-4 h-4 sm:w-5 sm:h-5" />}
                         iconBg="bg-blue-100"
                         iconColor="text-blue-600"
                     />
                     <StatsCard 
-                        title="Jami Mahsulotlar" 
+                        title="Mahsulotlar" 
                         value={stats?.total_products?.toString() || "0"}
-                        icon={<Package className="w-5 h-5" />}
+                        icon={<Package className="w-4 h-4 sm:w-5 sm:h-5" />}
                         iconBg="bg-purple-100"
                         iconColor="text-purple-600"
                     />
                     <StatsCard 
-                        title="Kam qolgan tovarlar" 
+                        title="Kam qolgan" 
                         value={stats?.low_stock_products?.toString() || "0"}
-                        icon={<AlertCircle className="w-5 h-5" />}
+                        icon={<AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                         iconBg="bg-red-100"
                         iconColor="text-red-600"
                         alert={stats?.low_stock_products > 0}
@@ -195,35 +194,35 @@ export default function DashboardPage() {
             )}
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                 {/* Recent Sales */}
-                <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100">
-                        <h2 className="text-lg font-semibold text-gray-900">So'nggi sotuvlar</h2>
+                <div className="lg:col-span-2 bg-white rounded-lg sm:rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100">
+                        <h2 className="text-sm sm:text-base font-semibold text-gray-900">So'nggi sotuvlar</h2>
                         <Link 
                             href="/dashboard/sales" 
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                            className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
                         >
-                            Barchasi <ArrowRight className="w-4 h-4" />
+                            Barchasi <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Link>
                     </div>
                     <div className="divide-y divide-gray-100">
                         {recentSales.length > 0 ? (
                             recentSales.slice(0, 5).map((sale: any) => (
-                                <div key={sale.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                                    <div>
-                                        <p className="font-medium text-gray-900">
+                                <div key={sale.id} className="flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">
                                             #{sale.receipt_number || sale.id}
                                         </p>
-                                        <p className="text-sm text-gray-500">
-                                            {new Date(sale.created_at).toLocaleString('uz-UZ')}
+                                        <p className="text-xs text-gray-500">
+                                            {new Date(sale.created_at).toLocaleDateString('uz-UZ')}
                                         </p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="font-semibold text-gray-900">
+                                    <div className="text-right shrink-0 ml-2">
+                                        <p className="text-sm font-semibold text-gray-900">
                                             {formatCurrency(sale.total_amount)}
                                         </p>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-xs text-gray-500">
                                             {sale.payment_method === 'cash' ? 'Naqd' : 
                                              sale.payment_method === 'card' ? 'Karta' : 
                                              sale.payment_method}
@@ -232,14 +231,14 @@ export default function DashboardPage() {
                                 </div>
                             ))
                         ) : (
-                            <div className="p-8 text-center text-gray-500">
-                                <Receipt className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                <p>Hali sotuvlar yo'q</p>
+                            <div className="p-6 sm:p-8 text-center text-gray-500">
+                                <Receipt className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-gray-300" />
+                                <p className="text-sm">Hali sotuvlar yo'q</p>
                                 <Link 
                                     href="/pos" 
-                                    className="mt-2 inline-block text-blue-600 hover:underline"
+                                    className="mt-2 inline-block text-sm text-blue-600 hover:underline"
                                 >
-                                    POS terminali orqali sotuv qiling
+                                    Sotuv qilish
                                 </Link>
                             </div>
                         )}
@@ -247,19 +246,19 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Tezkor amallar</h2>
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 p-3 sm:p-4">
+                    <h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-3">Tezkor amallar</h2>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         {quickActions.map((action) => (
                             <Link
                                 key={action.href}
                                 href={action.href}
-                                className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 transition-all group"
+                                className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 transition-all group"
                             >
-                                <div className="p-3 rounded-full bg-white border border-gray-200 group-hover:border-blue-200 group-hover:bg-blue-100 transition-all mb-2">
-                                    <action.icon className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+                                <div className="p-2 sm:p-3 rounded-full bg-white border border-gray-200 group-hover:border-blue-200 group-hover:bg-blue-100 transition-all mb-1.5 sm:mb-2">
+                                    <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-blue-600" />
                                 </div>
-                                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 text-center">
+                                <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-blue-700 text-center">
                                     {action.label}
                                 </span>
                             </Link>
@@ -267,12 +266,12 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Monthly Summary */}
-                    <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-                        <h3 className="font-medium text-gray-800 mb-2">Oylik savdo</h3>
-                        <p className="text-2xl font-bold text-blue-600">
+                    <div className="mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
+                        <h3 className="text-sm font-medium text-gray-800 mb-1">Oylik savdo</h3>
+                        <p className="text-xl sm:text-2xl font-bold text-blue-600">
                             {formatCurrency(stats?.monthly_sales || 0)}
                         </p>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-xs text-gray-600 mt-1">
                             {new Date().toLocaleString('uz-UZ', { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
@@ -295,20 +294,20 @@ interface StatsCardProps {
 
 function StatsCard({ title, value, icon, iconBg, iconColor, trend, trendUp, alert }: StatsCardProps) {
     return (
-        <div className={`bg-white p-4 md:p-6 rounded-xl border ${alert ? 'border-red-200 bg-red-50/50' : 'border-gray-200'} hover:shadow-md transition-shadow`}>
-            <div className="flex items-start justify-between mb-3">
-                <div className={`p-3 rounded-xl ${iconBg}`}>
+        <div className={`bg-white p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl border ${alert ? 'border-red-200 bg-red-50/50' : 'border-gray-200'} hover:shadow-md transition-shadow`}>
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+                <div className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl ${iconBg}`}>
                     <div className={iconColor}>{icon}</div>
                 </div>
                 {trend && (
-                    <div className={`flex items-center gap-1 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-                        {trendUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                    <div className={`hidden sm:flex items-center gap-1 text-xs sm:text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+                        {trendUp ? <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
                         {trend}
                     </div>
                 )}
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
-            <p className={`text-2xl font-bold ${alert ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
+            <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 truncate">{title}</h3>
+            <p className={`text-lg sm:text-xl md:text-2xl font-bold ${alert ? 'text-red-600' : 'text-gray-900'} truncate`}>{value}</p>
         </div>
     );
 }

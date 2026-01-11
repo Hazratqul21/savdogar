@@ -89,16 +89,16 @@ export default function ReportsPage() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Hisobotlar</h1>
-                    <p className="text-gray-600 mt-1">Biznesingiz statistikasi va tahlillari</p>
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Hisobotlar</h1>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Statistika va tahlillar</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
                     <Download className="w-4 h-4" />
-                    Excel yuklab olish
+                    <span className="hidden sm:inline">Export</span>
                 </button>
             </div>
 

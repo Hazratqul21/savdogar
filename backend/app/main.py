@@ -212,12 +212,34 @@ async def health_check():
 async def diagnostic_check():
     """Diagnostic endpoint to check environment configuration (safe for production)."""
     from urllib.parse import urlparse
+    import os
+    
+    # Check raw environment variables (for debugging Vercel integration)
+    raw_database_url = os.getenv("DATABASE_URL", "")
+    raw_postgres_url = os.getenv("POSTGRES_URL", "")
+    
+    # Mask sensitive parts but show structure
+    def mask_url(url: str) -> str:
+        if not url:
+            return "❌ Not set"
+        try:
+            parsed = urlparse(url)
+            # Show structure without password
+            masked = f"{parsed.scheme}://{parsed.username}:***@{parsed.hostname}:{parsed.port}/{parsed.path.lstrip('/')}"
+            if parsed.query:
+                masked += f"?{parsed.query[:50]}..."
+            return masked
+        except:
+            # Show first/last chars to debug format issues
+            return f"{url[:20]}...{url[-20:]}" if len(url) > 50 else f"[{len(url)} chars]"
     
     # Check environment variables (masked)
     env_status = {
         "ENVIRONMENT": settings.ENVIRONMENT,
         "FRONTEND_URL": settings.FRONTEND_URL or "❌ Not set",
-        "DATABASE_URL": "✅ Set" if (settings.DATABASE_URL or settings.POSTGRES_URL) else "❌ Not set",
+        "DATABASE_URL_RAW": mask_url(raw_database_url),
+        "POSTGRES_URL_RAW": mask_url(raw_postgres_url),
+        "DATABASE_URL_USED": "DATABASE_URL" if raw_database_url else ("POSTGRES_URL" if raw_postgres_url else "constructed"),
         "SECRET_KEY": "✅ Set" if (settings.SECRET_KEY and len(settings.SECRET_KEY) >= 32) else "❌ Not set or too short",
     }
     

@@ -11,16 +11,22 @@ interface UseBarcodeSccannerOptions {
     enabled?: boolean;
     minLength?: number;    // Minimal barcode uzunligi
     maxTime?: number;      // Maksimal vaqt (ms) raqamlar orasida
+    maxGap?: number;       // Alias for maxTime
     endKey?: string;       // Oxirgi tugma (Enter)
+    ignoreInputFocus?: boolean;  // Input field da skaner ishlamasin
 }
 
 export function useBarcodeScanner({
     onScan,
     enabled = true,
     minLength = 4,
-    maxTime = 50,
-    endKey = "Enter"
+    maxTime,
+    maxGap = 50,
+    endKey = "Enter",
+    ignoreInputFocus = false
 }: UseBarcodeSccannerOptions) {
+    // Use maxGap as alias for maxTime
+    const effectiveMaxTime = maxTime ?? maxGap;
     const [isScanning, setIsScanning] = useState(false);
     const bufferRef = useRef<string>("");
     const lastKeyTimeRef = useRef<number>(0);
@@ -55,7 +61,7 @@ export function useBarcodeScanner({
         }
         
         // If too much time passed, reset buffer (manual typing)
-        if (timeDiff > maxTime && bufferRef.current.length > 0 && !isScanning) {
+        if (timeDiff > effectiveMaxTime && bufferRef.current.length > 0 && !isScanning) {
             clearBuffer();
         }
         
@@ -75,6 +81,11 @@ export function useBarcodeScanner({
             // Check if we're in an input field and user is typing normally
             const target = event.target as HTMLElement;
             const isInputField = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+            
+            // If ignoreInputFocus is true and we're in input, skip
+            if (ignoreInputFocus && isInputField) {
+                return;
+            }
             
             // If typing slowly in input field, it's not a scanner
             if (isInputField && timeDiff > 100) {
@@ -96,9 +107,9 @@ export function useBarcodeScanner({
                 } else {
                     clearBuffer();
                 }
-            }, maxTime * 3);
+            }, effectiveMaxTime * 3);
         }
-    }, [enabled, maxTime, minLength, endKey, isScanning, processBarcode, clearBuffer]);
+    }, [enabled, effectiveMaxTime, minLength, endKey, isScanning, processBarcode, clearBuffer, ignoreInputFocus]);
     
     useEffect(() => {
         if (enabled) {

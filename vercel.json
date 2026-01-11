@@ -1,5 +1,14 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "backend/api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
   "routes": [
     {
       "src": "/(.*)",
@@ -22,7 +31,8 @@
     "backend/api/index.py": {
       "runtime": "python3.12",
       "maxDuration": 60,
-      "memory": 1024
+      "memory": 1024,
+      "includeFiles": "backend/**"
     }
   }
 }

@@ -2,7 +2,6 @@
 Vercel Serverless Function Entry Point
 =====================================
 FastAPI ASGI handler for Vercel Python runtime.
-Vercel Python 3.9+ supports ASGI natively.
 """
 import sys
 import os
@@ -17,6 +16,6 @@ if BACKEND_DIR not in sys.path:
 # Import FastAPI app
 from app.main import app
 
-# Vercel Python runtime expects 'app' variable for ASGI
-# Alternative: Use 'handler' with Mangum (but causes timeouts)
-# For native ASGI support, just export 'app'
+# Vercel Python 4.x REQUIRES 'handler' variable for ASGI apps
+# This is the CRITICAL export that Vercel looks for
+handler = app

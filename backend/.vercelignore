@@ -41,6 +41,7 @@ logs/
 .coverage
 htmlcov/
 tests/
+pytest.ini
 
 # Database files
 *.db
@@ -54,25 +55,36 @@ uploads/
 .git/
 .gitignore
 
-# Documentation
+# Documentation (not needed for runtime)
 *.md
-!README.md
+docs/
 
-# Migrations (not needed for serverless)
-# migrations/
+# Alembic & Migrations (run locally, not in serverless)
+alembic/
+alembic.ini
+migrations/
 
-# Alembic (keep for now)
-# alembic/
-
-# Temporary files
+# Temporary/trigger files
 *.tmp
 *.temp
 *.pid
+.deploy-trigger
+.vercel-trigger
+.vercel-updated
 
-# Certs (if any)
+# Certs
 certs/
 
 # Scripts not needed for deployment
 create_admin.py
 create_user.py
 create_user_via_mcp.py
+
+# Docker (not used in Vercel)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# API test files
+api/test.py
+api/.vercel-deploy

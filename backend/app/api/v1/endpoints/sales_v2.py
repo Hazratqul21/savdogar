@@ -438,7 +438,7 @@ def checkout(
                 item=None,  # Will be set after creation
                 business_type=business_type,
                 additional_data={
-                    **checkout_data.metadata or {},
+                    **(checkout_data.metadata or {}),
                     "variant_attributes": variant.attributes or {},
                     "product_metadata": product.product_metadata or {}
                 }

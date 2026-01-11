@@ -12,9 +12,42 @@ import {
     DollarSign,
     Cpu,
     Bell,
-    Smartphone
+    Smartphone,
+    CheckCircle2,
+    XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Toast notification component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 1500);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
+        >
+            <div className={cn(
+                "flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border",
+                type === 'success' 
+                    ? "bg-green-50 border-green-200 text-green-700" 
+                    : "bg-red-50 border-red-200 text-red-700"
+            )}>
+                {type === 'success' ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                ) : (
+                    <XCircle className="w-5 h-5 text-red-500" />
+                )}
+                <span className="font-medium text-sm">{message}</span>
+            </div>
+        </motion.div>
+    );
+}
 
 import {
     getSettings,
@@ -38,6 +71,7 @@ export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("profile");
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Form States
     const [profile, setProfile] = useState({
@@ -106,9 +140,9 @@ export default function SettingsPage() {
                 min_margin_percent: business.marginGuard,
                 config: { ...business.config, ai_mode: business.aiMode }
             });
-            alert("Muvaffaqiyatli saqlandi!");
+            setToast({ message: "Muvaffaqiyatli saqlandi!", type: 'success' });
         } catch (err) {
-            alert("Saqlashda xatolik yuz berdi.");
+            setToast({ message: "Saqlashda xatolik yuz berdi.", type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -133,6 +167,17 @@ export default function SettingsPage() {
 
     return (
         <div className="space-y-4 sm:space-y-6">
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <Toast 
+                        message={toast.message} 
+                        type={toast.type} 
+                        onClose={() => setToast(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
             <header className="flex items-center justify-between gap-2">
                 <div>
                     <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">

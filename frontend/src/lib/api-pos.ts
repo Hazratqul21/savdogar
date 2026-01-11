@@ -202,7 +202,7 @@ function mapVariant(variant: any, product: any, tenantId: number): ProductVarian
 
 export async function calculateCart(request: CartCalculationRequest): Promise<CartCalculationResult> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/sales/cart/calculate`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/sales/cart/calculate`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -213,7 +213,7 @@ export async function calculateCart(request: CartCalculationRequest): Promise<Ca
 
 export async function checkout(request: CheckoutRequest): Promise<any> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/sales/checkout`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/sales/checkout`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(request),
@@ -231,7 +231,7 @@ export async function checkout(request: CheckoutRequest): Promise<any> {
 
 export async function getCustomers(tenantId: number): Promise<Customer[]> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/customers`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/customers`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch customers');

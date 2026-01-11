@@ -50,6 +50,8 @@ export default function SettingsPage() {
 
     const [business, setBusiness] = useState({
         name: "",
+        address: "",
+        phone: "",
         type: "retail",
         currency: "UZS",
         usdRate: 12800,
@@ -71,6 +73,8 @@ export default function SettingsPage() {
                 });
                 setBusiness({
                     name: data.tenant.name || "",
+                    address: data.tenant.address || "",
+                    phone: data.tenant.phone || "",
                     type: data.tenant.business_type || "retail",
                     currency: data.tenant.base_currency || "UZS",
                     usdRate: data.tenant.usd_to_uzs_rate || 12800,
@@ -246,6 +250,26 @@ export default function SettingsPage() {
                                             >
                                                 {businessTypes.map(bt => <option key={bt.value} value={bt.value}>{bt.label}</option>)}
                                             </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-gray-700">Manzil</label>
+                                            <input
+                                                type="text"
+                                                value={business.address}
+                                                onChange={(e) => setBusiness({ ...business, address: e.target.value })}
+                                                placeholder="Toshkent sh., Chilonzor tumani"
+                                                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-gray-700">Telefon</label>
+                                            <input
+                                                type="tel"
+                                                value={business.phone}
+                                                onChange={(e) => setBusiness({ ...business, phone: e.target.value })}
+                                                placeholder="+998 90 123 45 67"
+                                                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900"
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold text-gray-700">Dollar kursi (1 USD - UZS)</label>

@@ -3,55 +3,36 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   LayoutDashboard,
   ShoppingCart,
-  Box,
+  Package,
+  Warehouse,
   Users,
   Settings,
   Receipt,
-  Tag,
-  FileText,
+  BarChart3,
+  UserPlus,
+  Shield,
 } from "lucide-react";
 
-// Menu items configuration - some items are restricted for 'seller' role
-const getAllMenuItems = (userRole?: string) => {
-    const allItems = [
-        { icon: LayoutDashboard, label: "Boshqaruv paneli", href: "/admin", restricted: true },
-        { icon: ShoppingCart, label: "POS Terminali", href: "/pos", restricted: false },
-        { icon: Receipt, label: "Buyurtmalar tarixi", href: "/admin/invoices", restricted: false, sellerLabel: "Buyurtmalar tarixi" },
-        { icon: Tag, label: "Label Studio", href: "/admin/labels", restricted: true },
-        { icon: Receipt, label: "Fakturalar", href: "/admin/invoices", restricted: true, ownerLabel: "Fakturalar" },
-        { icon: Box, label: "Ombor", href: "/admin/inventory", restricted: true },
-        { icon: FileText, label: "Nakladnoy Skaner", href: "/admin/inventory/nakladnoy", restricted: true },
-        { icon: Users, label: "Mijozlar", href: "/admin/customers", restricted: true },
-        { icon: Settings, label: "Sozlamalar", href: "/admin/settings", restricted: true },
-    ];
-    
-    // Filter items based on role
-    if (userRole === 'seller' || userRole === 'cashier') {
-        // Sellers only see POS and Orders History
-        return allItems
-            .filter(item => !item.restricted || (item.sellerLabel && item.href === "/admin/invoices"))
-            .map(item => {
-                if (item.sellerLabel && item.href === "/admin/invoices") {
-                    return { ...item, label: item.sellerLabel };
-                }
-                return item;
-            });
-    }
-    // Owners/managers see all items
-    return allItems.map(item => {
-        if (item.ownerLabel && item.href === "/admin/invoices") {
-            return { ...item, label: item.ownerLabel };
-        }
-        return item;
-    });
-};
+// Menu items with permission requirements (same as sidebar)
+const MENU_ITEMS = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", permission: "dashboard" },
+  { icon: ShoppingCart, label: "POS Terminali", href: "/pos", permission: "pos" },
+  { icon: Package, label: "Mahsulotlar", href: "/dashboard/products", permission: "products" },
+  { icon: Warehouse, label: "Ombor", href: "/dashboard/inventory", permission: "inventory" },
+  { icon: Receipt, label: "Sotuvlar", href: "/dashboard/sales", permission: "reports" },
+  { icon: Users, label: "Mijozlar", href: "/dashboard/customers", permission: "customers" },
+  { icon: BarChart3, label: "Hisobotlar", href: "/dashboard/reports", permission: "reports" },
+  { icon: UserPlus, label: "Jamoa", href: "/dashboard/team", permission: "team" },
+  { icon: Settings, label: "Sozlamalar", href: "/dashboard/settings", permission: "settings" },
+];
 
 /**
  * Mobile Sidebar - Hamburger menu for mobile devices
@@ -61,21 +42,58 @@ export function MobileSidebar() {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<any>({});
   const pathname = usePathname();
+  const router = useRouter();
+  const permissions = usePermissions();
 
-  // Fetch user profile to get role
+  // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const { getSettings } = await import("@/lib/api");
         const data = await getSettings();
-        setProfile(data.user);
-      } catch (e) {}
+        setProfile(data.user || {});
+      } catch (e) {
+        console.error("Failed to fetch profile:", e);
+      }
     };
     fetchProfile();
   }, []);
 
-  // Get filtered menu items based on user role
-  const menuItems = getAllMenuItems(profile?.role);
+  // Filter menu items based on permissions
+  const visibleMenuItems = MENU_ITEMS.filter(item => {
+    return permissions.hasPermission(item.permission);
+  });
+
+  // Add super admin link if user is super_admin
+  if (permissions.role === "super_admin") {
+    visibleMenuItems.push({
+      icon: Shield,
+      label: "Super Admin",
+      href: "/admin",
+      permission: "*"
+    });
+  }
+
+  const handleLogout = async () => {
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("user_permissions");
+    localStorage.removeItem("tenant_id");
+    localStorage.removeItem("business_type");
+    const { removeToken } = await import("@/lib/api");
+    removeToken();
+    router.push("/login");
+  };
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      super_admin: "Super Admin",
+      owner: "Egasi",
+      manager: "Menejer",
+      cashier: "Kassir",
+      warehouse_manager: "Omborchi"
+    };
+    return labels[role] || role;
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -83,7 +101,7 @@ export function MobileSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="fixed top-4 left-4 z-50 md:hidden h-11 w-11"
+          className="fixed top-4 left-4 z-50 md:hidden h-11 w-11 bg-white shadow-md"
           aria-label="Open menu"
         >
           <Menu className="h-6 w-6" />
@@ -93,7 +111,15 @@ export function MobileSidebar() {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Savdo-Gar</h2>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold">S</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Savdogar</h2>
+                <p className="text-xs text-gray-500">Savdo tizimi</p>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -104,9 +130,17 @@ export function MobileSidebar() {
             </Button>
           </div>
 
+          {/* User Info */}
+          <div className="px-4 py-3 border-b bg-gray-50">
+            <p className="font-medium text-gray-900 text-sm">
+              {profile.full_name || profile.username || "Foydalanuvchi"}
+            </p>
+            <p className="text-xs text-gray-500">{getRoleLabel(permissions.role)}</p>
+          </div>
+
           {/* Menu Items */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-            {menuItems.map((item) => {
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+            {visibleMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
               
@@ -133,13 +167,10 @@ export function MobileSidebar() {
           <div className="p-4 border-t">
             <Button
               variant="outline"
-              className="w-full"
-              onClick={async () => {
-                const { removeToken } = await import("@/lib/api");
-                removeToken();
-                window.location.href = "/login";
-              }}
+              className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
             >
+              <LogOut className="h-4 w-4" />
               Chiqish
             </Button>
           </div>

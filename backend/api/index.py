@@ -17,5 +17,14 @@ if BACKEND_DIR not in sys.path:
 from mangum import Mangum
 from app.main import app
 
-# Create Mangum handler for Vercel/AWS Lambda
-handler = Mangum(app, lifespan="off")
+# Create Mangum adapter
+_mangum_handler = Mangum(app, lifespan="off")
+
+
+# Vercel Python runtime expects a function named 'handler'
+def handler(event, context):
+    """
+    Vercel serverless function handler.
+    Wraps Mangum adapter for compatibility.
+    """
+    return _mangum_handler(event, context)

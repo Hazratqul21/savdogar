@@ -36,6 +36,7 @@ from app.api.v1.endpoints import (
     tenants,
     labels,
     settings,
+    team,  # Team management
     # ✅ PART 2: Plumbing & HVAC endpoints
     serial_numbers,
     warranties,
@@ -88,6 +89,7 @@ api_router.include_router(sales_v2.router, prefix="/v2/sales", tags=["sales-v2"]
 api_router.include_router(customers_v2.router, prefix="/v2/customers", tags=["customers-v2"])
 api_router.include_router(labels.router, prefix="/labels", tags=["labels"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
+api_router.include_router(team.router, prefix="/team", tags=["team"])
 
 # ✅ PART 2: Plumbing & HVAC endpoints
 api_router.include_router(serial_numbers.router, prefix="/serial-numbers", tags=["serial-numbers"])

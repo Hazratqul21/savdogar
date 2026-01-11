@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DemoDataSeeder } from "@/components/settings/demo-seeder";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const getUserBusinessType = () => {
     if (typeof window !== 'undefined') {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
     const [businessType, setBusinessType] = useState<string>("retail");
     const [userRole, setUserRole] = useState<string | null>(null);
     const router = useRouter();
+    const permissions = usePermissions();
 
     useEffect(() => {
         const type = getUserBusinessType();
@@ -43,15 +45,17 @@ export default function DashboardPage() {
                     setBusinessType(data.tenant.business_type);
                 }
                 
-                // NOTE: Auto-redirect to POS disabled
-                // Users can navigate to POS manually from sidebar
-                // This allows all users to see the dashboard first
+                // Redirect cashiers directly to POS (they can't access dashboard)
+                if (role === 'cashier' && !permissions.canAccessDashboard) {
+                    router.replace('/pos');
+                    return;
+                }
             } catch (e) {
                 console.error("Failed to fetch user role:", e);
             }
         };
         fetchUserRole();
-    }, [router]);
+    }, [router, permissions.canAccessDashboard]);
 
     const renderRetailDashboard = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -106,7 +106,8 @@ export default function SignupPage() {
       });
 
       saveToken(loginResponse.access_token);
-      router.push("/dashboard");
+      // New users go to onboarding wizard first
+      router.push("/onboarding");
     } catch (err: any) {
       setError(err.message || "Ro'yxatdan o'tishda xatolik yuz berdi");
     } finally {

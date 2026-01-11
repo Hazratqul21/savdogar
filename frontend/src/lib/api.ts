@@ -243,6 +243,98 @@ export async function updateTenant(data: any): Promise<any> {
 }
 
 // =============================================================================
+// Onboarding API
+// =============================================================================
+
+export async function updateOnboarding(data: {
+  step?: number;
+  completed?: boolean;
+  business_type?: string;
+  store_name?: string;
+  store_address?: string;
+  store_phone?: string;
+}): Promise<any> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/settings/onboarding`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Onboarding yangilashda xatolik");
+  return response.json();
+}
+
+// =============================================================================
+// Team Management API
+// =============================================================================
+
+export async function getTeamMembers(): Promise<any[]> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/team`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Jamoa a'zolarini yuklashda xatolik");
+  return response.json();
+}
+
+export async function createTeamMember(data: {
+  username: string;
+  password: string;
+  full_name?: string;
+  email?: string;
+  phone_number?: string;
+  role: string;
+}): Promise<any> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/team`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Xodim qo'shishda xatolik");
+  }
+  return response.json();
+}
+
+export async function updateTeamMember(id: number, data: {
+  full_name?: string;
+  email?: string;
+  phone_number?: string;
+  role?: string;
+  is_active?: boolean;
+}): Promise<any> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/team/${id}`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Xodimni yangilashda xatolik");
+  return response.json();
+}
+
+export async function deleteTeamMember(id: number): Promise<any> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/team/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Xodimni o'chirishda xatolik");
+  return response.json();
+}
+
+export async function getAvailableRoles(): Promise<any> {
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/team/roles`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Rollarni yuklashda xatolik");
+  return response.json();
+}
+
+// =============================================================================
 // Invoice Scanner API
 // =============================================================================
 

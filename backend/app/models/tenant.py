@@ -66,6 +66,10 @@ class Tenant(Base):
     max_users = Column(Integer, default=5)  # Default: 5 for standard/trial, 25 for pro
     max_branches = Column(Integer, default=1)  # Default: 1 for standard/trial, 5 for pro
     
+    # Onboarding Status
+    onboarding_completed = Column(Boolean, default=False, index=True)
+    onboarding_step = Column(Integer, default=0)  # 0-5: current step in wizard
+    
     # Status
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)

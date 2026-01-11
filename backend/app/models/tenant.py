@@ -28,10 +28,11 @@ class Tenant(Base):
     name = Column(String, nullable=False, index=True)
     
     # New Business Logic
-    # Use values_callable to store enum VALUES ("retail") not NAMES ("RETAIL") in database
+    # Use native_enum=False to store as VARCHAR instead of PostgreSQL ENUM type
+    # This avoids case sensitivity issues between Python enum names and DB values
     business_type = Column(
-        Enum(BusinessType, values_callable=lambda x: [e.value for e in x]),
-        default=BusinessType.RETAIL,
+        String(50),
+        default="retail",
         nullable=False,
         index=True
     )

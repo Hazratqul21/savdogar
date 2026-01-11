@@ -19,10 +19,11 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
-    # Use values_callable to store enum VALUES ("cashier") not NAMES ("CASHIER") in database
+    # Store role as VARCHAR to avoid PostgreSQL ENUM case sensitivity issues
+    # Values: super_admin, owner, manager, cashier, warehouse_manager
     role = Column(
-        Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
-        default=UserRole.CASHIER
+        String(50),
+        default="cashier"
     )
     is_active = Column(Boolean, default=True)
     

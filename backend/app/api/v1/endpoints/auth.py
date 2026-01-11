@@ -76,19 +76,20 @@ async def signup(
         if hasattr(user_in, 'business_type') and user_in.business_type:
             from app.models.tenant import Tenant, BusinessType
             
-            # Try to parse business_type to BusinessType enum
-            try:
-                business_type_enum = BusinessType(user_in.business_type.lower())
-            except ValueError:
-                # If invalid business_type, use default RETAIL
-                business_type_enum = BusinessType.RETAIL
-                logger.warning(f"⚠️ Invalid business_type '{user_in.business_type}', using default: RETAIL")
+            # Normalize business_type to lowercase string
+            business_type_str = user_in.business_type.lower()
+            
+            # Validate against allowed values
+            valid_types = [e.value for e in BusinessType]
+            if business_type_str not in valid_types:
+                business_type_str = "retail"
+                logger.warning(f"⚠️ Invalid business_type '{user_in.business_type}', using default: retail")
             
             # Create tenant automatically for new signup
             tenant_name = user_in.full_name or user_in.username or f"{user_in.email.split('@')[0]}'s Business"
             tenant_obj = Tenant(
                 name=tenant_name,
-                business_type=business_type_enum,
+                business_type=business_type_str,  # Store as lowercase string
                 email=user_in.email,
                 phone=user_in.phone_number,
                 config={},
@@ -100,14 +101,22 @@ async def signup(
             db.add(tenant_obj)
             db.flush()  # Flush to get tenant ID
             tenant_id = tenant_obj.id
-            logger.info(f"✅ Tenant created automatically: {tenant_name} (ID: {tenant_id}, business_type: {business_type_enum.value})")
+            logger.info(f"✅ Tenant created automatically: {tenant_name} (ID: {tenant_id}, business_type: {business_type_str})")
         
         # Create new user
+        # Determine role - convert to lowercase string
+        user_role = "owner"  # First user becomes owner
+        if user_in.role:
+            if isinstance(user_in.role, str):
+                user_role = user_in.role.lower()
+            elif hasattr(user_in.role, 'value'):
+                user_role = user_in.role.value
+        
         user_obj = User(
             username=user_in.username,
             email=user_in.email,
             hashed_password=security.get_password_hash(user_in.password),
-            role=user_in.role if user_in.role else UserRole.OWNER,  # First user becomes OWNER
+            role=user_role,  # Store as lowercase string
             is_active=True,
             phone_number=user_in.phone_number,
             full_name=user_in.full_name,

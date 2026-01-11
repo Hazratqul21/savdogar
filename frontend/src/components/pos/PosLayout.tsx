@@ -17,10 +17,11 @@ export function PosLayout() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch tenant info on mount
-  const { data: tenantInfo } = useQuery({
+  const { data: tenantInfo, error: tenantError, isLoading: tenantLoading } = useQuery({
     queryKey: ['tenant-info'],
     queryFn: getTenantInfo,
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
@@ -31,12 +32,45 @@ export function PosLayout() {
     }
   }, [tenantInfo, setTenantId, setBusinessType]);
 
-  if (isLoading) {
+  // Handle error - redirect to login if auth failed
+  useEffect(() => {
+    if (tenantError) {
+      console.error('Tenant info error:', tenantError);
+      // Check if it's an auth error
+      if (tenantError.message?.includes('403') || tenantError.message?.includes('401')) {
+        // Clear token and redirect to login
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, [tenantError]);
+
+  if (isLoading || tenantLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-slate-300">Yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (tenantError && !tenantInfo) {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <p className="text-red-400 text-lg mb-2">Server bilan bog&apos;lanishda xatolik</p>
+          <p className="text-slate-400 text-sm mb-4">{tenantError.message}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Qayta urinish
+          </button>
         </div>
       </div>
     );

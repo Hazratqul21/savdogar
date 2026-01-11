@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { usePosState, type ProductVariant } from '@/stores/pos-state';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts, searchProductsByBarcode, searchProductsBySku } from '@/lib/api-pos';
-import { Plus, Minus, Trash2, ShoppingCart, Search, User, ChevronDown } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, Search, User, ChevronDown, Coffee } from 'lucide-react';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 import { useToast } from '@/hooks/useToast';
 import { ToastComponent } from '@/components/inventory/Toast';
@@ -12,7 +12,16 @@ import { ScanIndicator } from '@/components/pos/ScanIndicator';
 import { MobileCartBar } from '@/components/pos/MobileCartBar';
 import { MobileScannerButton } from '@/components/pos/MobileScannerButton';
 import { QuickAddProductModal } from '@/components/pos/quick-add-modal';
+import { SizeSelectionModal } from '@/components/pos/SizeSelectionModal';
 import { soundManager } from '@/lib/sound-manager';
+
+// Group products by name for cafe mode (products with sizes)
+interface ProductGroup {
+  name: string;
+  variants: ProductVariant[];
+  minPrice: number;
+  maxPrice: number;
+}
 
 export function VisualGridView() {
   const {
@@ -23,6 +32,7 @@ export function VisualGridView() {
     decrementQuantity,
     getCartTotal,
     tenantId,
+    businessType,
   } = usePosState();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,6 +47,13 @@ export function VisualGridView() {
   // Add New Product Modal state
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [missingBarcode, setMissingBarcode] = useState("");
+  
+  // Size selection modal state (for cafe mode)
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [selectedProductGroup, setSelectedProductGroup] = useState<ProductGroup | null>(null);
+  
+  // Check if we're in cafe mode
+  const isCafeMode = businessType === 'cafe' || businessType === 'horeca' || businessType === 'kitchen';
 
   // HID Barcode Scanner: Listen for USB scanner input
   useBarcodeScanner({
@@ -135,7 +152,30 @@ export function VisualGridView() {
     }
   });
 
-  // Filter products
+  // For cafe mode: Group products by name
+  const productGroups: ProductGroup[] = [];
+  if (isCafeMode) {
+    const groupMap = new Map<string, ProductVariant[]>();
+    allVariants.forEach((variant) => {
+      const name = variant.product?.name || variant.sku;
+      if (!groupMap.has(name)) {
+        groupMap.set(name, []);
+      }
+      groupMap.get(name)!.push(variant);
+    });
+    
+    groupMap.forEach((variants, name) => {
+      const prices = variants.map(v => v.price);
+      productGroups.push({
+        name,
+        variants,
+        minPrice: Math.min(...prices),
+        maxPrice: Math.max(...prices),
+      });
+    });
+  }
+
+  // Filter products/groups
   const filteredVariants = allVariants.filter((variant) => {
     const matchesSearch = !searchQuery || 
       variant.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,8 +183,24 @@ export function VisualGridView() {
     return matchesSearch;
   });
 
+  const filteredGroups = productGroups.filter((group) => {
+    return !searchQuery || group.name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   const handleAddToCart = (variant: ProductVariant) => {
     addToCart(variant, 1);
+    soundManager.playBeep();
+  };
+
+  const handleProductClick = (group: ProductGroup) => {
+    if (group.variants.length === 1) {
+      // Only one variant, add directly
+      handleAddToCart(group.variants[0]);
+    } else {
+      // Multiple variants (sizes), show selection modal
+      setSelectedProductGroup(group);
+      setShowSizeModal(true);
+    }
   };
 
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -199,36 +255,86 @@ export function VisualGridView() {
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-2 gap-4">
-            {filteredVariants.map((variant) => {
-              const productName = variant.product?.name || 'Mahsulot';
-              const productCode = variant.sku || '';
-              const price = variant.price || 0;
-              const stock = variant.stock_quantity || 0;
-              const unit = variant.attributes?.unit || 'kg';
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {isCafeMode ? (
+              // Cafe mode: Show product groups with size indicator
+              filteredGroups.map((group) => {
+                const hasSizes = group.variants.length > 1;
+                const priceText = hasSizes 
+                  ? `${group.minPrice.toLocaleString()} - ${group.maxPrice.toLocaleString()}`
+                  : group.minPrice.toLocaleString();
+                
+                return (
+                  <div
+                    key={group.name}
+                    onClick={() => handleProductClick(group)}
+                    className="bg-white rounded-xl p-3 sm:p-4 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all border-2 border-gray-100 hover:border-amber-400 group"
+                  >
+                    {/* Product icon */}
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 bg-amber-50 rounded-full flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                      <Coffee className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+                    </div>
+                    
+                    {/* Product name */}
+                    <h3 className="font-semibold text-gray-900 text-sm text-center mb-2 line-clamp-2">
+                      {group.name}
+                    </h3>
+                    
+                    {/* Size indicator */}
+                    {hasSizes && (
+                      <div className="flex justify-center gap-1 mb-2">
+                        {group.variants.length <= 3 ? (
+                          ['S', 'M', 'L'].slice(0, group.variants.length).map((size, i) => (
+                            <span key={size} className="w-6 h-6 text-xs font-bold rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                              {size}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-500">{group.variants.length} o'lcham</span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Price */}
+                    <p className="text-center font-bold text-gray-900 text-sm sm:text-base">
+                      {priceText}
+                      <span className="text-xs text-gray-500 ml-1">so'm</span>
+                    </p>
+                  </div>
+                );
+              })
+            ) : (
+              // Normal mode: Show individual variants
+              filteredVariants.map((variant) => {
+                const productName = variant.product?.name || 'Mahsulot';
+                const productCode = variant.sku || '';
+                const price = variant.price || 0;
+                const stock = variant.stock_quantity || 0;
+                const unit = variant.attributes?.unit || 'kg';
 
-              return (
-                <div
-                  key={variant.id}
-                  onClick={() => handleAddToCart(variant)}
-                  className="bg-white rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-                >
-                  <div className="mb-2">
-                    <h3 className="font-semibold text-gray-900 text-sm mb-1">{productName}</h3>
-                    <p className="text-xs text-gray-500">{productCode}</p>
+                return (
+                  <div
+                    key={variant.id}
+                    onClick={() => handleAddToCart(variant)}
+                    className="bg-white rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
+                  >
+                    <div className="mb-2">
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1">{productName}</h3>
+                      <p className="text-xs text-gray-500">{productCode}</p>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-lg font-bold text-gray-900">
+                        {price.toLocaleString()} so'm
+                      </p>
+                      <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        {stock} {unit}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <p className="text-lg font-bold text-gray-900">
-                      {price.toLocaleString()} so'm
-                    </p>
-                    <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {stock} {unit}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -350,6 +456,20 @@ export function VisualGridView() {
         }}
         initialBarcode={missingBarcode}
       />
+
+      {/* Size Selection Modal (for cafe mode) */}
+      {selectedProductGroup && (
+        <SizeSelectionModal
+          isOpen={showSizeModal}
+          onClose={() => {
+            setShowSizeModal(false);
+            setSelectedProductGroup(null);
+          }}
+          productName={selectedProductGroup.name}
+          variants={selectedProductGroup.variants}
+          onSelect={handleAddToCart}
+        />
+      )}
     </div>
   );
 }

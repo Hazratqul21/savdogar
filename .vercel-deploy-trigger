@@ -1,0 +1,5 @@
+# Vercel Manual Deploy Trigger
+# Update this timestamp to force Vercel to detect changes
+Last Deploy Trigger: 2026-01-12 02:10:00 UTC
+Reason: Force Vercel to detect GitHub push and redeploy
+Commit: 1b07e83, 81d4857, b1ba7cc

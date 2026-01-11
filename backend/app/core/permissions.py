@@ -3,20 +3,23 @@ Role-Based Permissions System
 =============================
 Oddiy rol asosidagi ruxsatlar tizimi.
 Har bir rol uchun belgilangan ruxsatlar mavjud.
+
+IMPORTANT: role endi string sifatida saqlanadi (enum emas!)
+Qiymatlar: "super_admin", "owner", "manager", "cashier", "warehouse_manager"
 """
-from typing import List, Optional
+from typing import List, Optional, Union
 from functools import wraps
 from fastapi import HTTPException, status
 from app.models.user import UserRole
 
 
 # =============================================================================
-# Role Permissions Definition
+# Role Permissions Definition (STRING KEYS!)
 # =============================================================================
 
 ROLE_PERMISSIONS = {
-    UserRole.SUPER_ADMIN: ["*"],  # Barcha ruxsatlar
-    UserRole.OWNER: [
+    "super_admin": ["*"],  # Barcha ruxsatlar
+    "owner": [
         "dashboard",
         "dashboard.analytics",
         "pos",
@@ -45,7 +48,7 @@ ROLE_PERMISSIONS = {
         "settings.tenant",
         "settings.billing",
     ],
-    UserRole.MANAGER: [
+    "manager": [
         "dashboard",
         "pos",
         "pos.discount",
@@ -63,12 +66,12 @@ ROLE_PERMISSIONS = {
         "reports.sales",
         "reports.inventory",
     ],
-    UserRole.CASHIER: [
+    "cashier": [
         "pos",
         "customers",
         "customers.view",
     ],
-    UserRole.WAREHOUSE_MANAGER: [
+    "warehouse_manager": [
         "products",
         "products.create",
         "products.edit",
@@ -110,35 +113,52 @@ PERMISSION_LABELS = {
     "settings.billing": "To'lov sozlamalari",
 }
 
-# Role labels for UI
+# Role labels for UI (STRING KEYS!)
 ROLE_LABELS = {
-    UserRole.SUPER_ADMIN: "Super Admin",
-    UserRole.OWNER: "Egasi",
-    UserRole.MANAGER: "Menejer",
-    UserRole.CASHIER: "Kassir",
-    UserRole.WAREHOUSE_MANAGER: "Omborchi",
+    "super_admin": "Super Admin",
+    "owner": "Egasi",
+    "manager": "Menejer",
+    "cashier": "Kassir",
+    "warehouse_manager": "Omborchi",
 }
+
+
+# =============================================================================
+# Helper: Normalize role to string
+# =============================================================================
+
+def _normalize_role(role: Union[str, UserRole, None]) -> str:
+    """Convert role to lowercase string."""
+    if role is None:
+        return ""
+    if isinstance(role, str):
+        return role.lower()
+    if hasattr(role, 'value'):
+        return role.value.lower()
+    return str(role).lower()
 
 
 # =============================================================================
 # Permission Checking Functions
 # =============================================================================
 
-def has_permission(role: UserRole, permission: str) -> bool:
+def has_permission(role: Union[str, UserRole, None], permission: str) -> bool:
     """
     Check if a role has a specific permission.
     
     Args:
-        role: User's role
+        role: User's role (string or UserRole enum)
         permission: Permission string (e.g., "products.edit")
     
     Returns:
         bool: True if role has permission
     """
-    if role not in ROLE_PERMISSIONS:
+    role_str = _normalize_role(role)
+    
+    if role_str not in ROLE_PERMISSIONS:
         return False
     
-    permissions = ROLE_PERMISSIONS[role]
+    permissions = ROLE_PERMISSIONS[role_str]
     
     # Super admin has all permissions
     if "*" in permissions:
@@ -158,17 +178,18 @@ def has_permission(role: UserRole, permission: str) -> bool:
     return False
 
 
-def get_role_permissions(role: UserRole) -> List[str]:
+def get_role_permissions(role: Union[str, UserRole, None]) -> List[str]:
     """
     Get all permissions for a role.
     
     Args:
-        role: User's role
+        role: User's role (string or UserRole enum)
     
     Returns:
         List of permission strings
     """
-    return ROLE_PERMISSIONS.get(role, [])
+    role_str = _normalize_role(role)
+    return ROLE_PERMISSIONS.get(role_str, [])
 
 
 def get_permission_label(permission: str) -> str:
@@ -184,17 +205,18 @@ def get_permission_label(permission: str) -> str:
     return PERMISSION_LABELS.get(permission, permission)
 
 
-def get_role_label(role: UserRole) -> str:
+def get_role_label(role: Union[str, UserRole, None]) -> str:
     """
     Get human-readable label for a role.
     
     Args:
-        role: User's role
+        role: User's role (string or UserRole enum)
     
     Returns:
         Human-readable label
     """
-    return ROLE_LABELS.get(role, str(role.value))
+    role_str = _normalize_role(role)
+    return ROLE_LABELS.get(role_str, role_str)
 
 
 # =============================================================================

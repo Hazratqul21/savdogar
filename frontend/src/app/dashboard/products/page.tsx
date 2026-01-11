@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
     Package, 
@@ -14,7 +14,9 @@ import {
     Barcode,
     DollarSign,
     Box,
-    AlertCircle
+    AlertCircle,
+    Coffee,
+    Check
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
 
@@ -59,12 +61,34 @@ export default function ProductsPage() {
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
+    const [businessType, setBusinessType] = useState<string>("retail");
+    
+    // Standard product form
     const [newProduct, setNewProduct] = useState({
         name: "",
         base_price: "",
         cost_price: "",
         type: "simple",
     });
+    
+    // Cafe product form with sizes
+    const [cafeProduct, setCafeProduct] = useState({
+        name: "",
+        hasSizes: true,
+        prices: {
+            small: "",
+            medium: "",
+            large: "",
+        }
+    });
+    
+    // Load business type
+    useEffect(() => {
+        const type = localStorage.getItem("business_type") || "retail";
+        setBusinessType(type);
+    }, []);
+    
+    const isCafeMode = businessType === "cafe" || businessType === "horeca" || businessType === "kitchen";
 
     // Fetch products
     const { data: products = [], isLoading } = useQuery({
@@ -80,6 +104,7 @@ export default function ProductsPage() {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             setShowAddModal(false);
             setNewProduct({ name: "", base_price: "", cost_price: "", type: "simple" });
+            setCafeProduct({ name: "", hasSizes: true, prices: { small: "", medium: "", large: "" } });
         },
     });
 
@@ -92,14 +117,58 @@ export default function ProductsPage() {
     });
 
     const handleAddProduct = () => {
-        if (!newProduct.name || !newProduct.base_price) return;
-        
-        createMutation.mutate({
-            name: newProduct.name,
-            base_price: parseFloat(newProduct.base_price),
-            cost_price: parseFloat(newProduct.cost_price) || parseFloat(newProduct.base_price),
-            type: newProduct.type,
-        });
+        if (isCafeMode) {
+            // Cafe mode: Create product with size variants
+            if (!cafeProduct.name) return;
+            
+            const variants = [];
+            
+            if (cafeProduct.hasSizes) {
+                // Add size variants
+                if (cafeProduct.prices.small) {
+                    variants.push({
+                        sku: `${cafeProduct.name.toUpperCase().replace(/\s+/g, '-')}-S`,
+                        price: parseFloat(cafeProduct.prices.small),
+                        cost_price: parseFloat(cafeProduct.prices.small) * 0.6,
+                        attributes: { size: "small", size_label: "Kichik" }
+                    });
+                }
+                if (cafeProduct.prices.medium) {
+                    variants.push({
+                        sku: `${cafeProduct.name.toUpperCase().replace(/\s+/g, '-')}-M`,
+                        price: parseFloat(cafeProduct.prices.medium),
+                        cost_price: parseFloat(cafeProduct.prices.medium) * 0.6,
+                        attributes: { size: "medium", size_label: "O'rtacha" }
+                    });
+                }
+                if (cafeProduct.prices.large) {
+                    variants.push({
+                        sku: `${cafeProduct.name.toUpperCase().replace(/\s+/g, '-')}-L`,
+                        price: parseFloat(cafeProduct.prices.large),
+                        cost_price: parseFloat(cafeProduct.prices.large) * 0.6,
+                        attributes: { size: "large", size_label: "Katta" }
+                    });
+                }
+            }
+            
+            if (variants.length === 0) return;
+            
+            createMutation.mutate({
+                name: cafeProduct.name,
+                type: "variable",
+                variants: variants,
+            });
+        } else {
+            // Standard mode
+            if (!newProduct.name || !newProduct.base_price) return;
+            
+            createMutation.mutate({
+                name: newProduct.name,
+                base_price: parseFloat(newProduct.base_price),
+                cost_price: parseFloat(newProduct.cost_price) || parseFloat(newProduct.base_price),
+                type: newProduct.type,
+            });
+        }
     };
 
     // Stats
@@ -263,65 +332,192 @@ export default function ProductsPage() {
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
                     <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Yangi mahsulot</h2>
-                        
-                        <div className="space-y-3 sm:space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Mahsulot nomi *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newProduct.name}
-                                    onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="Masalan: Coca-Cola 1L"
-                                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Sotish narxi *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={newProduct.base_price}
-                                        onChange={(e) => setNewProduct(prev => ({ ...prev, base_price: e.target.value }))}
-                                        placeholder="15000"
-                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
+                        {isCafeMode ? (
+                            // Cafe Mode: Product with sizes
+                            <>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                        <Coffee className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900">Yangi ichimlik</h2>
+                                        <p className="text-sm text-gray-500">O'lchamlar bilan</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Kelish narxi
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={newProduct.cost_price}
-                                        onChange={(e) => setNewProduct(prev => ({ ...prev, cost_price: e.target.value }))}
-                                        placeholder="12000"
-                                        className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    />
+                                
+                                <div className="space-y-4">
+                                    {/* Product Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Ichimlik nomi *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cafeProduct.name}
+                                            onChange={(e) => setCafeProduct(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder="Masalan: Cappuccino"
+                                            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                                        />
+                                    </div>
+                                    
+                                    {/* Size Prices */}
+                                    <div className="space-y-3">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            O'lchamlar va narxlar
+                                        </label>
+                                        
+                                        {/* Small */}
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <div className="w-10 h-10 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center font-bold text-gray-600">
+                                                S
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-700">Kichik</p>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={cafeProduct.prices.small}
+                                                onChange={(e) => setCafeProduct(prev => ({
+                                                    ...prev,
+                                                    prices: { ...prev.prices, small: e.target.value }
+                                                }))}
+                                                placeholder="15000"
+                                                className="w-28 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-right"
+                                            />
+                                        </div>
+                                        
+                                        {/* Medium */}
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <div className="w-10 h-10 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center font-bold text-gray-600">
+                                                M
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-700">O'rtacha</p>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={cafeProduct.prices.medium}
+                                                onChange={(e) => setCafeProduct(prev => ({
+                                                    ...prev,
+                                                    prices: { ...prev.prices, medium: e.target.value }
+                                                }))}
+                                                placeholder="20000"
+                                                className="w-28 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-right"
+                                            />
+                                        </div>
+                                        
+                                        {/* Large */}
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <div className="w-10 h-10 bg-white border-2 border-gray-300 rounded-full flex items-center justify-center font-bold text-gray-600">
+                                                L
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-700">Katta</p>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={cafeProduct.prices.large}
+                                                onChange={(e) => setCafeProduct(prev => ({
+                                                    ...prev,
+                                                    prices: { ...prev.prices, large: e.target.value }
+                                                }))}
+                                                placeholder="25000"
+                                                className="w-28 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-right"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <p className="text-xs text-gray-500">
+                                        💡 Faqat kerakli o'lchamlarni to'ldiring. Bo'sh qoldirilgan o'lchamlar qo'shilmaydi.
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="flex gap-2 sm:gap-3 mt-5 sm:mt-6">
-                            <button
-                                onClick={() => setShowAddModal(false)}
-                                className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                            >
-                                Bekor
-                            </button>
-                            <button
-                                onClick={handleAddProduct}
-                                disabled={createMutation.isPending || !newProduct.name || !newProduct.base_price}
-                                className="flex-1 px-3 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {createMutation.isPending ? "..." : "Qo'shish"}
-                            </button>
-                        </div>
+                                <div className="flex gap-2 mt-5">
+                                    <button
+                                        onClick={() => setShowAddModal(false)}
+                                        className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Bekor
+                                    </button>
+                                    <button
+                                        onClick={handleAddProduct}
+                                        disabled={createMutation.isPending || !cafeProduct.name || 
+                                            (!cafeProduct.prices.small && !cafeProduct.prices.medium && !cafeProduct.prices.large)}
+                                        className="flex-1 px-3 py-2.5 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {createMutation.isPending ? "..." : (
+                                            <>
+                                                <Check className="w-4 h-4" />
+                                                Qo'shish
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            // Standard Mode
+                            <>
+                                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Yangi mahsulot</h2>
+                                
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Mahsulot nomi *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newProduct.name}
+                                            onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder="Masalan: Coca-Cola 1L"
+                                            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Sotish narxi *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={newProduct.base_price}
+                                                onChange={(e) => setNewProduct(prev => ({ ...prev, base_price: e.target.value }))}
+                                                placeholder="15000"
+                                                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Kelish narxi
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={newProduct.cost_price}
+                                                onChange={(e) => setNewProduct(prev => ({ ...prev, cost_price: e.target.value }))}
+                                                placeholder="12000"
+                                                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 sm:gap-3 mt-5 sm:mt-6">
+                                    <button
+                                        onClick={() => setShowAddModal(false)}
+                                        className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Bekor
+                                    </button>
+                                    <button
+                                        onClick={handleAddProduct}
+                                        disabled={createMutation.isPending || !newProduct.name || !newProduct.base_price}
+                                        className="flex-1 px-3 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                    >
+                                        {createMutation.isPending ? "..." : "Qo'shish"}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

@@ -200,8 +200,8 @@ async def update_team_member(
     if member.id == current_user.id:
         raise HTTPException(status_code=400, detail="O'zingizni o'zgartira olmaysiz")
     
-    # Can't edit owner
-    if member.role == UserRole.OWNER:
+    # Can't edit owner (role is now a string)
+    if member.role == "owner":
         raise HTTPException(status_code=400, detail="Egasini o'zgartirish mumkin emas")
     
     # Update fields
@@ -264,8 +264,8 @@ async def delete_team_member(
     if member.id == current_user.id:
         raise HTTPException(status_code=400, detail="O'zingizni o'chira olmaysiz")
     
-    # Can't delete owner
-    if member.role == UserRole.OWNER:
+    # Can't delete owner (role is now a string)
+    if member.role == "owner":
         raise HTTPException(status_code=400, detail="Egasini o'chirish mumkin emas")
     
     # Soft delete - just deactivate

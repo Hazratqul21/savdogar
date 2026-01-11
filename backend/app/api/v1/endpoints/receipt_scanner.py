@@ -26,7 +26,8 @@ def get_organization_id_for_user(current_user: User, db: Session) -> int:
     """
     Get organization_id for user. For super_admin, returns default organization.
     """
-    if current_user.role == UserRole.SUPER_ADMIN:
+    # role is now a string, not enum
+    if current_user.role == "super_admin":
         if not current_user.organization_id:
             from app.models import Organization
             default_org = db.query(Organization).first()

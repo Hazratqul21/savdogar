@@ -37,7 +37,8 @@ def read_organizations(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """List all organizations. Super admin sees all, others see only their own."""
-    if current_user.role == UserRole.SUPER_ADMIN:
+    # role is now a string, not enum
+    if current_user.role == "super_admin":
         organizations = db.query(Organization).filter(
             Organization.is_active == True
         ).offset(skip).limit(limit).all()

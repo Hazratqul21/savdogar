@@ -77,7 +77,8 @@ def get_user_organization(
     db: Session = Depends(get_db),
 ) -> Optional[int]:
     """Get organization_id for current user. Returns None for super_admin."""
-    if current_user.role == UserRole.SUPER_ADMIN:
+    # role is now a string, not enum
+    if current_user.role == "super_admin":
         return None  # Super admin can access all organizations
     if not current_user.organization_id:
         raise HTTPException(
@@ -91,7 +92,8 @@ def require_organization(
     db: Session = Depends(get_db),
 ) -> int:
     """Require organization_id. Even super_admin must specify organization for some operations."""
-    if current_user.role == UserRole.SUPER_ADMIN:
+    # role is now a string, not enum
+    if current_user.role == "super_admin":
         raise HTTPException(
             status_code=400,
             detail="Super admin must specify organization_id in request"

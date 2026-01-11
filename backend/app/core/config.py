@@ -55,6 +55,13 @@ class Settings(BaseSettings):
             for key, values in parse_qs(parsed.query).items():
                 query_params[key] = values[0] if values else ""
         
+        # FIX: Remove Supabase-specific parameters that psycopg2 doesn't understand
+        # Vercel+Supabase integration adds "supa=base-pooler..." which causes errors
+        invalid_params = ["supa", "supabase", "pgbouncer"]
+        for param in invalid_params:
+            if param in query_params:
+                del query_params[param]
+        
         # Detect Supabase (contains .supabase.co or pooler.supabase.com)
         is_supabase = "supabase.co" in parsed.netloc.lower() or "pooler.supabase.com" in parsed.netloc.lower()
         is_session_pooler = ":6543" in url or "pooler.supabase.com" in parsed.netloc.lower()

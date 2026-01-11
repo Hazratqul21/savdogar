@@ -22,7 +22,9 @@ import {
     XCircle
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
-import { contributeToGlobalCatalogRPC } from "@/lib/supabase";
+import { contributeToGlobalCatalogRPC, searchGlobalCatalogByBarcode } from "@/lib/supabase";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { BarcodeAddModal } from "@/components/products/BarcodeAddModal";
 
 // Toast component
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -98,6 +100,8 @@ export default function ProductsPage() {
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+    const [scannedBarcode, setScannedBarcode] = useState("");
     const [businessType, setBusinessType] = useState<string>("retail");
     
     // Standard product form
@@ -132,6 +136,56 @@ export default function ProductsPage() {
     }, []);
     
     const isCafeMode = businessType === "cafe" || businessType === "horeca" || businessType === "kitchen";
+
+    // Barcode scanner (faqat cafe/horeca tashqari faoliyatlar uchun)
+    const handleBarcodeScan = async (barcode: string) => {
+        if (isCafeMode) return; // Cafe da barcode scanner kerak emas
+        
+        try {
+            // 1. Avval local products da qidirish
+            const localProduct = products.find((p: any) => 
+                p.variants?.some((v: any) => 
+                    v.barcode_aliases?.includes(barcode) || v.sku === barcode
+                )
+            );
+            
+            if (localProduct) {
+                setToast({ message: "Bu mahsulot allaqachon mavjud", type: 'error' });
+                return;
+            }
+            
+            // 2. Global catalogdan qidirish
+            const globalProduct = await searchGlobalCatalogByBarcode(barcode);
+            
+            // 3. QuickAdd modalni ochish (narx kiritish uchun)
+            setScannedBarcode(barcode);
+            setShowQuickAddModal(true);
+            
+            // Global catalog ma'lumotlarini sessionStorage ga saqlash
+            if (globalProduct) {
+                sessionStorage.setItem('global_catalog_data', JSON.stringify({
+                    found: true,
+                    ...globalProduct
+                }));
+            } else {
+                sessionStorage.removeItem('global_catalog_data');
+            }
+            
+        } catch (error) {
+            console.error("Barcode scan error:", error);
+            setToast({ message: "Barcode skanerlashda xatolik", type: 'error' });
+        }
+    };
+
+    // Barcode scanner hook (faqat cafe tashqari)
+    useBarcodeScanner({
+        onScan: handleBarcodeScan,
+        enabled: !isCafeMode, // Cafe da o'chirilgan
+        minLength: 3,
+        maxLength: 50,
+        timeout: 100,
+        ignoreInputFocus: true,
+    });
 
     // Fetch products
     const { data: products = [], isLoading } = useQuery({
@@ -630,6 +684,20 @@ export default function ProductsPage() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Barcode Add Modal (Barcode Scanner uchun) */}
+            {!isCafeMode && (
+                <BarcodeAddModal
+                    isOpen={showQuickAddModal}
+                    onClose={() => {
+                        setShowQuickAddModal(false);
+                        setScannedBarcode("");
+                        sessionStorage.removeItem('global_catalog_data');
+                    }}
+                    barcode={scannedBarcode}
+                    businessType={businessType}
+                />
             )}
         </div>
     );

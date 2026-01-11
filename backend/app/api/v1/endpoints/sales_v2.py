@@ -597,6 +597,33 @@ def read_sales(
     return sales
 
 
+@router.get("/{sale_id}", response_model=schemas.Sale)
+def read_sale(
+    *,
+    db: Session = Depends(deps.get_db),
+    sale_id: int,
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Bitta sotuvni olish"""
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+    
+    sale = db.query(SaleV2).filter(
+        and_(
+            SaleV2.id == sale_id,
+            SaleV2.tenant_id == current_user.tenant_id
+        )
+    ).first()
+    
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sotuv topilmadi")
+    
+    # Items ni yuklash
+    sale.items = db.query(SaleItemV2).filter(
+        SaleItemV2.sale_id == sale.id
+    ).all()
+    
+    return sale
 
 
 

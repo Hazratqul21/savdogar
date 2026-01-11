@@ -17,6 +17,7 @@ class ProfileUpdate(BaseModel):
 
 class TenantUpdate(BaseModel):
     name: Optional[str] = None
+    business_type: Optional[str] = None  # cafe, retail, wholesale, etc.
     description: Optional[str] = None
     address: Optional[str] = None
     phone: Optional[str] = None
@@ -103,13 +104,15 @@ async def update_tenant(
     
     if update_data.name is not None:
         tenant.name = update_data.name
+    if update_data.business_type is not None:
+        tenant.business_type = update_data.business_type
     if update_data.usd_to_uzs_rate is not None:
         tenant.usd_to_uzs_rate = update_data.usd_to_uzs_rate
     if update_data.min_margin_percent is not None:
         tenant.min_margin_percent = update_data.min_margin_percent
     if update_data.config is not None:
         tenant.config = {**(tenant.config or {}), **update_data.config}
-    
+
     db.commit()
     db.refresh(tenant)
     return tenant

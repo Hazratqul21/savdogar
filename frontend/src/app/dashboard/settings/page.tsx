@@ -136,11 +136,16 @@ export default function SettingsPage() {
             });
             await apiUpdateTenant({
                 name: business.name,
+                business_type: business.type,
                 usd_to_uzs_rate: business.usdRate,
                 min_margin_percent: business.marginGuard,
                 config: { ...business.config, ai_mode: business.aiMode }
             });
+            // Update localStorage with new business type
+            localStorage.setItem("business_type", business.type);
             setToast({ message: "Muvaffaqiyatli saqlandi!", type: 'success' });
+            // Reload page to reflect menu changes
+            setTimeout(() => window.location.reload(), 1000);
         } catch (err) {
             setToast({ message: "Saqlashda xatolik yuz berdi.", type: 'error' });
         } finally {

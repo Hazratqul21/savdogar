@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
     BarChart3, 
@@ -13,7 +13,9 @@ import {
     Receipt,
     Loader2,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    ChevronDown,
+    FileSpreadsheet
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
 
@@ -56,12 +58,52 @@ function formatCurrency(value: number): string {
 
 type ReportTab = "sales" | "inventory" | "financial";
 
+// Export functions
+function downloadExport(type: string, startDate?: string, endDate?: string) {
+    const apiUrl = getApiBaseUrl();
+    let url = `${apiUrl}/api/v1/export/${type}`;
+    const params = new URLSearchParams();
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    // Create hidden link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Add auth header via fetch and blob
+    fetch(url, { headers: getAuthHeaders() })
+        .then(res => res.blob())
+        .then(blob => {
+            const blobUrl = window.URL.createObjectURL(blob);
+            link.href = blobUrl;
+            link.download = `${type}_export.xls`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        });
+}
+
 export default function ReportsPage() {
     const [activeTab, setActiveTab] = useState<ReportTab>("sales");
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const exportMenuRef = useRef<HTMLDivElement>(null);
     const [dateRange, setDateRange] = useState({
         start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // Start of month
         end: new Date().toISOString().split('T')[0] // Today
     });
+
+    // Close export menu on click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+                setShowExportMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Fetch reports
     const { data: salesReport, isLoading: salesLoading } = useQuery({
@@ -96,10 +138,74 @@ export default function ReportsPage() {
                     <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Hisobotlar</h1>
                     <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Statistika va tahlillar</p>
                 </div>
-                <button className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline">Export</span>
-                </button>
+                <div className="relative" ref={exportMenuRef}>
+                    <button 
+                        onClick={() => setShowExportMenu(!showExportMenu)}
+                        className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export</span>
+                        <ChevronDown className="w-4 h-4" />
+                    </button>
+                    
+                    {showExportMenu && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border z-50">
+                            <div className="p-2">
+                                <p className="px-3 py-2 text-xs font-medium text-gray-500 uppercase">Excel Export</p>
+                                <button
+                                    onClick={() => {
+                                        downloadExport("sales", dateRange.start, dateRange.end);
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-green-600" />
+                                    Savdolar hisoboti
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        downloadExport("products");
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+                                    Mahsulotlar ro'yxati
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        downloadExport("inventory");
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-purple-600" />
+                                    Ombor hisoboti
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        downloadExport("customers");
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-orange-600" />
+                                    Mijozlar ro'yxati
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        downloadExport("daily-summary", dateRange.start, dateRange.end);
+                                        setShowExportMenu(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-teal-600" />
+                                    Kunlik hisobot
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Date Range Picker */}

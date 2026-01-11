@@ -39,6 +39,7 @@ from app.api.v1.endpoints import (
     team,  # Team management
     shifts,  # ✅ Shift/Z-Report management
     modifiers,  # ✅ Cafe modifiers
+    export,  # ✅ Excel/CSV export
     # ✅ PART 2: Plumbing & HVAC endpoints
     serial_numbers,
     warranties,
@@ -94,6 +95,7 @@ api_router.include_router(settings.router, prefix="/settings", tags=["settings"]
 api_router.include_router(team.router, prefix="/team", tags=["team"])
 api_router.include_router(shifts.router, prefix="/shifts", tags=["shifts"])  # ✅ Shift/Z-Report
 api_router.include_router(modifiers.router, prefix="/modifiers", tags=["modifiers"])  # ✅ Cafe modifiers
+api_router.include_router(export.router, prefix="/export", tags=["export"])  # ✅ Excel/CSV export
 
 # ✅ PART 2: Plumbing & HVAC endpoints
 api_router.include_router(serial_numbers.router, prefix="/serial-numbers", tags=["serial-numbers"])

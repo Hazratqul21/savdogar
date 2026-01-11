@@ -1,13 +1,15 @@
 -- ============================================================================
--- SAVDOGAR - TO'LIQ DATABASE SETUP
+-- SAVDOGAR - TO'LIQ DATABASE SETUP (v2)
 -- ============================================================================
--- Bu script Supabase SQL Editor da ishga tushiring
--- Barcha kerakli jadvallarni yaratadi
+-- Supabase SQL Editor da ishga tushiring
+-- Xatolik chiqsa, qismlarni alohida ishga tushiring
 -- ============================================================================
 
 -- ============================================================================
--- 1. TENANTS (Tashkilotlar)
+-- PART 1: ASOSIY JADVALLAR
 -- ============================================================================
+
+-- 1. TENANTS
 CREATE TABLE IF NOT EXISTS tenants (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -26,9 +28,7 @@ CREATE TABLE IF NOT EXISTS tenants (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================================
--- 2. USERS (Foydalanuvchilar)
--- ============================================================================
+-- 2. USERS
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER REFERENCES tenants(id),
@@ -47,15 +47,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- ============================================================================
--- 3. CATEGORIES (Kategoriyalar)
--- ============================================================================
+-- 3. CATEGORIES
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER,
     tenant_id INTEGER REFERENCES tenants(id),
     name VARCHAR(255) NOT NULL,
-    parent_id INTEGER REFERENCES categories(id),
+    parent_id INTEGER,
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -64,8 +62,10 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE INDEX IF NOT EXISTS idx_categories_tenant ON categories(tenant_id);
 
 -- ============================================================================
--- 4. PRODUCTS_V2 (Mahsulotlar - Yangi versiya)
+-- PART 2: MAHSULOTLAR
 -- ============================================================================
+
+-- 4. PRODUCTS_V2
 CREATE TABLE IF NOT EXISTS products_v2 (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -90,9 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_products_v2_tenant ON products_v2(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_products_v2_name ON products_v2(name);
 CREATE INDEX IF NOT EXISTS idx_products_v2_tenant_active ON products_v2(tenant_id, is_active);
 
--- ============================================================================
--- 5. PRODUCT_VARIANTS (Mahsulot variantlari)
--- ============================================================================
+-- 5. PRODUCT_VARIANTS
 CREATE TABLE IF NOT EXISTS product_variants (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products_v2(id) ON DELETE CASCADE,
@@ -122,14 +120,15 @@ CREATE TABLE IF NOT EXISTS product_variants (
 CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
 CREATE INDEX IF NOT EXISTS idx_variants_tenant ON product_variants(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_variants_sku ON product_variants(sku);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_variants_tenant_sku ON product_variants(tenant_id, sku);
 CREATE INDEX IF NOT EXISTS idx_variants_expiry ON product_variants(expiry_date);
-CREATE INDEX IF NOT EXISTS idx_variants_attributes ON product_variants USING GIN(attributes);
-CREATE INDEX IF NOT EXISTS idx_variants_barcodes ON product_variants USING GIN(barcode_aliases);
 
--- ============================================================================
--- 6. PRICE_TIERS (Narx darajalari - Optom uchun)
--- ============================================================================
+-- Unique constraint (agar xatolik chiqsa, o'tkazib yuboring)
+DO $$ BEGIN
+    CREATE UNIQUE INDEX idx_variants_tenant_sku ON product_variants(tenant_id, sku);
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
+
+-- 6. PRICE_TIERS
 CREATE TABLE IF NOT EXISTS price_tiers (
     id SERIAL PRIMARY KEY,
     variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
@@ -145,8 +144,10 @@ CREATE TABLE IF NOT EXISTS price_tiers (
 CREATE INDEX IF NOT EXISTS idx_price_tiers_variant ON price_tiers(variant_id);
 
 -- ============================================================================
--- 7. CUSTOMERS_V2 (Mijozlar)
+-- PART 3: MIJOZLAR
 -- ============================================================================
+
+-- 7. CUSTOMERS_V2
 CREATE TABLE IF NOT EXISTS customers_v2 (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -168,8 +169,10 @@ CREATE INDEX IF NOT EXISTS idx_customers_v2_tenant ON customers_v2(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_customers_v2_phone ON customers_v2(phone);
 
 -- ============================================================================
--- 8. SALES_V2 (Sotuvlar)
+-- PART 4: SOTUVLAR
 -- ============================================================================
+
+-- 8. SALES_V2
 CREATE TABLE IF NOT EXISTS sales_v2 (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -198,9 +201,7 @@ CREATE INDEX IF NOT EXISTS idx_sales_v2_created ON sales_v2(created_at);
 CREATE INDEX IF NOT EXISTS idx_sales_v2_customer ON sales_v2(customer_id);
 CREATE INDEX IF NOT EXISTS idx_sales_v2_cashier ON sales_v2(cashier_id);
 
--- ============================================================================
--- 9. SALE_ITEMS_V2 (Sotuv elementlari)
--- ============================================================================
+-- 9. SALE_ITEMS_V2
 CREATE TABLE IF NOT EXISTS sale_items_v2 (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL REFERENCES sales_v2(id) ON DELETE CASCADE,
@@ -224,9 +225,7 @@ CREATE TABLE IF NOT EXISTS sale_items_v2 (
 CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items_v2(sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_items_variant ON sale_items_v2(variant_id);
 
--- ============================================================================
--- 10. CUSTOMER_LEDGER (Qarz daftari)
--- ============================================================================
+-- 10. CUSTOMER_LEDGER
 CREATE TABLE IF NOT EXISTS customer_ledger (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER NOT NULL REFERENCES customers_v2(id),
@@ -243,8 +242,10 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
 CREATE INDEX IF NOT EXISTS idx_ledger_customer ON customer_ledger(customer_id);
 
 -- ============================================================================
--- 11. SHIFTS (Smenalar / Z-Report)
+-- PART 5: SMENA VA KASSA
 -- ============================================================================
+
+-- 11. SHIFTS
 CREATE TABLE IF NOT EXISTS shifts (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -272,9 +273,7 @@ CREATE INDEX IF NOT EXISTS idx_shifts_tenant ON shifts(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_shifts_cashier ON shifts(cashier_id);
 CREATE INDEX IF NOT EXISTS idx_shifts_status ON shifts(status);
 
--- ============================================================================
--- 12. CASH_MOVEMENTS (Kassa harakatlari)
--- ============================================================================
+-- 12. CASH_MOVEMENTS
 CREATE TABLE IF NOT EXISTS cash_movements (
     id SERIAL PRIMARY KEY,
     shift_id INTEGER NOT NULL REFERENCES shifts(id),
@@ -289,8 +288,10 @@ CREATE TABLE IF NOT EXISTS cash_movements (
 CREATE INDEX IF NOT EXISTS idx_cash_movements_shift ON cash_movements(shift_id);
 
 -- ============================================================================
--- 13. MODIFIER_GROUPS (Modifikator guruhlari - Cafe uchun)
+-- PART 6: CAFE MODIFIKATORLAR
 -- ============================================================================
+
+-- 13. MODIFIER_GROUPS
 CREATE TABLE IF NOT EXISTS modifier_groups (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -305,9 +306,7 @@ CREATE TABLE IF NOT EXISTS modifier_groups (
 
 CREATE INDEX IF NOT EXISTS idx_modifier_groups_tenant ON modifier_groups(tenant_id);
 
--- ============================================================================
--- 14. MODIFIER_OPTIONS (Modifikator variantlari)
--- ============================================================================
+-- 14. MODIFIER_OPTIONS
 CREATE TABLE IF NOT EXISTS modifier_options (
     id SERIAL PRIMARY KEY,
     group_id INTEGER NOT NULL REFERENCES modifier_groups(id) ON DELETE CASCADE,
@@ -321,24 +320,23 @@ CREATE TABLE IF NOT EXISTS modifier_options (
 
 CREATE INDEX IF NOT EXISTS idx_modifier_options_group ON modifier_options(group_id);
 
--- ============================================================================
--- 15. PRODUCT_MODIFIERS (Mahsulot-Modifikator bog'lanishi)
--- ============================================================================
+-- 15. PRODUCT_MODIFIERS
 CREATE TABLE IF NOT EXISTS product_modifiers (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products_v2(id) ON DELETE CASCADE,
     modifier_group_id INTEGER NOT NULL REFERENCES modifier_groups(id) ON DELETE CASCADE,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(product_id, modifier_group_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_product_modifiers_product ON product_modifiers(product_id);
 
 -- ============================================================================
--- 16. SERIAL_NUMBERS (Seriya raqamlari - Plumbing/HVAC)
+-- PART 7: SERIAL NUMBERS & WARRANTIES
 -- ============================================================================
+
+-- 16. SERIAL_NUMBERS
 CREATE TABLE IF NOT EXISTS serial_numbers (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -348,14 +346,14 @@ CREATE TABLE IF NOT EXISTS serial_numbers (
     maintenance_status VARCHAR(50) DEFAULT 'ok',
     is_sold BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
-    sale_id INTEGER REFERENCES sales_v2(id),
+    sale_id INTEGER,
     purchase_date DATE,
     warranty_start_date DATE,
     warranty_end_date DATE,
     warranty_duration_months INTEGER,
     last_maintenance_date DATE,
     next_maintenance_date DATE,
-    customer_id INTEGER REFERENCES customers_v2(id),
+    customer_id INTEGER,
     notes TEXT,
     serial_metadata JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -365,21 +363,18 @@ CREATE TABLE IF NOT EXISTS serial_numbers (
 CREATE INDEX IF NOT EXISTS idx_serial_numbers_tenant ON serial_numbers(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_serial_numbers_variant ON serial_numbers(variant_id);
 CREATE INDEX IF NOT EXISTS idx_serial_numbers_serial ON serial_numbers(serial_number);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_serial_numbers_unique ON serial_numbers(tenant_id, variant_id, serial_number);
 
--- ============================================================================
--- 17. WARRANTIES (Kafolatlar)
--- ============================================================================
+-- 17. WARRANTIES
 CREATE TABLE IF NOT EXISTS warranties (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER NOT NULL REFERENCES tenants(id),
-    serial_number_id INTEGER REFERENCES serial_numbers(id),
-    customer_id INTEGER REFERENCES customers_v2(id),
-    product_variant_id INTEGER REFERENCES product_variants(id),
+    serial_number_id INTEGER,
+    customer_id INTEGER,
+    product_variant_id INTEGER,
     warranty_type VARCHAR(50) DEFAULT 'standard',
     status VARCHAR(50) DEFAULT 'active',
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
+    start_date DATE,
+    end_date DATE,
     duration_months INTEGER,
     terms TEXT,
     warranty_metadata JSONB DEFAULT '{}',
@@ -387,12 +382,8 @@ CREATE TABLE IF NOT EXISTS warranties (
 );
 
 CREATE INDEX IF NOT EXISTS idx_warranties_tenant ON warranties(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_warranties_serial ON warranties(serial_number_id);
-CREATE INDEX IF NOT EXISTS idx_warranties_customer ON warranties(customer_id);
 
--- ============================================================================
--- 18. PRODUCT_BUNDLES (Mahsulot to'plamlari)
--- ============================================================================
+-- 18. PRODUCT_BUNDLES
 CREATE TABLE IF NOT EXISTS product_bundles (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products_v2(id) ON DELETE CASCADE,
@@ -409,8 +400,10 @@ CREATE TABLE IF NOT EXISTS product_bundles (
 CREATE INDEX IF NOT EXISTS idx_bundles_product ON product_bundles(product_id);
 
 -- ============================================================================
--- 19. GLOBAL_CATALOG (Global mahsulot katalogi)
+-- PART 8: GLOBAL CATALOG & AUDIT
 -- ============================================================================
+
+-- 19. GLOBAL_CATALOG
 CREATE TABLE IF NOT EXISTS global_catalog (
     id SERIAL PRIMARY KEY,
     barcode VARCHAR(255) UNIQUE NOT NULL,
@@ -430,9 +423,7 @@ CREATE TABLE IF NOT EXISTS global_catalog (
 CREATE INDEX IF NOT EXISTS idx_global_catalog_barcode ON global_catalog(barcode);
 CREATE INDEX IF NOT EXISTS idx_global_catalog_name ON global_catalog(name);
 
--- ============================================================================
--- 20. AUDIT_LOGS (Audit loglari)
--- ============================================================================
+-- 20. AUDIT_LOGS
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
     tenant_id INTEGER REFERENCES tenants(id),
@@ -453,19 +444,10 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant ON audit_logs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 
 -- ============================================================================
--- RLS (Row Level Security) - Ixtiyoriy
--- Hozircha o'chirilgan - Backend orqali nazorat qilinadi
--- ============================================================================
--- ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE products_v2 ENABLE ROW LEVEL SECURITY;
--- (va hokazo)
-
--- ============================================================================
--- FUNCTIONS
+-- PART 9: FUNCTIONS
 -- ============================================================================
 
--- Global catalog qidirish funksiyasi
+-- Global catalog search
 CREATE OR REPLACE FUNCTION search_global_catalog(search_barcode TEXT)
 RETURNS TABLE (
     id INTEGER,
@@ -491,7 +473,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Global catalog ga qo'shish/yangilash funksiyasi
+-- Global catalog contribute
 CREATE OR REPLACE FUNCTION contribute_to_global_catalog(
     p_barcode TEXT,
     p_name TEXT,
@@ -503,11 +485,9 @@ DECLARE
     result JSONB;
     existing_id INTEGER;
 BEGIN
-    -- Mavjud yozuvni tekshirish
     SELECT id INTO existing_id FROM global_catalog WHERE barcode = p_barcode;
     
     IF existing_id IS NOT NULL THEN
-        -- Mavjud bo'lsa, yangilash
         UPDATE global_catalog
         SET 
             name = COALESCE(p_name, name),
@@ -517,14 +497,11 @@ BEGIN
             contribution_count = contribution_count + 1,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = existing_id;
-        
         result := jsonb_build_object('status', 'updated', 'id', existing_id);
     ELSE
-        -- Yangi yozuv qo'shish
         INSERT INTO global_catalog (barcode, name, category, image_url, description)
         VALUES (p_barcode, p_name, p_category, p_image_url, p_description)
         RETURNING id INTO existing_id;
-        
         result := jsonb_build_object('status', 'created', 'id', existing_id);
     END IF;
     
@@ -533,6 +510,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- SUCCESS MESSAGE
+-- DONE!
 -- ============================================================================
-SELECT 'Database setup completed successfully!' as message;
+SELECT 'SUCCESS! All 20 tables created.' as result;

@@ -72,7 +72,10 @@ async function createProduct(data: any) {
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error("Failed to create product");
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || "Failed to create product");
+    }
     return response.json();
 }
 
@@ -170,8 +173,10 @@ export default function ProductsPage() {
             setCafeProduct({ name: "", hasSizes: true, prices: { small: "", medium: "", large: "" } });
             setToast({ message: "Mahsulot qo'shildi ✓", type: 'success' });
         },
-        onError: () => {
-            setToast({ message: "Xatolik yuz berdi", type: 'error' });
+        onError: (error: any) => {
+            console.error("Product creation error:", error);
+            const errorMessage = error?.message || error?.response?.data?.detail || "Xatolik yuz berdi";
+            setToast({ message: errorMessage, type: 'error' });
         },
     });
 
@@ -231,9 +236,14 @@ export default function ProductsPage() {
             
             if (variants.length === 0) return;
             
+            // Find minimum price for base_price
+            const minPrice = Math.min(...variants.map(v => v.price));
+            
             createMutation.mutate({
                 name: cafeProduct.name,
                 type: "variable",
+                base_price: minPrice, // Required field
+                cost_price: minPrice * 0.6, // Estimated cost
                 variants: variants,
             });
         } else {

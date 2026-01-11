@@ -29,7 +29,7 @@ export default function DashboardPage() {
         const type = getUserBusinessType();
         setBusinessType(type);
 
-        // Check user role and redirect sellers to POS
+        // Fetch user role for display purposes
         const fetchUserRole = async () => {
             try {
                 const { getSettings } = await import("@/lib/api");
@@ -37,22 +37,21 @@ export default function DashboardPage() {
                 const role = data.user?.role;
                 setUserRole(role);
                 
-                // Redirect 'seller' or 'cashier' users to POS immediately
-                if (role === 'seller' || role === 'cashier') {
-                    router.replace('/pos');
-                    return;
+                // Store business type from tenant if available
+                if (data.tenant?.business_type) {
+                    localStorage.setItem("business_type", data.tenant.business_type);
+                    setBusinessType(data.tenant.business_type);
                 }
+                
+                // NOTE: Auto-redirect to POS disabled
+                // Users can navigate to POS manually from sidebar
+                // This allows all users to see the dashboard first
             } catch (e) {
                 console.error("Failed to fetch user role:", e);
             }
         };
         fetchUserRole();
     }, [router]);
-
-    // Show loading or nothing while checking role
-    if (userRole === 'seller' || userRole === 'cashier') {
-        return null; // Will redirect
-    }
 
     const renderRetailDashboard = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

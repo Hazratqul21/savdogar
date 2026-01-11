@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Users, 
     Plus, 
@@ -15,9 +16,35 @@ import {
     User,
     Crown,
     Building2,
-    X
+    X,
+    CheckCircle2,
+    XCircle
 } from "lucide-react";
 import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
+
+// Toast component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 2000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
+        >
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border ${
+                type === 'success' ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
+            }`}>
+                {type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                <span className="font-medium text-sm">{message}</span>
+            </div>
+        </motion.div>
+    );
+}
 
 // API functions
 async function getCustomers(search?: string) {
@@ -57,6 +84,7 @@ export default function CustomersPage() {
     const queryClient = useQueryClient();
     const [searchQuery, setSearchQuery] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [newCustomer, setNewCustomer] = useState({
         name: "",
         phone: "",
@@ -78,6 +106,10 @@ export default function CustomersPage() {
             queryClient.invalidateQueries({ queryKey: ["customers"] });
             setShowAddModal(false);
             setNewCustomer({ name: "", phone: "", price_tier: "retail", credit_limit: "" });
+            setToast({ message: "Mijoz qo'shildi ✓", type: 'success' });
+        },
+        onError: () => {
+            setToast({ message: "Xatolik yuz berdi", type: 'error' });
         },
     });
 
@@ -100,6 +132,11 @@ export default function CustomersPage() {
 
     return (
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Toast */}
+            <AnimatePresence>
+                {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            </AnimatePresence>
+
             {/* Header */}
             <div className="flex items-center justify-between gap-2">
                 <div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
     Users, 
     Plus, 
@@ -17,10 +18,36 @@ import {
     EyeOff,
     X,
     Check,
-    AlertCircle
+    AlertCircle,
+    CheckCircle2,
+    XCircle
 } from "lucide-react";
 import { getTeamMembers, createTeamMember, updateTeamMember, deleteTeamMember } from "@/lib/api";
 import { usePermissions } from "@/hooks/usePermissions";
+
+// Toast component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 2000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
+        >
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border ${
+                type === 'success' ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
+            }`}>
+                {type === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                <span className="font-medium text-sm">{message}</span>
+            </div>
+        </motion.div>
+    );
+}
 
 // Role labels and icons
 const ROLE_INFO: Record<string, { label: string; icon: any; color: string; description: string }> = {
@@ -51,6 +78,7 @@ export default function TeamPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [editingMember, setEditingMember] = useState<any>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [newMember, setNewMember] = useState({
         username: "",
         password: "",
@@ -73,6 +101,10 @@ export default function TeamPage() {
             queryClient.invalidateQueries({ queryKey: ["team-members"] });
             setShowAddModal(false);
             setNewMember({ username: "", password: "", full_name: "", phone_number: "", role: "cashier" });
+            setToast({ message: "Xodim qo'shildi ✓", type: 'success' });
+        },
+        onError: () => {
+            setToast({ message: "Xatolik yuz berdi", type: 'error' });
         },
     });
 
@@ -82,6 +114,10 @@ export default function TeamPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["team-members"] });
             setEditingMember(null);
+            setToast({ message: "Yangilandi ✓", type: 'success' });
+        },
+        onError: () => {
+            setToast({ message: "Yangilashda xatolik", type: 'error' });
         },
     });
 
@@ -90,6 +126,10 @@ export default function TeamPage() {
         mutationFn: deleteTeamMember,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["team-members"] });
+            setToast({ message: "Xodim o'chirildi", type: 'success' });
+        },
+        onError: () => {
+            setToast({ message: "O'chirishda xatolik", type: 'error' });
         },
     });
 
@@ -132,6 +172,11 @@ export default function TeamPage() {
 
     return (
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            {/* Toast */}
+            <AnimatePresence>
+                {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            </AnimatePresence>
+
             {/* Header */}
             <div className="flex items-center justify-between gap-2">
                 <div>

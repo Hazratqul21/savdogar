@@ -16,7 +16,7 @@ interface BarcodeAddModalProps {
 
 async function createProduct(data: any) {
     const apiUrl = getApiBaseUrl();
-    const response = await fetch(`${apiUrl}/api/v1/v2/products`, {
+    const response = await fetch(`${apiUrl}/api/v1/v2/products/`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),

@@ -1,5 +1,7 @@
 # Vercel Serverless Function Dependencies
 # Optimized for Vercel Python Runtime
+# FORCE REBUILD: 2026-01-12T06:15:00Z - Cache bypass trigger v3
+# CRITICAL: Deploy commit 4b7ba17 with tenant auto-create fix
 
 # Core Framework - REQUIRED for Vercel
 fastapi>=0.109.0

@@ -215,21 +215,19 @@ async def health_check():
 async def build_info():
     """
     Build info endpoint for verifying deployment version.
-    FORCE REBUILD: 2026-01-12T06:15:00Z - v3.0.0
+    DEPLOY: 2026-01-12T20:10:00Z - v3.4.0
     """
     return {
-        "build_timestamp": "2026-01-12T06:15:00Z",
-        "build_version": "3.0.0",
-        "commit": "4b7ba17",
-        "deploy_reason": "Tenant auto-create fix for products_v2",
+        "build_timestamp": "2026-01-12T20:10:00Z",
+        "build_version": "3.4.0",
+        "commit": "2293e24",
+        "deploy_reason": "Fix bcrypt hash format for login",
         "critical_fixes": [
-            "67e77a8: Auto-create tenant for products_v2 FK constraint",
-            "6ca76fc: Auto-redirect to login on 403 token expired",
-            "1b07e83: Trailing slashes fix",
-            "81d4857: redirect_slashes enabled",
-            "b1ba7cc: Vercel handler routing fix"
+            "2293e24: Fix bcrypt dummy hash format",
+            "5df9936: Export app for Vercel ASGI",
+            "001f1bd: OpenAI lazy init + vercel.json fix"
         ],
-        "status": "NEW_DEPLOYMENT_VERIFIED"
+        "status": "PENDING_DEPLOY"
     }
 
 

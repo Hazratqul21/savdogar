@@ -1,5 +1,6 @@
 # Vercel Serverless Function Dependencies
 # Optimized for Vercel Python Runtime
+# Force rebuild - 2026-01-12 06:00 - Cache bypass trigger
 
 # Core Framework - REQUIRED for Vercel
 fastapi>=0.109.0

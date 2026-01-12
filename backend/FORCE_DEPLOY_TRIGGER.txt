@@ -1,0 +1,25 @@
+FORCE DEPLOY TRIGGER
+====================
+
+Timestamp: 2026-01-12 05:42:00 UTC
+Commit: 372b8dc
+Purpose: Force Vercel backend redeploy
+
+Critical Changes That Need Deployment:
+- 67e77a8: Auto-create tenant for products_v2 FK constraint (CRITICAL!)
+- 6ca76fc: Auto-redirect to login on 403 token expired error
+- 1b07e83: Trailing slashes to product API URLs
+- 81d4857: Enable redirect_slashes for 405 fix
+- b1ba7cc: Backend Vercel handler va routing
+
+WHY THIS IS CRITICAL:
+Without these changes deployed, mahsulot qo'shish 500 error qaytaradi
+because tenant_id FK constraint fails.
+
+VERCEL DEPLOYMENT STATUS:
+Last deployed commit: 0dca50f (3 hours ago)
+Current commit: 372b8dc
+Missed commits: 10+
+
+ACTION REQUIRED:
+If you see this file, manually redeploy from Vercel dashboard!

@@ -30,6 +30,22 @@ def create_product(
             detail="Foydalanuvchi tenant yoki organizatsiyaga bog'lanmagan"
         )
     
+    # Ensure tenant exists (auto-create if missing - for FK constraint safety)
+    from app.models.tenant import Tenant
+    existing_tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not existing_tenant:
+        # Auto-create missing tenant
+        from app.models.organization import Organization
+        org = db.query(Organization).filter(Organization.id == tenant_id).first()
+        new_tenant = Tenant(
+            id=tenant_id,
+            name=org.name if org else f"Organization {tenant_id}",
+            business_type=org.business_type if (org and hasattr(org, 'business_type')) else "retail",
+            is_active=True
+        )
+        db.add(new_tenant)
+        db.flush()
+    
     # Product yaratish
     product_obj = ProductV2(
         tenant_id=tenant_id,

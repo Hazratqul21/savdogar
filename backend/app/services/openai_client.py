@@ -15,13 +15,18 @@ class OpenAIClient:
     """Direct OpenAI client using OpenAI API (not Azure)"""
     
     def __init__(self):
+        self.client = None
+        self.model = "gpt-4o"
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only connect when actually needed"""
+        if self._initialized:
+            return
         if not settings.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY must be set in environment variables")
-        
-        self.client = AsyncOpenAI(
-            api_key=settings.OPENAI_API_KEY
-        )
-        self.model = "gpt-4o"  # Use gpt-4o model
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self._initialized = True
 
     @retry(
         stop=stop_after_attempt(3),
@@ -32,6 +37,7 @@ class OpenAIClient:
         """
         Generates a JSON response from OpenAI.
         """
+        self._ensure_initialized()
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -57,6 +63,7 @@ class OpenAIClient:
         """
         Generates a text response from OpenAI.
         """
+        self._ensure_initialized()
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -80,6 +87,7 @@ class OpenAIClient:
         """
         Analyzes an image using OpenAI Vision (gpt-4o).
         """
+        self._ensure_initialized()
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,

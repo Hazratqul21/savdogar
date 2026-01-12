@@ -231,6 +231,43 @@ async def build_info():
     }
 
 
+@app.get("/debug/password-test")
+async def debug_password_test():
+    """Debug: Test bcrypt password verification"""
+    from app.core.security import verify_password, get_password_hash
+    import bcrypt
+    
+    test_password = "Admin123"
+    test_hash = "$2b$12$E9ZF9GADQoIm108qWkcSaOGGtqKezUCAhr13N.8eyCmeoIwllyzfS"
+    
+    try:
+        # Test passlib verify
+        passlib_result = verify_password(test_password, test_hash)
+    except Exception as e:
+        passlib_result = f"Error: {str(e)}"
+    
+    try:
+        # Test direct bcrypt
+        bcrypt_result = bcrypt.checkpw(test_password.encode('utf-8'), test_hash.encode('utf-8'))
+    except Exception as e:
+        bcrypt_result = f"Error: {str(e)}"
+    
+    # Generate new hash
+    try:
+        new_hash = get_password_hash(test_password)
+    except Exception as e:
+        new_hash = f"Error: {str(e)}"
+    
+    return {
+        "test_password": test_password,
+        "stored_hash": test_hash[:30] + "...",
+        "passlib_verify": passlib_result,
+        "bcrypt_verify": bcrypt_result,
+        "new_hash_preview": new_hash[:30] + "..." if isinstance(new_hash, str) and new_hash.startswith("$") else new_hash,
+        "bcrypt_version": getattr(bcrypt, '__version__', 'unknown'),
+    }
+
+
 @app.get("/health/diagnostic")
 @app.get("/api/health/diagnostic")
 async def diagnostic_check():

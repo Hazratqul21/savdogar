@@ -2,11 +2,9 @@
 Vercel Serverless Function Entry Point
 =====================================
 FastAPI app for Vercel Python runtime.
-Vercel natively supports ASGI apps like FastAPI.
 
-DEPLOY: 2026-01-12T19:58:00Z
-VERSION: v3.2.0
-FIX: Remove Mangum wrapper - Vercel supports ASGI natively
+DEPLOY: 2026-01-12T20:00:00Z
+VERSION: v3.3.0
 """
 import sys
 import os
@@ -18,8 +16,6 @@ BACKEND_DIR = os.path.dirname(CURRENT_DIR)
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-# Import FastAPI app - Vercel will use this directly
+# Import and re-export FastAPI app
+# Vercel looks for 'app' variable for ASGI applications
 from app.main import app
-
-# Export app as handler for Vercel
-handler = app

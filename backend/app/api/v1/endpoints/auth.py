@@ -157,12 +157,16 @@ def login_access_token(
     
     ✅ SECURITY FIX: Constant-time lookup to prevent timing attacks
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         from sqlalchemy import or_
         
         # ✅ SECURITY FIX: Single query with OR conditions (constant time)
         # This prevents timing attacks by always executing the same query structure
         login_identifier = form_data.username.strip()
+        logger.info(f"🔐 Login attempt: identifier='{login_identifier[:10]}...'")
         
         user = db.query(User).filter(
             or_(
@@ -175,6 +179,7 @@ def login_access_token(
         # ✅ SECURITY FIX: Always perform password verification to maintain constant time
         # This prevents attackers from detecting user existence via timing differences
         if not user:
+            logger.warning(f"❌ User not found: '{login_identifier[:10]}...'")
             # Perform dummy password verification to maintain constant execution time
             # Valid bcrypt hash format: $2b$12$<22 char salt><31 char hash>
             dummy_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.bLCGsiU9cqZi/2"
@@ -187,21 +192,28 @@ def login_access_token(
                 detail="Noto'g'ri login, telefon raqami yoki parol"
             )
         
+        logger.info(f"✅ User found: id={user.id}, username={user.username}, email={user.email}")
+        
         # Verify password (always takes same time regardless of user existence)
         # Check if user has valid password hash
         if not user.hashed_password:
+            logger.error(f"❌ User {user.id} has no password hash")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Noto'g'ri login, telefon raqami yoki parol"
             )
         
+        logger.info(f"🔑 Verifying password for user {user.id}, hash preview: {user.hashed_password[:20]}...")
         try:
             password_valid = security.verify_password(form_data.password, user.hashed_password)
-        except Exception:
+            logger.info(f"🔑 Password verification result: {password_valid}")
+        except Exception as e:
             # Invalid password hash format in database
+            logger.error(f"❌ Password verification error: {e}")
             password_valid = False
         
         if not password_valid:
+            logger.warning(f"❌ Invalid password for user {user.id}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Noto'g'ri login, telefon raqami yoki parol"

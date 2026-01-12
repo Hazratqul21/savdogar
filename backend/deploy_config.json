@@ -1,0 +1,12 @@
+{
+  "deploy_timestamp": "2026-01-12T06:30:00Z",
+  "build_version": "3.0.0",
+  "commit": "bf765e3",
+  "force_rebuild": true,
+  "critical_fixes": [
+    "67e77a8: Auto-create tenant for products_v2 FK constraint",
+    "6ca76fc: Auto-redirect to login on 403 token expired",
+    "1b07e83: Trailing slashes fix",
+    "81d4857: redirect_slashes enabled"
+  ]
+}

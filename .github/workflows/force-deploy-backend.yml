@@ -1,0 +1,31 @@
+name: Force Backend Deploy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  trigger-vercel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel Deployment
+        run: |
+          echo "🚀 Triggering Vercel deployment..."
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          
+          # Log the push event
+          echo "✅ GitHub detected changes in backend folder"
+          echo "⏳ Vercel should auto-deploy via webhook"
+          
+          # If Vercel has a deploy hook configured, uncomment below:
+          # curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          
+      - name: Verify Deployment Started
+        run: |
+          echo "📊 Deployment should start within 30 seconds"
+          echo "Check: https://vercel.com/dashboard"

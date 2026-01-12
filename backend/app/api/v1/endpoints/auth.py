@@ -188,7 +188,20 @@ def login_access_token(
             )
         
         # Verify password (always takes same time regardless of user existence)
-        if not security.verify_password(form_data.password, user.hashed_password):
+        # Check if user has valid password hash
+        if not user.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Noto'g'ri login, telefon raqami yoki parol"
+            )
+        
+        try:
+            password_valid = security.verify_password(form_data.password, user.hashed_password)
+        except Exception:
+            # Invalid password hash format in database
+            password_valid = False
+        
+        if not password_valid:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Noto'g'ri login, telefon raqami yoki parol"

@@ -174,12 +174,14 @@ def login_access_token(
         
         # ✅ SECURITY FIX: Always perform password verification to maintain constant time
         # This prevents attackers from detecting user existence via timing differences
-        # Use a dummy hash if user not found to ensure constant verification time
         if not user:
             # Perform dummy password verification to maintain constant execution time
-            # This prevents timing attacks that could reveal user existence
-            dummy_hash = "$2b$12$dummy.hash.for.timing.attack.prevention.constant.time"
-            security.verify_password("dummy_password_that_will_never_match", dummy_hash)
+            # Valid bcrypt hash format: $2b$12$<22 char salt><31 char hash>
+            dummy_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.bLCGsiU9cqZi/2"
+            try:
+                security.verify_password("dummy_password", dummy_hash)
+            except Exception:
+                pass  # Ignore - just for timing attack prevention
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Noto'g'ri login, telefon raqami yoki parol"

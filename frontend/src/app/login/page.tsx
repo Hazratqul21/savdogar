@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { login, saveToken } from "@/lib/api";
 import { Eye, EyeOff } from "lucide-react";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -19,10 +18,13 @@ function LoginForm() {
 
   // Check if redirected due to expired token
   useEffect(() => {
-    if (searchParams.get('expired') === 'true') {
-      setError("Sessiya muddati tugagan. Iltimos, qayta kiring.");
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('expired') === 'true') {
+        setError("Sessiya muddati tugagan. Iltimos, qayta kiring.");
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

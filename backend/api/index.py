@@ -4,10 +4,10 @@ Vercel Serverless Function Entry Point
 FastAPI + Mangum for Vercel Python runtime.
 Mangum wraps ASGI apps for AWS Lambda / Vercel compatibility.
 
-FORCE REBUILD: 2026-01-12T06:15:00Z
-DEPLOY VERSION: v3.0.0
-COMMIT: 4b7ba17
-CRITICAL FIX: Tenant auto-create for products_v2
+FORCE REBUILD: 2026-01-12T14:35:00Z
+DEPLOY VERSION: v3.1.0
+COMMIT: e23b57a
+TRIGGER: Force Vercel to detect GitHub changes
 """
 import sys
 import os

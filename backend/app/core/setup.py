@@ -203,7 +203,7 @@ def seed_demo_data() -> bool:
             product_palov = ProductV2(
                 tenant_id=tenant_horeca.id,
                 name="Palov",
-                type=ProductType.SIMPLE,
+                type=ProductType.simple,
                 base_price=35000.0,
                 cost_price=20000.0,
                 is_active=True
@@ -269,7 +269,7 @@ def seed_demo_data() -> bool:
             product_ariston = ProductV2(
                 tenant_id=tenant_plumbing.id,
                 name="Ariston Cares X",
-                type=ProductType.SIMPLE,
+                type=ProductType.simple,
                 base_price=5000000.0,
                 cost_price=4000000.0,
                 is_active=True
@@ -307,7 +307,7 @@ def seed_demo_data() -> bool:
             product_pipe = ProductV2(
                 tenant_id=tenant_plumbing.id,
                 name="PPR Pipe 32mm",
-                type=ProductType.SIMPLE,
+                type=ProductType.simple,
                 base_price=25600.0,
                 cost_price=20000.0,
                 is_active=True

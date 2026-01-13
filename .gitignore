@@ -25,3 +25,4 @@ frontend_backup_*/
 frontend_old/
 .vincent/
 *.pid
+.vercel

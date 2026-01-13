@@ -497,7 +497,7 @@ def checkout(
             ).first()
             product = variant.product_v2
             
-            if product.type == ProductType.BUNDLE:
+            if product.type == ProductType.bundle:
                 from app.models.product_bundle import ProductBundle
                 bundle_components = db.query(ProductBundle).filter(
                     and_(

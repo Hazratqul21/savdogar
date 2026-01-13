@@ -7,12 +7,12 @@ import uuid
 from datetime import date
 
 class ProductType(str, enum.Enum):
-    """Mahsulot turlari"""
-    SIMPLE = "simple"           # Oddiy mahsulot (bitta variant)
-    VARIABLE = "variable"      # Variantli mahsulot (size, color, va hokazo)
-    COMPOSITE = "composite"    # Kompozit mahsulot (set, combo)
-    SERVICE = "service"         # Xizmat (o'rnatish, texnik xizmat) - Plumbing/HVAC uchun
-    BUNDLE = "bundle"           # To'plam/Kit (1 Boiler + 5 Radiator + 20m Pipe)
+    """Mahsulot turlari - lowercase to match PostgreSQL enum values"""
+    simple = "simple"           # Oddiy mahsulot (bitta variant)
+    variable = "variable"      # Variantli mahsulot (size, color, va hokazo)
+    composite = "composite"    # Kompozit mahsulot (set, combo)
+    service = "service"         # Xizmat (o'rnatish, texnik xizmat) - Plumbing/HVAC uchun
+    bundle = "bundle"           # To'plam/Kit (1 Boiler + 5 Radiator + 20m Pipe)
 
 class ProductV2(Base):
     """
@@ -28,7 +28,7 @@ class ProductV2(Base):
     # Asosiy ma'lumotlar
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    type = Column(Enum(ProductType), default=ProductType.SIMPLE, nullable=False)
+    type = Column(Enum(ProductType), default=ProductType.simple, nullable=False)
     
     # Narxlar (base price - variantlar uchun default)
     base_price = Column(Float, default=0.0)

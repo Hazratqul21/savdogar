@@ -43,7 +43,7 @@ def create_bundle(
     if not product:
         raise HTTPException(status_code=404, detail="Mahsulot topilmadi")
     
-    if product.type != ProductType.BUNDLE:
+    if product.type != ProductType.bundle:
         raise HTTPException(
             status_code=400,
             detail="Bu mahsulot BUNDLE type emas. Avval mahsulotni BUNDLE type qiling."

@@ -218,7 +218,7 @@ async def import_nakladnoy_to_inventory(
                     tenant_id=current_user.tenant_id,
                     name=name,
                     description=f"Nakladnoydan import qilingan - {datetime.now().strftime('%Y-%m-%d')}",
-                    type=ProductType.SIMPLE,
+                    type=ProductType.simple,
                     base_price=price * 1.25 if price > 0 else 0,  # 25% markup
                     cost_price=price if price > 0 else 0,
                     is_active=True,

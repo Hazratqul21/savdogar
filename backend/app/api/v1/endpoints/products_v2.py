@@ -67,7 +67,7 @@ def create_product(
     db.flush()  # ID ni olish uchun
     
     # Variantlar yaratish
-    if product_in.type == ProductType.VARIABLE and product_in.variants:
+    if product_in.type == ProductType.variable and product_in.variants:
         for variant_data in product_in.variants:
             variant_obj = ProductVariant(
                 product_id=product_obj.id,
@@ -89,7 +89,7 @@ def create_product(
                 is_serialized=variant_data.is_serialized or False,
             )
             db.add(variant_obj)
-    elif product_in.type == ProductType.SIMPLE:
+    elif product_in.type == ProductType.simple:
         # Simple product uchun bitta variant yaratish
         variant_obj = ProductVariant(
             product_id=product_obj.id,

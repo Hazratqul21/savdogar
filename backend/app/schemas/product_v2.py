@@ -119,7 +119,7 @@ class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: Optional[str] = None
     category_id: Optional[int] = None
-    type: ProductType = ProductType.SIMPLE
+    type: ProductType = ProductType.simple
     base_price: float = Field(0.0, ge=0)
     cost_price: Optional[float] = Field(0.0, ge=0)
     tax_rate: Optional[float] = Field(0.0, ge=0, le=100)
@@ -136,7 +136,7 @@ class ProductCreate(BaseModel):
     @validator('variants')
     def validate_variants(cls, v, values):
         """VARIABLE type uchun variantlar majburiy"""
-        if values.get('type') == ProductType.VARIABLE and not v:
+        if values.get('type') == ProductType.variable and not v:
             raise ValueError("VARIABLE type mahsulot uchun kamida bitta variant kerak")
         return v
 

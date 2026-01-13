@@ -50,46 +50,6 @@ def check_database_health(db: Session = Depends(deps.get_db)):
         }
 
 
-@router.get("/debug-user")
-def debug_user_hash(db: Session = Depends(deps.get_db)):
-    """
-    Debug endpoint to check user hash (TEMPORARY - remove in production)
-    """
-    import bcrypt
-    
-    try:
-        result = db.execute(text("""
-            SELECT id, username, email, hashed_password 
-            FROM users WHERE username = 'engineer'
-        """)).fetchone()
-        
-        if not result:
-            return {"error": "User not found"}
-        
-        user_id, username, email, hashed_password = result
-        
-        # Test passwords using bcrypt directly
-        test_passwords = ["test123", "Xazrat_ali571"]
-        password_tests = {}
-        for pwd in test_passwords:
-            try:
-                pwd_bytes = pwd.encode('utf-8')
-                hash_bytes = hashed_password.encode('utf-8')
-                password_tests[pwd] = bcrypt.checkpw(pwd_bytes, hash_bytes)
-            except Exception as e:
-                password_tests[pwd] = f"Error: {e}"
-        
-        return {
-            "user_id": user_id,
-            "username": username,
-            "email": email,
-            "hash_preview": hashed_password[:40] + "...",
-            "hash_length": len(hashed_password),
-            "password_tests": password_tests,
-            "bcrypt_version": bcrypt.__version__ if hasattr(bcrypt, '__version__') else "unknown"
-        }
-    except Exception as e:
-        return {"error": str(e)}
 
 
 

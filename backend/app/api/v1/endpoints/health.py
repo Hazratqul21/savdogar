@@ -55,8 +55,7 @@ def debug_user_hash(db: Session = Depends(deps.get_db)):
     """
     Debug endpoint to check user hash (TEMPORARY - remove in production)
     """
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    import bcrypt
     
     try:
         result = db.execute(text("""
@@ -69,12 +68,14 @@ def debug_user_hash(db: Session = Depends(deps.get_db)):
         
         user_id, username, email, hashed_password = result
         
-        # Test passwords
+        # Test passwords using bcrypt directly
         test_passwords = ["test123", "Xazrat_ali571"]
         password_tests = {}
         for pwd in test_passwords:
             try:
-                password_tests[pwd] = pwd_context.verify(pwd, hashed_password)
+                pwd_bytes = pwd.encode('utf-8')
+                hash_bytes = hashed_password.encode('utf-8')
+                password_tests[pwd] = bcrypt.checkpw(pwd_bytes, hash_bytes)
             except Exception as e:
                 password_tests[pwd] = f"Error: {e}"
         
@@ -84,7 +85,8 @@ def debug_user_hash(db: Session = Depends(deps.get_db)):
             "email": email,
             "hash_preview": hashed_password[:40] + "...",
             "hash_length": len(hashed_password),
-            "password_tests": password_tests
+            "password_tests": password_tests,
+            "bcrypt_version": bcrypt.__version__ if hasattr(bcrypt, '__version__') else "unknown"
         }
     except Exception as e:
         return {"error": str(e)}

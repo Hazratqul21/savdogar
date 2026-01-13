@@ -5,7 +5,7 @@ from app.api import deps
 
 router = APIRouter()
 
-@router.get("/health/db")
+@router.get("/db")
 def check_database_health(db: Session = Depends(deps.get_db)):
     """
     Database connection health check
@@ -50,7 +50,7 @@ def check_database_health(db: Session = Depends(deps.get_db)):
         }
 
 
-@router.get("/health/debug-user")
+@router.get("/debug-user")
 def debug_user_hash(db: Session = Depends(deps.get_db)):
     """
     Debug endpoint to check user hash (TEMPORARY - remove in production)

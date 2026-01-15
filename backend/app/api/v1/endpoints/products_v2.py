@@ -66,13 +66,53 @@ def create_product(
     db.add(product_obj)
     db.flush()  # ID ni olish uchun
     
+    # Helper function to generate unique SKU
+    def get_unique_sku(base_sku: str, tenant_id: int, db: Session) -> str:
+        """Generate unique SKU by checking existing SKUs and appending suffix if needed"""
+        from datetime import datetime
+        sku = base_sku.strip().upper()
+        
+        # Check if SKU already exists
+        existing = db.query(ProductVariant).filter(
+            and_(
+                ProductVariant.tenant_id == tenant_id,
+                ProductVariant.sku == sku
+            )
+        ).first()
+        
+        if not existing:
+            return sku
+        
+        # If exists, append timestamp to make it unique
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        new_sku = f"{sku}-{timestamp}"
+        
+        # Double check the new SKU doesn't exist (unlikely but safe)
+        existing_new = db.query(ProductVariant).filter(
+            and_(
+                ProductVariant.tenant_id == tenant_id,
+                ProductVariant.sku == new_sku
+            )
+        ).first()
+        
+        if existing_new:
+            # If still exists (very unlikely), add random suffix
+            import random
+            random_suffix = random.randint(1000, 9999)
+            new_sku = f"{sku}-{timestamp}-{random_suffix}"
+        
+        return new_sku
+    
     # Variantlar yaratish
     if product_in.type == ProductType.variable and product_in.variants:
         for variant_data in product_in.variants:
+            # Ensure SKU is unique
+            unique_sku = get_unique_sku(variant_data.sku, tenant_id, db)
+            
             variant_obj = ProductVariant(
                 product_id=product_obj.id,
                 tenant_id=tenant_id,
-                sku=variant_data.sku,
+                sku=unique_sku,
                 price=variant_data.price or product_in.base_price,
                 cost_price=variant_data.cost_price or product_in.cost_price or product_in.base_price,
                 stock_quantity=variant_data.stock_quantity,
@@ -91,6 +131,11 @@ def create_product(
             db.add(variant_obj)
     elif product_in.type == ProductType.simple:
         # Simple product uchun bitta variant yaratish
+        # Generate base SKU from product name
+        base_sku = f"{product_in.name.upper().replace(' ', '-').replace('_', '-')}-001"
+        # Ensure SKU is unique
+        unique_sku = get_unique_sku(base_sku, tenant_id, db)
+        
         variant_obj = ProductVariant(
             product_id=product_obj.id,
             tenant_id=tenant_id,

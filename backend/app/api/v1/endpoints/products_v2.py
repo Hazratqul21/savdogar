@@ -178,14 +178,21 @@ def read_products(
     if not tenant_id:
         raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
+    # Filter by is_active=True by default (show only active products)
     products = db.query(ProductV2).filter(
-        ProductV2.tenant_id == tenant_id
+        and_(
+            ProductV2.tenant_id == tenant_id,
+            ProductV2.is_active == True
+        )
     ).offset(skip).limit(limit).all()
     
-    # Variantlarni yuklash
+    # Variantlarni yuklash (only active variants)
     for product in products:
         product.variants = db.query(ProductVariant).filter(
-            ProductVariant.product_id == product.id
+            and_(
+                ProductVariant.product_id == product.id,
+                ProductVariant.is_active == True
+            )
         ).all()
     
     # Hide cost_price for seller/cashier role (role is now a string)
@@ -197,7 +204,15 @@ def read_products(
                 variant.cost_price = None
     
     # Convert to schema to avoid MetaData conflict
-    return [schemas.Product.from_orm(product) for product in products]
+    try:
+        result = [schemas.Product.from_orm(product) for product in products]
+        return result
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error converting products to schema: {e}", exc_info=True)
+        # Return empty list if conversion fails
+        return []
 
 @router.get("/{product_id}", response_model=schemas.Product)
 def read_product(

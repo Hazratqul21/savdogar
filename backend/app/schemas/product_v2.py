@@ -184,10 +184,46 @@ class Product(BaseModel):
             metadata_value = {}
         
         # Convert variants to schema if they exist
+        # ProductVariant has from_attributes=True, so we can use model_validate directly
         variants = []
         if hasattr(obj, 'variants') and obj.variants:
             for variant in obj.variants:
-                variants.append(ProductVariant.from_orm(variant))
+                try:
+                    # Use Pydantic's model_validate with from_attributes
+                    # This should work since ProductVariant has from_attributes = True
+                    variant_schema = ProductVariant.model_validate(variant)
+                    variants.append(variant_schema)
+                except Exception as e:
+                    # Fallback: try manual conversion
+                    try:
+                        variant_dict = {
+                            "id": variant.id,
+                            "product_id": variant.product_id,
+                            "tenant_id": variant.tenant_id,
+                            "sku": variant.sku,
+                            "price": float(variant.price) if variant.price is not None else 0.0,
+                            "cost_price": float(variant.cost_price) if variant.cost_price is not None else 0.0,
+                            "stock_quantity": float(variant.stock_quantity) if variant.stock_quantity is not None else 0.0,
+                            "min_stock_level": float(variant.min_stock_level) if variant.min_stock_level is not None else 0.0,
+                            "max_stock_level": float(variant.max_stock_level) if variant.max_stock_level is not None else None,
+                            "attributes": variant.attributes if isinstance(variant.attributes, dict) else {},
+                            "barcode_aliases": variant.barcode_aliases if isinstance(variant.barcode_aliases, list) else [],
+                            "is_active": variant.is_active if variant.is_active is not None else True,
+                            "primary_unit": variant.primary_unit or "piece",
+                            "secondary_unit": variant.secondary_unit,
+                            "unit_conversion_factor": float(variant.unit_conversion_factor) if variant.unit_conversion_factor is not None else None,
+                            "requires_serial_number": variant.requires_serial_number if variant.requires_serial_number is not None else False,
+                            "is_serialized": variant.is_serialized if variant.is_serialized is not None else False,
+                            "expiry_date": variant.expiry_date,
+                            "batch_number": variant.batch_number,
+                        }
+                        variants.append(ProductVariant(**variant_dict))
+                    except Exception as e2:
+                        # Skip problematic variants
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Failed to convert variant {getattr(variant, 'id', 'unknown')}: {e2}")
+                        continue
         
         # Build data dict manually to avoid SQLAlchemy Base.metadata conflict
         data = {

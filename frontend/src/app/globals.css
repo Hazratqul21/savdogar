@@ -325,9 +325,7 @@ html {
   transition: all 0.15s ease;
 }
 
-@utility pos-key:active {
-  transform: scale(0.95);
-}
+/* POS key active state - use as: class="pos-key [&:active]:scale-95" */
 
 /* Table styles */
 .data-table {

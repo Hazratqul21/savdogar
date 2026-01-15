@@ -116,7 +116,9 @@ def create_product(
         ProductVariant.product_id == product_obj.id
     ).all()
     
-    return product_obj
+    # Ensure product_metadata is a dict (not MetaData object)
+    # Convert using schema's from_orm method to avoid SQLAlchemy MetaData conflict
+    return schemas.Product.from_orm(product_obj)
 
 @router.get("/", response_model=List[schemas.Product])
 def read_products(
@@ -149,7 +151,8 @@ def read_products(
             for variant in product.variants:
                 variant.cost_price = None
     
-    return products
+    # Convert to schema to avoid MetaData conflict
+    return [schemas.Product.from_orm(product) for product in products]
 
 @router.get("/{product_id}", response_model=schemas.Product)
 def read_product(
@@ -174,18 +177,13 @@ def read_product(
     if not product:
         raise HTTPException(status_code=404, detail="Mahsulot topilmadi")
     
+    # Load variants
     product.variants = db.query(ProductVariant).filter(
         ProductVariant.product_id == product.id
     ).all()
     
-    # Hide cost_price for seller/cashier role (role is now a string)
-    is_seller = current_user.role == "cashier"
-    if is_seller:
-        product.cost_price = None
-        for variant in product.variants:
-            variant.cost_price = None
-    
-    return product
+    # Convert to schema to avoid MetaData conflict
+    return schemas.Product.from_orm(product)
 
 
 @router.delete("/{product_id}")

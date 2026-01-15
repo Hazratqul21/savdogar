@@ -94,7 +94,7 @@ def create_product(
         variant_obj = ProductVariant(
             product_id=product_obj.id,
             tenant_id=tenant_id,
-            sku=f"{product_in.name.upper().replace(' ', '-')}-001",
+            sku=unique_sku,
             price=product_in.base_price,
             cost_price=product_in.cost_price or product_in.base_price,
             stock_quantity=0.0,

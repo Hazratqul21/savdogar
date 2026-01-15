@@ -36,7 +36,22 @@ export default function LoginPage() {
       saveToken(response.access_token);
       window.location.href = "/dashboard";
     } catch (err: any) {
-      setError(err.message || "Kirishda xatolik yuz berdi");
+      // Better error message handling
+      console.error('Login error:', err);
+      let errorMessage = err.message || "Kirishda xatolik yuz berdi";
+      
+      // Check for common errors and provide helpful messages
+      if (errorMessage.includes('Backend serverga ulanib bo\'lmadi') || 
+          errorMessage.includes('Failed to fetch') ||
+          errorMessage.includes('NEXT_PUBLIC_API_URL')) {
+        errorMessage = "Backend serverga ulanib bo'lmadi. Iltimos, backend ishlayotganini va API URL sozlanganini tekshiring.";
+      } else if (errorMessage.includes('Noto\'g\'ri') || errorMessage.includes('parol') || errorMessage.includes('login')) {
+        // Keep the original message from backend
+      } else if (!errorMessage || errorMessage === "Kirishda xatolik yuz berdi") {
+        errorMessage = "Kirishda xatolik yuz berdi. Login va parolni tekshirib qayta urinib ko'ring.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

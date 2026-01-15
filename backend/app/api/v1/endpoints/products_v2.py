@@ -259,7 +259,8 @@ def update_product(
         ProductVariant.product_id == product.id
     ).all()
     
-    return product
+    # Convert to schema to avoid MetaData conflict
+    return schemas.Product.from_orm(product)
 
 
 @router.post("/variants/{variant_id}/price-tiers", response_model=schemas.PriceTier)

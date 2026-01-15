@@ -162,12 +162,49 @@ class Product(BaseModel):
     base_price: float
     cost_price: float
     tax_rate: float
-    product_metadata: Dict[str, Any] = Field(..., alias="metadata")
+    product_metadata: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool
     variants: List[ProductVariant] = []
     
     class Config:
         from_attributes = True
+        populate_by_name = True  # Allow both product_metadata and metadata names
+    
+    @classmethod
+    def from_orm(cls, obj):
+        """Custom ORM converter to handle metadata field correctly
+        Avoids conflict with SQLAlchemy Base.metadata attribute
+        """
+        # Get product_metadata from SQLAlchemy model, ensure it's a dict
+        metadata_value = getattr(obj, 'product_metadata', None)
+        if metadata_value is None:
+            metadata_value = {}
+        elif not isinstance(metadata_value, dict):
+            # If it's somehow not a dict, convert or default to empty dict
+            metadata_value = {}
+        
+        # Convert variants to schema if they exist
+        variants = []
+        if hasattr(obj, 'variants') and obj.variants:
+            for variant in obj.variants:
+                variants.append(ProductVariant.from_orm(variant))
+        
+        # Build data dict manually to avoid SQLAlchemy Base.metadata conflict
+        data = {
+            "id": obj.id,
+            "tenant_id": obj.tenant_id,
+            "category_id": obj.category_id,
+            "name": obj.name,
+            "description": obj.description,
+            "type": obj.type,
+            "base_price": float(obj.base_price),
+            "cost_price": float(obj.cost_price) if obj.cost_price is not None else 0.0,
+            "tax_rate": float(obj.tax_rate) if obj.tax_rate is not None else 0.0,
+            "product_metadata": metadata_value,
+            "is_active": obj.is_active,
+            "variants": variants,
+        }
+        return cls(**data)
 
 # ==================== Price Tier Schemas ====================
 

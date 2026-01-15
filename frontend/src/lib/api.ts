@@ -141,8 +141,18 @@ async function handleApiError(response: Response, defaultMessage: string): Promi
  */
 function handleNetworkError(error: unknown): never {
   if (error instanceof Error) {
+    // Check for network errors
     if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-      throw new Error("Backend serverga ulanib bo'lmadi. Backend ishlayotganini tekshiring.");
+      const apiUrl = typeof window !== 'undefined' ? getApiBaseUrl() : 'unknown';
+      throw new Error(
+        `Backend serverga ulanib bo'lmadi. ` +
+        `API URL: ${apiUrl || 'not configured'}. ` +
+        `Backend ishlayotganini va NEXT_PUBLIC_API_URL sozlanganingini tekshiring.`
+      );
+    }
+    // Check for API URL configuration errors
+    if (error.message.includes('NEXT_PUBLIC_API_URL') || error.message.includes('API URL')) {
+      throw error; // Already has good message
     }
     throw error;
   }
@@ -179,6 +189,11 @@ export interface TokenResponse {
 export async function login(credentials: LoginRequest): Promise<TokenResponse> {
   const apiUrl = getApiUrl();
   
+  // Log for debugging
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('🔐 Login request:', { apiUrl, username: credentials.username });
+  }
+  
   try {
     const formData = new URLSearchParams();
     formData.append('username', credentials.username);
@@ -190,18 +205,51 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
       body: formData,
     });
 
-    if (!response.ok) {
-      await handleApiError(response, 'Kirishda xatolik yuz berdi');
+    // Log response for debugging
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('📥 Login response:', { status: response.status, statusText: response.statusText });
     }
 
-    return await response.json();
+    if (!response.ok) {
+      // Try to get detailed error message
+      let errorMessage = 'Kirishda xatolik yuz berdi';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorData.error || errorData.message || errorMessage;
+        if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+          console.error('❌ Login error:', errorData);
+        }
+      } catch (e) {
+        // If JSON parsing fails, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('✅ Login success');
+    }
+    return result;
   } catch (error) {
+    // Enhanced error handling
+    if (error instanceof Error) {
+      // If it's already a proper error with message, throw it as is
+      if (error.message && error.message !== 'Kirishda xatolik yuz berdi') {
+        throw error;
+      }
+    }
     throw handleNetworkError(error);
   }
 }
 
 export async function signup(userData: SignupRequest): Promise<any> {
   const apiUrl = getApiUrl();
+  
+  // Log for debugging
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('🔐 Signup request:', { apiUrl, username: userData.username, email: userData.email });
+  }
   
   try {
     const response = await fetch(`${apiUrl}/api/v1/auth/signup`, {
@@ -210,12 +258,40 @@ export async function signup(userData: SignupRequest): Promise<any> {
       body: JSON.stringify(userData),
     });
 
-    if (!response.ok) {
-      await handleApiError(response, "Ro'yxatdan o'tishda xatolik yuz berdi");
+    // Log response for debugging
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('📥 Signup response:', { status: response.status, statusText: response.statusText });
     }
 
-    return await response.json();
+    if (!response.ok) {
+      // Try to get detailed error message
+      let errorMessage = "Ro'yxatdan o'tishda xatolik yuz berdi";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.detail || errorData.error || errorData.message || errorMessage;
+        if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+          console.error('❌ Signup error:', errorData);
+        }
+      } catch (e) {
+        // If JSON parsing fails, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('✅ Signup success:', result);
+    }
+    return result;
   } catch (error) {
+    // Enhanced error handling
+    if (error instanceof Error) {
+      // If it's already a proper error with message, throw it as is
+      if (error.message && error.message !== "Ro'yxatdan o'tishda xatolik yuz berdi") {
+        throw error;
+      }
+    }
     throw handleNetworkError(error);
   }
 }

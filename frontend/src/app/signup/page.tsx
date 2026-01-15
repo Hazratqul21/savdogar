@@ -100,6 +100,9 @@ export default function SignupPage() {
 
       await signup(signupData);
 
+      // Wait a bit before login to ensure user is fully created
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const loginResponse = await login({
         username: formData.username,
         password: formData.password,
@@ -109,7 +112,22 @@ export default function SignupPage() {
       // New users go to onboarding wizard first
       router.push("/onboarding");
     } catch (err: any) {
-      setError(err.message || "Ro'yxatdan o'tishda xatolik yuz berdi");
+      // Better error message handling
+      console.error('Signup error:', err);
+      let errorMessage = err.message || "Ro'yxatdan o'tishda xatolik yuz berdi";
+      
+      // Check for common errors and provide helpful messages
+      if (errorMessage.includes('Backend serverga ulanib bo\'lmadi') || 
+          errorMessage.includes('Failed to fetch') ||
+          errorMessage.includes('NEXT_PUBLIC_API_URL')) {
+        errorMessage = "Backend serverga ulanib bo'lmadi. Iltimos, backend ishlayotganini va API URL sozlanganini tekshiring.";
+      } else if (errorMessage.includes('already exists') || errorMessage.includes('mavjud')) {
+        // Keep the original message from backend
+      } else if (!errorMessage || errorMessage === "Ro'yxatdan o'tishda xatolik yuz berdi") {
+        errorMessage = "Ro'yxatdan o'tishda xatolik yuz berdi. Iltimos, ma'lumotlaringizni tekshirib qayta urinib ko'ring.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

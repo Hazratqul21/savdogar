@@ -35,8 +35,14 @@ async function getProducts() {
     const response = await fetch(`${apiUrl}/api/v1/v2/products?limit=100`, {
         headers: getAuthHeaders(),
     });
-    if (!response.ok) throw new Error("Failed to fetch products");
-    return response.json();
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Inventory: Failed to fetch products:", response.status, errorText);
+        throw new Error("Failed to fetch products");
+    }
+    const data = await response.json();
+    console.log("✅ Inventory: Products fetched:", data?.length || 0, "products");
+    return data;
 }
 
 // Format currency

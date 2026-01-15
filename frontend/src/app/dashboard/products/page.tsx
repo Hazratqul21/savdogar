@@ -63,8 +63,17 @@ async function getProducts(search?: string) {
     if (search) url += `&search=${encodeURIComponent(search)}`;
     
     const response = await fetch(url, { headers: getAuthHeaders() });
-    if (!response.ok) throw new Error("Failed to fetch products");
-    return response.json();
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Failed to fetch products:", response.status, errorText);
+        throw new Error("Failed to fetch products");
+    }
+    const data = await response.json();
+    console.log("✅ Products fetched:", data?.length || 0, "products");
+    if (data?.length > 0) {
+        console.log("📦 First product:", data[0]);
+    }
+    return data;
 }
 
 async function createProduct(data: any) {
@@ -196,10 +205,16 @@ export default function ProductsPage() {
     });
 
     // Fetch products
-    const { data: products = [], isLoading } = useQuery({
+    const { data: products = [], isLoading, error } = useQuery({
         queryKey: ["products", searchQuery],
         queryFn: () => getProducts(searchQuery),
         retry: 1,
+        onError: (err) => {
+            console.error("❌ Query error:", err);
+        },
+        onSuccess: (data) => {
+            console.log("✅ Products query success:", data?.length || 0, "products");
+        },
     });
 
     // Create product mutation with global catalog contribution
@@ -228,8 +243,11 @@ export default function ProductsPage() {
             
             return result;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            console.log("✅ Product created successfully:", data);
+            // Invalidate both query keys
             queryClient.invalidateQueries({ queryKey: ["products"] });
+            queryClient.invalidateQueries({ queryKey: ["products-inventory"] });
             setShowAddModal(false);
             setNewProduct({ name: "", base_price: "", cost_price: "", type: "simple" });
             setCafeProduct({ name: "", hasSizes: true, prices: { small: "", medium: "", large: "" } });
@@ -322,12 +340,23 @@ export default function ProductsPage() {
     };
 
     // Stats
-    const totalProducts = products.length;
-    const activeProducts = products.filter((p: any) => p.is_active).length;
-    const lowStockProducts = products.filter((p: any) => {
-        const variant = p.variants?.[0];
+    const totalProducts = Array.isArray(products) ? products.length : 0;
+    const activeProducts = Array.isArray(products) ? products.filter((p: any) => p?.is_active !== false).length : 0;
+    const lowStockProducts = Array.isArray(products) ? products.filter((p: any) => {
+        const variant = p?.variants?.[0];
         return variant && variant.stock_quantity < (variant.min_stock_level || 10);
-    }).length;
+    }).length : 0;
+    
+    // Debug: Log products state
+    useEffect(() => {
+        console.log("🔍 Products state:", {
+            isLoading,
+            error,
+            productsCount: Array.isArray(products) ? products.length : "not array",
+            productsType: typeof products,
+            firstProduct: Array.isArray(products) && products.length > 0 ? products[0] : null,
+        });
+    }, [products, isLoading, error]);
 
     return (
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
@@ -414,7 +443,20 @@ export default function ProductsPage() {
                     <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                     </div>
-                ) : products.length > 0 ? (
+                ) : error ? (
+                    <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                        <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-300 mb-3" />
+                        <p className="text-sm text-red-500 mb-3">Xatolik yuz berdi</p>
+                        <p className="text-xs text-gray-500 mb-4">{(error as Error)?.message || "Noma'lum xatolik"}</p>
+                        <button 
+                            onClick={() => queryClient.refetchQueries({ queryKey: ["products"] })}
+                            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                            <Loader2 className="w-4 h-4" />
+                            Qayta yuklash
+                        </button>
+                    </div>
+                ) : Array.isArray(products) && products.length > 0 ? (
                     <div className="overflow-x-auto -mx-3 sm:mx-0">
                         <table className="w-full min-w-[500px] text-sm">
                             <thead className="bg-gray-50">

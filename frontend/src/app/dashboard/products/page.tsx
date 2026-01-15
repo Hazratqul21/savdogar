@@ -351,7 +351,7 @@ export default function ProductsPage() {
     useEffect(() => {
         console.log("🔍 Products state:", {
             isLoading,
-            error,
+            error: error ? (error as Error).message : null,
             productsCount: Array.isArray(products) ? products.length : "not array",
             productsType: typeof products,
             firstProduct: Array.isArray(products) && products.length > 0 ? products[0] : null,

@@ -3,24 +3,33 @@
   "builds": [
     {
       "src": "backend/api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
+      "src": "/api/v1/(.*)",
+      "dest": "backend/api/index.py"
+    },
+    {
+      "src": "/health(.*)",
+      "dest": "backend/api/index.py"
+    },
+    {
+      "src": "/docs(.*)",
+      "dest": "backend/api/index.py"
+    },
+    {
+      "src": "/openapi.json",
+      "dest": "backend/api/index.py"
+    },
+    {
+      "src": "/verify/(.*)",
+      "dest": "backend/api/index.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "backend/api/index.py"
     }
-  ],
-  "functions": {
-    "backend/api/index.py": {
-      "runtime": "python3.12",
-      "maxDuration": 60,
-      "memory": 1024,
-      "includeFiles": "backend/**"
-    }
-  }
+  ]
 }

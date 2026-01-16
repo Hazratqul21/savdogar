@@ -2,6 +2,7 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
+import logging
 
 from app.api import deps
 from app.models import User, UserRole
@@ -10,6 +11,7 @@ from app.models.pricing import PriceTier
 from app.schemas import product_v2 as schemas
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=schemas.Product)
 def create_product(
@@ -163,6 +165,7 @@ def create_product(
     
     # Ensure product_metadata is a dict (not MetaData object)
     # Convert using schema's from_orm method to avoid SQLAlchemy MetaData conflict
+    logger.info(f"✅ Product created successfully: id={product_obj.id}, name={product_obj.name}")
     return schemas.Product.from_orm(product_obj)
 
 @router.get("/", response_model=List[schemas.Product])
@@ -170,25 +173,37 @@ def read_products(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    search: str = None,
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotlarni olish"""
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info(f"✅ GET /api/v1/v2/products called - tenant_id: {current_user.tenant_id or current_user.organization_id}, skip: {skip}, limit: {limit}")
+    logger.info(f"✅ GET /api/v1/v2/products called - tenant_id: {current_user.tenant_id or current_user.organization_id}, skip: {skip}, limit: {limit}, search: {search}")
+    logger.info(f"✅ User info: id={current_user.id}, username={current_user.username}, tenant_id={current_user.tenant_id}, org_id={current_user.organization_id}")
     # Support both tenant_id (new) and organization_id (old) for backwards compatibility
     tenant_id = current_user.tenant_id or current_user.organization_id
     if not tenant_id:
         raise HTTPException(status_code=400, detail="Tenant yoki organizatsiya topilmadi")
     
     # Filter by is_active=True by default (show only active products)
-    products = db.query(ProductV2).filter(
+    logger.info(f"🔍 Querying products for tenant_id: {tenant_id}")
+    
+    # Build query with search filter
+    query = db.query(ProductV2).filter(
         and_(
             ProductV2.tenant_id == tenant_id,
             ProductV2.is_active == True
         )
-    ).offset(skip).limit(limit).all()
+    )
     
+    # Add search filter if provided
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(ProductV2.name.ilike(search_pattern))
+        logger.info(f"🔍 Searching products with pattern: {search_pattern}")
+    
+    products = query.offset(skip).limit(limit).all()
+    logger.info(f"📦 Found {len(products)} products in database")
+
     # Variantlarni yuklash (only active variants)
     for product in products:
         product.variants = db.query(ProductVariant).filter(
@@ -197,6 +212,7 @@ def read_products(
                 ProductVariant.is_active == True
             )
         ).all()
+        logger.info(f"📦 Product {product.id} ({product.name}) has {len(product.variants)} variants")
     
     # Hide cost_price for seller/cashier role (role is now a string)
     is_seller = current_user.role == "cashier"
@@ -209,11 +225,10 @@ def read_products(
     # Convert to schema to avoid MetaData conflict
     try:
         result = [schemas.Product.from_orm(product) for product in products]
+        logger.info(f"✅ Successfully converted {len(result)} products to schema")
         return result
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error converting products to schema: {e}", exc_info=True)
+        logger.error(f"❌ Error converting products to schema: {e}", exc_info=True)
         # Return empty list if conversion fails
         return []
 

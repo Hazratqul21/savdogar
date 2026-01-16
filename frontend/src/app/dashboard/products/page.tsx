@@ -126,6 +126,7 @@ export default function ProductsPage() {
         name: "",
         base_price: "",
         cost_price: "",
+        barcode: "",
         type: "simple",
     });
     
@@ -249,7 +250,7 @@ export default function ProductsPage() {
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["products-inventory"] });
             setShowAddModal(false);
-            setNewProduct({ name: "", base_price: "", cost_price: "", type: "simple" });
+            setNewProduct({ name: "", base_price: "", cost_price: "", barcode: "", type: "simple" });
             setCafeProduct({ name: "", hasSizes: true, prices: { small: "", medium: "", large: "" } });
             setToast({ message: "Mahsulot qo'shildi ✓", type: 'success' });
         },
@@ -330,11 +331,24 @@ export default function ProductsPage() {
             // Standard mode
             if (!newProduct.name || !newProduct.base_price) return;
             
+            // SKU yaratish
+            const sku = newProduct.barcode || `${newProduct.name.toUpperCase().replace(/\s+/g, '-')}-${Date.now().toString().slice(-4)}`;
+            
             createMutation.mutate({
                 name: newProduct.name,
                 base_price: parseFloat(newProduct.base_price),
                 cost_price: parseFloat(newProduct.cost_price) || parseFloat(newProduct.base_price),
                 type: newProduct.type,
+                barcode: newProduct.barcode || undefined,
+                variants: [{
+                    sku: sku,
+                    price: parseFloat(newProduct.base_price),
+                    cost_price: parseFloat(newProduct.cost_price) || parseFloat(newProduct.base_price),
+                    stock_quantity: 0,
+                    barcode_aliases: newProduct.barcode ? [newProduct.barcode] : [],
+                    attributes: {},
+                    is_active: true,
+                }],
             });
         }
     };
@@ -708,6 +722,20 @@ export default function ProductsPage() {
                                                 className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Barcode / QR kod
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newProduct.barcode}
+                                            onChange={(e) => setNewProduct(prev => ({ ...prev, barcode: e.target.value }))}
+                                            placeholder="Skanerlang yoki kiriting"
+                                            className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">💡 Barcode skanerini ishlating yoki qo'lda kiriting</p>
                                     </div>
                                 </div>
 

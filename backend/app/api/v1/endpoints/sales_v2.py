@@ -45,11 +45,10 @@ def calculate_cart_total(
             customer_tier = customer.price_tier
     
     for item in items:
-        # Variantni olish
+        # Variantni olish (variant_id unique, tenant_id filter kerak emas)
         variant = db.query(ProductVariant).filter(
             and_(
                 ProductVariant.id == item.variant_id,
-                ProductVariant.tenant_id == tenant_id,
                 ProductVariant.is_active == True
             )
         ).first()
@@ -57,7 +56,7 @@ def calculate_cart_total(
         if not variant:
             raise HTTPException(
                 status_code=404,
-                detail=f"Variant {item.variant_id} topilmadi"
+                detail=f"Variant {item.variant_id} topilmadi yoki faol emas"
             )
         
         # ✅ PART 2: Serial number validation for serialized items

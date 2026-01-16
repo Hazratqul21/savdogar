@@ -1,10 +1,10 @@
 """
 Vercel Serverless Function Entry Point
 =====================================
-FastAPI app for Vercel Python runtime.
+FastAPI app for Vercel Python runtime with Mangum adapter.
 
-DEPLOY: 2026-01-12T20:00:00Z
-VERSION: v3.3.0
+DEPLOY: 2026-01-16T05:50:00Z
+VERSION: v3.4.0 - CRITICAL FIX: 405 Method Not Allowed
 """
 import sys
 import os
@@ -16,6 +16,15 @@ BACKEND_DIR = os.path.dirname(CURRENT_DIR)
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-# Import and re-export FastAPI app
-# Vercel looks for 'app' variable for ASGI applications
+# Import FastAPI app
 from app.main import app
+
+# Import Mangum adapter for Vercel serverless function
+from mangum import Mangum
+
+# Create handler with Mangum
+# lifespan="off" to avoid issues with Vercel cold starts
+handler = Mangum(app, lifespan="off")
+
+# Export both for compatibility
+__all__ = ['app', 'handler']

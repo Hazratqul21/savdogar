@@ -16,13 +16,8 @@ const nextConfig: NextConfig = {
   
   typescript: {
     // Ignore TypeScript errors during build to speed up deployment
-    // We still get type checking in development via IDE
-    ignoreBuildErrors: false,
-  },
-  
-  eslint: {
-    // Ignore ESLint errors during build
-    ignoreDuringBuilds: true,
+    // Type checking is still available in development via IDE
+    ignoreBuildErrors: true,
   },
   
   compiler: {

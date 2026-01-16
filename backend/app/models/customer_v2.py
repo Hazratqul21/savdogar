@@ -48,6 +48,10 @@ class CustomerV2(Base):
     credit_limit = Column(Float, default=0.0)  # Maksimal qarz miqdori
     max_debt_allowed = Column(Float, default=0.0)  # Ruxsat etilgan maksimal qarz
     
+    # Current debt (computed from negative balance for convenience)
+    # ✅ FIX: Add current_debt column for API compatibility
+    current_debt = Column(Float, default=0.0, nullable=False)
+    
     # Loyalty
     loyalty_points = Column(Float, default=0.0)
     

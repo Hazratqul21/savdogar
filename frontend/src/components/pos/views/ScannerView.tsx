@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/useToast';
 import { ToastComponent } from '@/components/inventory/Toast';
 import { ScanIndicator } from '@/components/pos/ScanIndicator';
 import { soundManager } from '@/lib/sound-manager';
+import { CheckoutModal } from '@/components/pos/CheckoutModal';
 import Link from 'next/link';
 
 export function ScannerView() {
@@ -49,6 +50,7 @@ export function ScannerView() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [missingBarcode, setMissingBarcode] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanError, setScanError] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -497,6 +499,7 @@ export function ScannerView() {
 
             {/* Main Pay Button */}
             <button
+              onClick={() => setShowCheckout(true)}
               disabled={cart.length === 0}
               className={cn(
                 "w-full py-4 rounded-xl font-bold text-lg",
@@ -526,6 +529,19 @@ export function ScannerView() {
       />
       
       <KeyboardGuide />
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckout}
+        onClose={() => {
+          setShowCheckout(false);
+          setTimeout(() => searchInputRef.current?.focus(), 100);
+        }}
+        onSuccess={(sale) => {
+          playSuccess();
+          console.log('Sale completed:', sale);
+        }}
+      />
 
       {/* Toast Notifications */}
       <div className="fixed bottom-4 right-4 z-50 space-y-2">

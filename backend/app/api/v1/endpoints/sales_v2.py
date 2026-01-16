@@ -266,9 +266,9 @@ def checkout(
     tenant_config = tenant.config or {}
     
     # Database transaction
+    # SQLAlchemy autocommit=False bilan avtomatik tranzaksiya boshqaradi
+    # db.begin() chaqirish KERAK EMAS - xatolik keltirib chiqaradi
     try:
-        db.begin()
-        
         # Savatchani hisoblash
         cart_result = calculate_cart_total(
             db=db,
@@ -346,6 +346,31 @@ def checkout(
             additional_data=checkout_data.metadata or {}
         )
         
+        # ✅ Receipt number generatsiyasi (POS standart formati)
+        from datetime import datetime
+        today = datetime.utcnow()
+        date_prefix = today.strftime("%Y%m%d")
+        
+        # Bugungi oxirgi receipt raqamini topish
+        last_sale_today = db.query(SaleV2).filter(
+            and_(
+                SaleV2.tenant_id == tenant_id,
+                SaleV2.receipt_number != None,
+                SaleV2.receipt_number.like(f"R{date_prefix}%")
+            )
+        ).order_by(SaleV2.id.desc()).first()
+        
+        if last_sale_today and last_sale_today.receipt_number:
+            try:
+                last_num = int(last_sale_today.receipt_number[-4:])
+                next_num = last_num + 1
+            except:
+                next_num = 1
+        else:
+            next_num = 1
+        
+        receipt_number = f"R{date_prefix}{next_num:04d}"
+        
         # Sale yaratish
         sale_obj = SaleV2(
             tenant_id=tenant_id,
@@ -363,6 +388,7 @@ def checkout(
             debt_amount=checkout_data.debt_amount or (cart_result.total if checkout_data.payment_method == PaymentMethod.DEBT else 0.0),
             notes=checkout_data.notes,
             sale_metadata=sale_metadata,
+            receipt_number=receipt_number,
         )
         db.add(sale_obj)
         db.flush()  # ID ni olish uchun

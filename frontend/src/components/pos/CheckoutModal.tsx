@@ -131,11 +131,10 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
     100000,
   ].filter((v, i, arr) => arr.indexOf(v) === i && v >= total).slice(0, 4);
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
+      {isOpen && (
+        <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -505,6 +504,7 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
           </div>
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }

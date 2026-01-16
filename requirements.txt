@@ -1,6 +1,7 @@
 # Vercel Serverless Function Dependencies
 # Optimized for Vercel Python Runtime
-# Force rebuild - 2026-01-12 06:00 - Cache bypass trigger
+# FORCE REBUILD: 2026-01-12T14:35:00Z - Cache bypass trigger v4
+# TRIGGER: Force Vercel to detect latest commit e23b57a
 
 # Core Framework - REQUIRED for Vercel
 fastapi>=0.109.0
@@ -11,6 +12,7 @@ mangum>=0.17.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
+email-validator>=2.0.0
 
 # Database
 sqlalchemy>=2.0.0
@@ -20,6 +22,7 @@ alembic>=1.12.0
 # Authentication & Security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1  # Pin to 4.0.1 for passlib compatibility (4.1+ has breaking changes)
 
 # File Uploads
 python-multipart>=0.0.6
@@ -44,3 +47,4 @@ tenacity>=8.0.0
 openpyxl>=3.1.2
 reportlab>=4.0.0
 python-dateutil>=2.8.0
+duckduckgo-search>=4.0.0

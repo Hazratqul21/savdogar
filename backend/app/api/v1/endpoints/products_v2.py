@@ -173,6 +173,9 @@ def read_products(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Mahsulotlarni olish"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"✅ GET /api/v1/v2/products called - tenant_id: {current_user.tenant_id or current_user.organization_id}, skip: {skip}, limit: {limit}")
     # Support both tenant_id (new) and organization_id (old) for backwards compatibility
     tenant_id = current_user.tenant_id or current_user.organization_id
     if not tenant_id:

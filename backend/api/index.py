@@ -3,40 +3,29 @@ Vercel Serverless Function Entry Point
 =====================================
 FastAPI app for Vercel Python runtime.
 
-DEPLOY: 2026-01-16T06:30:00Z
-VERSION: v4.1.0 - SENIOR FIX: Proper ASGI handler for Vercel
+DEPLOY: 2026-01-16T06:50:00Z
+VERSION: v4.3.0 - FIX: Backend as Root Directory
 
-IMPORTANT: Vercel @vercel/python looks for:
-1. An ASGI/WSGI app named 'app'
-2. A callable named 'handler' for HTTP functions
-
-For FastAPI (ASGI), we export 'app' directly.
+Vercel Root Directory = "backend"
+So this file is at: api/index.py (relative to backend/)
+And app/ is at: app/ (relative to backend/)
 """
 import sys
 import os
 
-# Add backend directory to Python path FIRST - before any imports
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-BACKEND_DIR = os.path.dirname(CURRENT_DIR)
+# Get paths
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))  # backend/api/
+BACKEND_DIR = os.path.dirname(CURRENT_DIR)                 # backend/
 
-# Ensure backend is in path
+# Add backend directory to Python path
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
-
-# Also add the parent of backend for absolute imports
-REPO_ROOT = os.path.dirname(BACKEND_DIR)
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
 
 # Set environment variables for Vercel
 os.environ["VERCEL"] = "1"
 
-# Now import FastAPI app
+# Import FastAPI app from backend/app/main.py
 from app.main import app
 
-# Vercel @vercel/python runtime will automatically detect
-# that 'app' is an ASGI application and handle it correctly.
-# No Mangum or other adapter needed for Vercel's Python runtime.
-
-# Export for Vercel
+# Export for Vercel - ASGI app
 __all__ = ['app']

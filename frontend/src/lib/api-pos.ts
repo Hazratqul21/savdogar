@@ -116,7 +116,7 @@ export interface CheckoutRequest {
 
 export async function getProducts(tenantId: number): Promise<any[]> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/v2/products?limit=1000`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/products/?limit=1000`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch products');
@@ -231,7 +231,7 @@ export async function checkout(request: CheckoutRequest): Promise<any> {
 
 export async function getCustomers(tenantId: number): Promise<Customer[]> {
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/v1/v2/customers`, {
+  const response = await fetch(`${apiUrl}/api/v1/v2/customers/`, {
     headers: getAuthHeaders(),
   });
   if (!response.ok) throw new Error('Failed to fetch customers');

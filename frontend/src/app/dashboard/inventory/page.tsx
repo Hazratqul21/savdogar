@@ -32,7 +32,7 @@ async function getInventoryReport() {
 
 async function getProducts() {
     const apiUrl = getApiBaseUrl();
-    const response = await fetch(`${apiUrl}/api/v1/v2/products?limit=100`, {
+    const response = await fetch(`${apiUrl}/api/v1/v2/products/?limit=100`, {
         headers: getAuthHeaders(),
     });
     if (!response.ok) {

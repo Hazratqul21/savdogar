@@ -148,7 +148,7 @@ export async function getSalesData(days: number = 30): Promise<SalesDataPoint[]>
   try {
     const apiUrl = getApiUrl();
     const salesResponse = await fetch(
-      `${apiUrl}/api/v1/v2/sales?skip=0&limit=1000`,
+      `${apiUrl}/api/v1/v2/sales/?skip=0&limit=1000`,
       { headers: getAuthHeaders() }
     );
 

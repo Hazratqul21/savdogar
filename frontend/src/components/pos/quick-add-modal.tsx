@@ -130,7 +130,7 @@ export function QuickAddProductModal({ isOpen, onClose, initialBarcode }: QuickA
                 ? 'http://localhost:8000'
                 : process.env.NEXT_PUBLIC_API_URL || '';
             
-            const response = await fetch(`${apiBaseUrl}/api/v1/v2/products`, {
+            const response = await fetch(`${apiBaseUrl}/api/v1/v2/products/`, {
                 method: "POST",
                 headers: {
                     ...getAuthHeaders(),
@@ -222,7 +222,7 @@ export function QuickAddProductModal({ isOpen, onClose, initialBarcode }: QuickA
                         ? 'http://localhost:8000'
                         : process.env.NEXT_PUBLIC_API_URL || '';
 
-                    const response = await fetch(`${apiBaseUrl}/api/v1/v2/products`, {
+                    const response = await fetch(`${apiBaseUrl}/api/v1/v2/products/`, {
                         method: "POST",
                         headers: {
                             ...getAuthHeaders(),

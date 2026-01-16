@@ -59,7 +59,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 // API functions
 async function getProducts(search?: string) {
     const apiUrl = getApiBaseUrl();
-    let url = `${apiUrl}/api/v1/v2/products?limit=100`;
+    let url = `${apiUrl}/api/v1/v2/products/?limit=100`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     
     const response = await fetch(url, { headers: getAuthHeaders() });
@@ -78,7 +78,7 @@ async function getProducts(search?: string) {
 
 async function createProduct(data: any) {
     const apiUrl = getApiBaseUrl();
-    const response = await fetch(`${apiUrl}/api/v1/v2/products`, {
+    const response = await fetch(`${apiUrl}/api/v1/v2/products/`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),

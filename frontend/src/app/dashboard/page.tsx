@@ -45,7 +45,7 @@ async function getDashboardStats() {
 
 async function getRecentSales() {
     const apiUrl = getApiBaseUrl();
-    const response = await fetch(`${apiUrl}/api/v1/v2/sales?limit=5`, {
+    const response = await fetch(`${apiUrl}/api/v1/v2/sales/?limit=5`, {
         headers: getAuthHeaders(),
     });
     if (!response.ok) {

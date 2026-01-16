@@ -22,7 +22,7 @@ import { getAuthHeaders, getApiBaseUrl } from "@/lib/api";
 // API functions
 async function getSales(startDate?: string, endDate?: string) {
     const apiUrl = getApiBaseUrl();
-    let url = `${apiUrl}/api/v1/v2/sales?limit=100`;
+    let url = `${apiUrl}/api/v1/v2/sales/?limit=100`;
     
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error("Failed to fetch sales");

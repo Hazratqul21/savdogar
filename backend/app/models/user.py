@@ -37,6 +37,7 @@ class User(Base):
     passport_data = Column(String, nullable=True)
     job_title = Column(String, nullable=True)
     hired_date = Column(Date, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
     # UI/Personalization Settings
     # {"theme": "glass", "language": "uz", "dashboard_layout": ["sales", "stock", "ai"]}

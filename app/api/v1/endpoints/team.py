@@ -77,7 +77,7 @@ async def get_team_members(
     members = db.query(User).filter(
         User.tenant_id == current_user.tenant_id,
         User.id != current_user.id  # Exclude current user
-    ).order_by(User.created_at.desc()).all()
+    ).order_by(User.id.desc()).all()
     
     result = []
     for member in members:

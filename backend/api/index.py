@@ -1,10 +1,10 @@
 """
 Vercel Serverless Function Entry Point
 =====================================
-FastAPI app for Vercel Python runtime with Mangum adapter.
+FastAPI app for Vercel Python runtime (native ASGI support).
 
-DEPLOY: 2026-01-16T05:50:00Z
-VERSION: v3.4.0 - CRITICAL FIX: 405 Method Not Allowed
+DEPLOY: 2026-01-16T06:00:00Z
+VERSION: v3.5.0 - FIX: TypeError issubclass() - Direct ASGI export
 """
 import sys
 import os
@@ -17,14 +17,10 @@ if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
 # Import FastAPI app
+# Vercel Python runtime natively supports ASGI applications
+# No need for Mangum adapter - direct export works
 from app.main import app
 
-# Import Mangum adapter for Vercel serverless function
-from mangum import Mangum
-
-# Create handler with Mangum
-# lifespan="off" to avoid issues with Vercel cold starts
-handler = Mangum(app, lifespan="off")
-
-# Export both for compatibility
-__all__ = ['app', 'handler']
+# Vercel will automatically detect and use the ASGI app
+# Export app directly for Vercel's native ASGI support
+__all__ = ['app']

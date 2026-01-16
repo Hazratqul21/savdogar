@@ -45,11 +45,13 @@ async def lifespan(app: FastAPI):
 
 
 # Initialize FastAPI application
+# NOTE: lifespan disabled for Vercel serverless compatibility
+# Vercel cold starts don't work well with lifespan events
 app = FastAPI(
     title="SmartPOS CRM API",
     description="Professional POS and CRM system for businesses",
     version="1.0.0",
-    lifespan=lifespan,
+    # lifespan=lifespan,  # Disabled for Vercel serverless
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",

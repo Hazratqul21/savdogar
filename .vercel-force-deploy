@@ -1,12 +1,1 @@
-FORCE DEPLOY TRIGGER
-====================
-Timestamp: 2026-01-16T06:35:00Z
-Version: v4.1.0
-Reason: Fix Vercel not detecting backend commits
-
-Changes:
-- Removed backend/vercel.json (conflict with root vercel.json)
-- Root vercel.json is the only config Vercel uses
-- Backend changes: api/index.py, main.py, products_v2.py
-
-This file forces Vercel to redeploy by changing repo content.
+1768536039

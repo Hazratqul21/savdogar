@@ -8,28 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/api/v1/(.*)",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/health(.*)",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/docs(.*)",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/openapi.json",
-      "dest": "backend/api/index.py"
-    },
-    {
-      "src": "/verify/(.*)",
-      "dest": "backend/api/index.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "backend/api/index.py"
+      "dest": "/backend/api/index.py"
     }
   ]
 }

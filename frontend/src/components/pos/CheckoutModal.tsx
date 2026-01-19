@@ -8,7 +8,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePosState, type PaymentMethod } from "@/stores/pos-state";
-import { checkout, type CheckoutRequest } from "@/lib/api-pos";
+import { checkout, type CheckoutRequest, getTenantInfo } from "@/lib/api-pos";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import { ReceiptPrint, generateReceiptData } from "@/components/receipt/ReceiptPrint";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -38,6 +41,8 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saleResult, setSaleResult] = useState<any>(null);
+  const [tenantInfo, setTenantInfo] = useState<any>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const total = getCartTotal();
   const subtotal = getCartSubtotal();
@@ -55,8 +60,17 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
       setNotes("");
       setError(null);
       setSaleResult(null);
+
+      // Fetch tenant info for receipt
+      getTenantInfo()
+        .then(setTenantInfo)
+        .catch(console.error);
     }
   }, [isOpen, paymentMethod]);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+  });
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString("uz-UZ") + " so'm";
@@ -99,10 +113,6 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleNewSale = () => {
     clearCart();
     onClose();
@@ -129,7 +139,7 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && step !== "processing" && onClose()}
     >
@@ -151,9 +161,9 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
-                {step === "success" ? "Sotuv yakunlandi!" : 
-                 step === "error" ? "Xatolik" :
-                 step === "processing" ? "Jarayonda..." : "To'lov"}
+                {step === "success" ? "Sotuv yakunlandi!" :
+                  step === "error" ? "Xatolik" :
+                    step === "processing" ? "Jarayonda..." : "To'lov"}
               </h2>
               <p className="text-sm text-slate-500">
                 {step === "success" && saleResult?.receipt_number
@@ -234,8 +244,8 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
                         onClick={() => setSelectedPayment(method.id)}
                         className={cn(
                           "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
-                          isSelected 
-                            ? "bg-blue-500/20 border-blue-500 text-blue-400" 
+                          isSelected
+                            ? "bg-blue-500/20 border-blue-500 text-blue-400"
                             : "bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600"
                         )}
                       >
@@ -361,7 +371,7 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={handlePrint}
+                  onClick={() => handlePrint()}
                   className="flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium transition-colors"
                 >
                   <Printer className="w-5 h-5" />
@@ -374,6 +384,25 @@ export function CheckoutModal({ isOpen, onClose, onSuccess }: CheckoutModalProps
                   <Receipt className="w-5 h-5" />
                   Yangi sotuv
                 </button>
+              </div>
+
+              {/* Hidden Receipt for Printing */}
+              <div className="hidden">
+                <div ref={printRef}>
+                  {saleResult && tenantInfo && (
+                    <ReceiptPrint
+                      data={generateReceiptData(
+                        saleResult,
+                        {
+                          name: tenantInfo.name || "SAVDOGAR",
+                          address: tenantInfo.address,
+                          phone: tenantInfo.phone
+                        },
+                        "Kassir" // TODO: Add cashier name to state
+                      )}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           )}

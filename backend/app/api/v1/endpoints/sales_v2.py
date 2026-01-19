@@ -187,7 +187,7 @@ def calculate_cart_total(
     from app.models.tenant import Tenant
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if tenant and tenant.business_type == "horeca":
-        service_charge = subtotal * 0.10 # 10% xizmat haqi
+        service_charge = 0.0 # 10% xizmat haqi o'chirildi
         
     total = subtotal + tax_amount + service_charge
     

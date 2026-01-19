@@ -130,6 +130,18 @@ class SaleItemV2(Base):
         Index('idx_sale_items_variant', 'variant_id'),
     )
 
+    @property
+    def product_name(self):
+        if self.variant and self.variant.product_v2:
+            return self.variant.product_v2.name
+        return "Noma'lum mahsulot"
+
+    @property
+    def sku(self):
+        if self.variant:
+            return self.variant.sku
+        return ""
+
 
 
 

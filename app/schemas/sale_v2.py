@@ -28,6 +28,8 @@ class SaleItem(BaseModel):
     discount_amount: float
     tax_rate: float
     tax_amount: float
+    product_name: Optional[str] = None
+    sku: Optional[str] = None
     
     class Config:
         from_attributes = True

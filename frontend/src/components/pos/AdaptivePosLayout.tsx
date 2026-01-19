@@ -19,6 +19,7 @@ import { ScanIndicator } from "@/components/pos/ScanIndicator";
 import { MobileCartBar } from "./MobileCartBar";
 import { MobileScannerButton } from "./MobileScannerButton";
 import { QuickAddProductModal } from "./quick-add-modal";
+import { CheckoutModal } from "./CheckoutModal";
 import { soundManager } from "@/lib/sound-manager";
 
 /**
@@ -46,14 +47,15 @@ export function AdaptivePosLayout() {
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductVariant[]>([]);
   const { toasts, removeToast, error: showErrorToast } = useToast();
-  
+
   // Scan indicator state
   const [scanSuccess, setScanSuccess] = useState(false);
   const [scanError, setScanError] = useState(false);
-  
+
   // Add New Product Modal state
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [missingBarcode, setMissingBarcode] = useState("");
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
   // HID Barcode Scanner: Listen for USB scanner input
   useBarcodeScanner({
@@ -97,22 +99,22 @@ export function AdaptivePosLayout() {
       if (variant) {
         // Found locally: Auto-add to cart (increment quantity if already exists)
         addToCart(variant, 1);
-        
+
         // Visual feedback: Green flash
         setScanSuccess(true);
         setTimeout(() => setScanSuccess(false), 1000);
-        
+
         // Audio feedback: Success beep
         soundManager.playBeep();
       } else {
         // Not found locally: Check global catalog directly from Supabase
         const { searchGlobalCatalogByBarcode } = await import('@/lib/supabase');
         const globalProduct = await searchGlobalCatalogByBarcode(barcode);
-        
+
         // Product not found: Open "Add New Product" modal
         setMissingBarcode(barcode);
         setShowQuickAdd(true);
-        
+
         // If found in global catalog, store the data for pre-filling
         if (globalProduct) {
           sessionStorage.setItem('global_catalog_data', JSON.stringify({
@@ -122,12 +124,12 @@ export function AdaptivePosLayout() {
         } else {
           sessionStorage.removeItem('global_catalog_data');
         }
-        
+
         // No error sound, no toast - just silently open the modal
       }
     } catch (error) {
       console.error('Barcode scan error:', error);
-      
+
       // Error feedback
       setScanError(true);
       setTimeout(() => setScanError(false), 1000);
@@ -163,7 +165,7 @@ export function AdaptivePosLayout() {
   useEffect(() => {
     if (productsData) {
       setProducts(productsData);
-      
+
       // Flatten products to variants for display
       const variants: ProductVariant[] = [];
       productsData.forEach((product: any) => {
@@ -180,7 +182,7 @@ export function AdaptivePosLayout() {
           });
         }
       });
-      
+
       setFilteredProducts(variants);
     }
   }, [productsData]);
@@ -219,14 +221,14 @@ export function AdaptivePosLayout() {
       const barcode = variant.barcode_aliases?.some((b) =>
         b.toLowerCase().includes(query)
       );
-      
+
       return (
         productName.includes(query) ||
         sku.includes(query) ||
         barcode
       );
     });
-    
+
     setFilteredProducts(filtered);
   }, [searchQuery, productsData]);
 
@@ -235,8 +237,7 @@ export function AdaptivePosLayout() {
   };
 
   const handlePay = () => {
-    // TODO: Implement payment flow
-    console.log("Pay clicked");
+    setIsCheckoutModalOpen(true);
   };
 
   if (isLoading || isLoadingTenant) {
@@ -275,10 +276,10 @@ export function AdaptivePosLayout() {
     <div className="h-screen flex flex-col bg-background">
       {/* Scan Indicator - Visual feedback for scans */}
       <ScanIndicator success={scanSuccess} error={scanError} />
-      
+
       {/* Mobile Cart Bar with Scanner Button - Only on mobile */}
       <MobileCartBar onScan={handleBarcodeScan} />
-      
+
       {/* Search Bar */}
       <div className="border-b border-border p-4 bg-card">
         <div className="relative max-w-2xl flex gap-3 items-center">
@@ -291,7 +292,7 @@ export function AdaptivePosLayout() {
             className="pl-10 h-12 text-lg flex-1"
             autoFocus
           />
-          
+
           {/* Mobile Scanner Button - Only on mobile */}
           <div className="md:hidden">
             <MobileScannerButton
@@ -371,6 +372,17 @@ export function AdaptivePosLayout() {
           setMissingBarcode("");
         }}
         initialBarcode={missingBarcode}
+      />
+
+      {/* Checkout/Payment Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutModalOpen}
+        onClose={() => setIsCheckoutModalOpen(false)}
+        onSuccess={(sale) => {
+          setIsCheckoutModalOpen(false);
+          // Optional: Show success toast
+          console.log("Sale successful:", sale);
+        }}
       />
     </div>
   );

@@ -22,22 +22,16 @@ export const getApiBaseUrl = (): string => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
+
   // 2. Development: use localhost backend
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:8000';
   }
-  
-  // 3. Build-time: return empty string (validation happens at runtime)
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  
-  // 4. Runtime without env var: throw error
-  throw new Error(
-    'NEXT_PUBLIC_API_URL environment variable is not set. ' +
-    'Please configure it in Vercel: Settings → Environment Variables'
-  );
+
+  // 3. Fallback for production (prevents hard crash)
+  // Returning empty string instead of throwing error allows the app to load
+  // and show a specific error message/toast about configuration.
+  return '';
 };
 
 // Cache for API URL
@@ -55,19 +49,19 @@ const getApiUrl = (): string => {
       return '';
     }
   }
-  
+
   // Client-side: cache and validate
   if (_apiUrlCache === null) {
     _apiUrlCache = getApiBaseUrl();
   }
-  
+
   if (!_apiUrlCache) {
     throw new Error(
       'NEXT_PUBLIC_API_URL is not configured. ' +
       'Set it in Vercel: Settings → Environment Variables'
     );
   }
-  
+
   return _apiUrlCache;
 };
 
@@ -188,12 +182,12 @@ export interface TokenResponse {
 
 export async function login(credentials: LoginRequest): Promise<TokenResponse> {
   const apiUrl = getApiUrl();
-  
+
   // Log for debugging
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.log('🔐 Login request:', { apiUrl, username: credentials.username });
   }
-  
+
   try {
     const formData = new URLSearchParams();
     formData.append('username', credentials.username);
@@ -245,12 +239,12 @@ export async function login(credentials: LoginRequest): Promise<TokenResponse> {
 
 export async function signup(userData: SignupRequest): Promise<any> {
   const apiUrl = getApiUrl();
-  
+
   // Log for debugging
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.log('🔐 Signup request:', { apiUrl, username: userData.username, email: userData.email });
   }
-  
+
   try {
     const response = await fetch(`${apiUrl}/api/v1/auth/signup`, {
       method: 'POST',

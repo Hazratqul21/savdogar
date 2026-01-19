@@ -247,10 +247,7 @@ export const usePosState = create<PosState>()(
       },
 
       getServiceCharge: () => {
-        const subtotal = get().getCartSubtotal();
-        const { businessType } = get();
-        const serviceChargeTypes: BusinessType[] = ['horeca', 'cafe', 'kitchen'];
-        return serviceChargeTypes.includes(businessType as any) ? subtotal * 0.10 : 0;
+        return 0; // Disabled automatic 10% service charge as per user request
       },
 
       getDiscountPercent: (variantId) => {

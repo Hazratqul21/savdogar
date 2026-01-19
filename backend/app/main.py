@@ -82,56 +82,16 @@ if settings.CORS_ORIGINS:
     additional_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
     origins.extend(additional_origins)
 
-def get_cors_origin(request_origin: str) -> str:
-    """
-    Check if origin is allowed, including Vercel preview deployments.
-    """
-    if not request_origin:
-        return origins[0] if origins else "*"
-    
-    # Exact match
-    if request_origin in origins:
-        return request_origin
-    
-    # Allow all Vercel preview deployments (*.vercel.app)
-    if request_origin.endswith(".vercel.app"):
-        return request_origin
-    
-    # Allow localhost variations
-    if request_origin.startswith("http://localhost") or request_origin.startswith("http://127.0.0.1"):
-        return request_origin
-    
-    return origins[0] if origins else "*"
-
-# Custom CORS middleware to handle Vercel preview deployments
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class DynamicCORSMiddleware(BaseHTTPMiddleware):
-    """
-    Custom CORS middleware that supports dynamic origins including Vercel previews.
-    """
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin", "")
-        
-        # Handle preflight (OPTIONS) - already handled by options_handler
-        if request.method == "OPTIONS":
-            return await call_next(request)
-        
-        # Process request
-        response = await call_next(request)
-        
-        # Add CORS headers to response
-        allowed_origin = get_cors_origin(origin)
-        response.headers["Access-Control-Allow-Origin"] = allowed_origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token"
-        response.headers["Access-Control-Expose-Headers"] = "*"
-        
-        return response
-
-# Add custom CORS middleware (handles dynamic origins for Vercel previews)
-app.add_middleware(DynamicCORSMiddleware)
+# Standard FastAPI CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex="https://.*\.vercel\.app",  # Support all Vercel previews
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 # Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)

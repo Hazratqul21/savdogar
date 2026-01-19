@@ -42,8 +42,8 @@ class SaleV2(Base):
     service_charge = Column(Float, default=0.0) # Xizmat haqi (Horeca bo'limi uchun)
     
     # To'lov
-    payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.CASH, nullable=False)
-    status = Column(Enum(SaleStatus), default=SaleStatus.COMPLETED, nullable=False)
+    payment_method = Column(String, default="cash", nullable=False)
+    status = Column(String, default="completed", nullable=False)
     
     # Qarz ma'lumotlari (agar payment_method = DEBT)
     is_debt = Column(Boolean, default=False, index=True)

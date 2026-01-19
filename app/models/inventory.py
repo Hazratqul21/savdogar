@@ -13,7 +13,9 @@ class InventoryMovement(Base):
     __tablename__ = "inventory_movements"
 
     id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True) # Legacy
+    variant_id = Column(Integer, ForeignKey("product_variants.id"), nullable=True) # New V2
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=True, index=True) # Multi-tenant
     quantity = Column(Float, nullable=False)
     movement_type = Column(Enum(MovementType), default=MovementType.IN)
     reference_type = Column(String, nullable=True)  # sale, invoice, adjustment
@@ -23,6 +25,8 @@ class InventoryMovement(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     product = relationship("Product")
+    variant = relationship("ProductVariant")
+    tenant = relationship("Tenant")
 
 class Supplier(Base):
     __tablename__ = "suppliers"

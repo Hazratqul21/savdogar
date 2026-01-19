@@ -1,13 +1,13 @@
-from typing import Any
-from fastapi import APIRouter, Depends
+from typing import Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 
 from app.api import deps
-from app.models import Sale, SaleItem, Product, User, Invoice, UserRole
-from typing import Optional
-from fastapi import HTTPException, status
+from app.models.user import User
+from app.models.sale_v2 import SaleV2, SaleItemV2
+from app.models.product_v2 import ProductV2, ProductVariant
 
 router = APIRouter()
 
@@ -15,62 +15,63 @@ router = APIRouter()
 def get_dashboard_stats(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-    organization_id: Optional[int] = Depends(deps.get_user_organization),
 ) -> Any:
-    """Get dashboard statistics."""
-    # Restrict access for seller/cashier role (role is now a string)
+    """Get dashboard statistics using V2 models."""
+    # Restrict access for cashier role
     if current_user.role == "cashier":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. Sellers cannot view dashboard analytics."
+            detail="Kirish taqiqlangan. Kassirlar tahlillarni ko'ra olmaydi."
         )
+    
+    tenant_id = current_user.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+
     today = datetime.utcnow().date()
     month_start = today.replace(day=1)
     
-    # Build filters
-    sale_filters = []
-    product_filters = []
-    if organization_id is not None:
-        sale_filters.append(Sale.organization_id == organization_id)
-        product_filters.append(Product.organization_id == organization_id)
+    # Today's sales (SaleV2)
+    today_sales = db.query(func.sum(SaleV2.total_amount)).filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            func.date(SaleV2.created_at) == today,
+            SaleV2.status == "completed"
+        )
+    ).scalar() or 0
     
-    # Today's sales
-    today_sales_query = db.query(func.sum(Sale.total_amount)).filter(
-        func.date(Sale.created_at) == today
-    )
-    if sale_filters:
-        today_sales_query = today_sales_query.filter(*sale_filters)
-    today_sales = today_sales_query.scalar() or 0
+    # Monthly sales (SaleV2)
+    monthly_sales = db.query(func.sum(SaleV2.total_amount)).filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            SaleV2.created_at >= month_start,
+            SaleV2.status == "completed"
+        )
+    ).scalar() or 0
     
-    # Monthly sales
-    monthly_sales_query = db.query(func.sum(Sale.total_amount)).filter(
-        Sale.created_at >= month_start
-    )
-    if sale_filters:
-        monthly_sales_query = monthly_sales_query.filter(*sale_filters)
-    monthly_sales = monthly_sales_query.scalar() or 0
+    # Total products (ProductV2)
+    total_products = db.query(func.count(ProductV2.id)).filter(
+        ProductV2.tenant_id == tenant_id,
+        ProductV2.is_active == True
+    ).scalar() or 0
     
-    # Total products
-    total_products_query = db.query(func.count(Product.id))
-    if product_filters:
-        total_products_query = total_products_query.filter(*product_filters)
-    total_products = total_products_query.scalar() or 0
+    # Low stock products (ProductVariant)
+    low_stock = db.query(func.count(ProductVariant.id)).filter(
+        and_(
+            ProductVariant.tenant_id == tenant_id,
+            ProductVariant.stock_quantity < 10,
+            ProductVariant.is_active == True
+        )
+    ).scalar() or 0
     
-    # Low stock products
-    low_stock_query = db.query(func.count(Product.id)).filter(
-        Product.stock_quantity < 10
-    )
-    if product_filters:
-        low_stock_query = low_stock_query.filter(*product_filters)
-    low_stock = low_stock_query.scalar() or 0
-    
-    # Today's transactions
-    today_transactions_query = db.query(func.count(Sale.id)).filter(
-        func.date(Sale.created_at) == today
-    )
-    if sale_filters:
-        today_transactions_query = today_transactions_query.filter(*sale_filters)
-    today_transactions = today_transactions_query.scalar() or 0
+    # Today's transactions (SaleV2)
+    today_transactions = db.query(func.count(SaleV2.id)).filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            func.date(SaleV2.created_at) == today,
+            SaleV2.status == "completed"
+        )
+    ).scalar() or 0
     
     return {
         "today_sales": float(today_sales),
@@ -84,47 +85,47 @@ def get_dashboard_stats(
 def get_dashboard_charts(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
-    organization_id: Optional[int] = Depends(deps.get_user_organization),
 ) -> Any:
-    """Get data for dashboard charts."""
-    # Restrict access for seller/cashier role (role is now a string)
+    """Get data for dashboard charts using V2 models."""
     if current_user.role == "cashier":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied. Sellers cannot view dashboard charts."
+            detail="Kirish taqiqlangan."
         )
+        
+    tenant_id = current_user.tenant_id
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant topilmadi")
+
     today = datetime.utcnow().date()
-    
-    # Build filters
-    sale_filters = []
-    if organization_id is not None:
-        sale_filters.append(Sale.organization_id == organization_id)
     
     # Last 7 days sales
     sales_data = []
     for i in range(6, -1, -1):
         date = today - timedelta(days=i)
-        daily_sales_query = db.query(func.sum(Sale.total_amount)).filter(
-            func.date(Sale.created_at) == date
-        )
-        if sale_filters:
-            daily_sales_query = daily_sales_query.filter(*sale_filters)
-        daily_sales = daily_sales_query.scalar() or 0
+        daily_sales = db.query(func.sum(SaleV2.total_amount)).filter(
+            and_(
+                SaleV2.tenant_id == tenant_id,
+                func.date(SaleV2.created_at) == date,
+                SaleV2.status == "completed"
+            )
+        ).scalar() or 0
         sales_data.append({
             "date": date.isoformat(),
             "total": float(daily_sales),
         })
     
     # Top 5 products by sales
-    top_products_query = db.query(
-        Product.name,
-        func.sum(SaleItem.quantity).label("total_qty")
-    ).join(SaleItem).join(Sale)
-    if sale_filters:
-        top_products_query = top_products_query.filter(*sale_filters)
-    top_products = top_products_query.group_by(Product.id).order_by(
-        func.sum(SaleItem.quantity).desc()
-    ).limit(5).all()
+    top_products = db.query(
+        ProductV2.name,
+        func.sum(SaleItemV2.quantity).label("total_qty")
+    ).join(ProductVariant, ProductV2.id == ProductVariant.product_id)\
+     .join(SaleItemV2, ProductVariant.id == SaleItemV2.variant_id)\
+     .join(SaleV2, SaleItemV2.sale_id == SaleV2.id)\
+     .filter(SaleV2.tenant_id == tenant_id, SaleV2.status == "completed")\
+     .group_by(ProductV2.id)\
+     .order_by(func.sum(SaleItemV2.quantity).desc())\
+     .limit(5).all()
     
     return {
         "sales_trend": sales_data,

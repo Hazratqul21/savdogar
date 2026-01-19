@@ -11,32 +11,48 @@ from app.models import Sale, SaleItem, Product, ScannedReceipt
 from app.services.openai_service import openai_service
 
 
-def get_sales_summary(db: Session, days: int = 30) -> Dict:
-    """Get sales summary for AI analysis."""
+def get_sales_summary(db: Session, tenant_id: int, days: int = 30) -> Dict:
+    """Get sales summary for AI analysis using V2 models."""
     start_date = datetime.utcnow() - timedelta(days=days)
     
-    # Total sales
-    total_sales = db.query(func.sum(Sale.total_amount)).filter(
-        Sale.created_at >= start_date
+    # Total sales (SaleV2)
+    total_sales = db.query(func.sum(SaleV2.total_amount)).filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            SaleV2.created_at >= start_date,
+            SaleV2.status == "completed"
+        )
     ).scalar() or 0
     
     # Number of transactions
-    transaction_count = db.query(func.count(Sale.id)).filter(
-        Sale.created_at >= start_date
+    transaction_count = db.query(func.count(SaleV2.id)).filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            SaleV2.created_at >= start_date,
+            SaleV2.status == "completed"
+        )
     ).scalar() or 0
     
-    # Top products
+    # Top products (V2)
+    from app.models.product_v2 import ProductV2, ProductVariant
     top_products = db.query(
-        Product.name,
-        func.sum(SaleItem.quantity).label('total_qty'),
-        func.sum(SaleItem.total).label('total_revenue')
-    ).join(SaleItem).join(Sale).filter(
-        Sale.created_at >= start_date
-    ).group_by(Product.name).order_by(
-        func.sum(SaleItem.total).desc()
+        ProductV2.name,
+        func.sum(SaleItemV2.quantity).label('total_qty'),
+        func.sum(SaleItemV2.total).label('total_revenue')
+    ).join(ProductVariant, ProductV2.id == ProductVariant.product_id)\
+     .join(SaleItemV2, ProductVariant.id == SaleItemV2.variant_id)\
+     .join(SaleV2, SaleItemV2.sale_id == SaleV2.id)\
+     .filter(
+        and_(
+            SaleV2.tenant_id == tenant_id,
+            SaleV2.created_at >= start_date,
+            SaleV2.status == "completed"
+        )
+    ).group_by(ProductV2.id).order_by(
+        func.sum(SaleItemV2.total).desc()
     ).limit(10).all()
     
-    # Scanned receipts count
+    # Note: ScannedReceipt might need tenant_id check too if it's multi-tenant
     scanned_count = db.query(func.count(ScannedReceipt.id)).filter(
         ScannedReceipt.created_at >= start_date,
         ScannedReceipt.status == "confirmed"
@@ -57,14 +73,14 @@ def get_sales_summary(db: Session, days: int = 30) -> Dict:
         ]
     }
 
+from sqlalchemy import and_
 
-def generate_ai_insights(db: Session, days: int = 30) -> Dict:
+def generate_ai_insights(db: Session, tenant_id: int, days: int = 30) -> Dict:
     """
-    Generate AI-powered business insights based on sales data.
-    Returns automatic analysis and recommendations.
+    Generate AI-powered business insights for specific tenant.
     """
     # Get sales data
-    summary = get_sales_summary(db, days)
+    summary = get_sales_summary(db, tenant_id, days)
     
     # Create prompt for AI analysis
     prompt = f"""Siz biznes tahlilchisisiz. Quyidagi savdo ma'lumotlarini tahlil qiling va o'zbek tilida qisqa xulosalar va tavsiyalar bering.
@@ -146,9 +162,9 @@ Faqat JSON qaytaring, boshqa matn yo'q."""
         }
 
 
-def get_product_recommendations(db: Session) -> List[str]:
-    """Get AI-powered product recommendations."""
-    summary = get_sales_summary(db, 30)
+def get_product_recommendations(db: Session, tenant_id: int) -> List[str]:
+    """Get AI-powered product recommendations for specific tenant."""
+    summary = get_sales_summary(db, tenant_id, 30)
     
     prompt = f"""Quyidagi savdo ma'lumotlariga asoslanib, qaysi mahsulotlarni omborda ko'proq saqlash kerakligini tavsiya qiling.
 

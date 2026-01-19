@@ -20,10 +20,10 @@ def get_ai_insights(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Get AI-powered business insights.
-    Automatically analyzes sales data and provides recommendations.
+    Get AI-powered business insights for current tenant.
     """
-    insights = generate_ai_insights(db, days)
+    tenant_id = current_user.tenant_id
+    insights = generate_ai_insights(db, tenant_id, days)
     return insights
 
 
@@ -32,6 +32,7 @@ def get_ai_recommendations(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Get AI-powered product recommendations."""
-    recommendations = get_product_recommendations(db)
+    """Get AI-powered product recommendations for current tenant."""
+    tenant_id = current_user.tenant_id
+    recommendations = get_product_recommendations(db, tenant_id)
     return {"recommendations": recommendations}

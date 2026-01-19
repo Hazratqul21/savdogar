@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Loader2, AlertCircle } from "lucide-react";
 import { usePosState, ProductVariant } from "@/stores/pos-state";
-import { getTenantInfo, getProducts, searchProductsByBarcode, searchProductsBySku } from "@/lib/api-pos";
+import { checkout, type CheckoutRequest, getTenantInfo, getProducts, searchProductsByBarcode, searchProductsBySku } from "@/lib/api-pos";
 import { ProductCard } from "./ProductCard";
 import { CartSidebar } from "./CartSidebar";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,9 @@ import { MobileScannerButton } from "./MobileScannerButton";
 import { QuickAddProductModal } from "./quick-add-modal";
 import { CheckoutModal } from "./CheckoutModal";
 import { soundManager } from "@/lib/sound-manager";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import { ReceiptPrint, generateReceiptData } from "@/components/receipt/ReceiptPrint";
 
 /**
  * Adaptive POS Layout
@@ -41,6 +44,10 @@ export function AdaptivePosLayout() {
     addToCart,
     searchQuery,
     setSearchQuery,
+    cart,
+    selectedCustomer,
+    paymentMethod,
+    clearCart,
   } = usePosState();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +63,9 @@ export function AdaptivePosLayout() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [missingBarcode, setMissingBarcode] = useState("");
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isInstantPaying, setIsInstantPaying] = useState(false);
+  const [lastSaleResult, setLastSaleResult] = useState<any>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // HID Barcode Scanner: Listen for USB scanner input
   useBarcodeScanner({
@@ -236,8 +246,65 @@ export function AdaptivePosLayout() {
     addToCart(variant, quantity);
   };
 
+  const handleInstantPay = async () => {
+    if (cart.length === 0) return;
+
+    setIsInstantPaying(true);
+    soundManager.playBeep();
+
+    try {
+      const request: CheckoutRequest = {
+        items: cart.map((item) => ({
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          discount_percent: item.discount_percent,
+        })),
+        customer_id: selectedCustomer?.id,
+        payment_method: paymentMethod || 'cash',
+        notes: "Instant Checkout",
+      };
+
+      const result = await checkout(request);
+      setLastSaleResult(result);
+
+      // Success feedback
+      soundManager.playBeep();
+      // We can't easily auto-print without the modal or a button click, 
+      // but we successfully cleared the cart and finished the sale.
+
+      clearCart();
+      // Show success message
+      toasts.push({
+        id: Date.now().toString(),
+        type: 'success',
+        title: 'Sotuv yakunlandi!',
+        message: `Chek raqami: ${result.receipt_number}`,
+        duration: 3000
+      });
+
+    } catch (err: any) {
+      console.error("Instant pay error:", err);
+      soundManager.playError();
+      showErrorToast(err.message || "To'lov xatosi");
+    } finally {
+      setIsInstantPaying(false);
+    }
+  };
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+  });
+
+  // Auto-print effect when lastSaleResult changes
+  useEffect(() => {
+    if (lastSaleResult && tenantInfo) {
+      handlePrint();
+    }
+  }, [lastSaleResult, tenantInfo]);
+
   const handlePay = () => {
-    setIsCheckoutModalOpen(true);
+    // As per user request: "skip checkout modal"
+    handleInstantPay();
   };
 
   if (isLoading || isLoadingTenant) {
@@ -380,10 +447,28 @@ export function AdaptivePosLayout() {
         onClose={() => setIsCheckoutModalOpen(false)}
         onSuccess={(sale) => {
           setIsCheckoutModalOpen(false);
-          // Optional: Show success toast
-          console.log("Sale successful:", sale);
+          setLastSaleResult(sale);
         }}
       />
+
+      {/* Hidden Receipt for Instant Printing */}
+      <div className="hidden">
+        <div ref={printRef}>
+          {lastSaleResult && tenantInfo && (
+            <ReceiptPrint
+              data={generateReceiptData(
+                lastSaleResult,
+                {
+                  name: tenantInfo.name || "SAVDOGAR",
+                  address: tenantInfo.address,
+                  phone: tenantInfo.phone
+                },
+                "Kassir"
+              )}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -85,37 +85,25 @@ def calculate_cart_total(
                     detail=f"Serial number '{item.serial_number}' topilmadi yoki allaqachon sotilgan"
                 )
         
+        # Get business type and config to check if negative stock is allowed
+        from app.models.tenant import Tenant
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        allow_negative = False
+        if tenant and tenant.config:
+            allow_negative = tenant.config.get("allow_negative_stock", False)
+
         # ✅ PART 2: Stock check with decimal support for length-based items
-        # For length-based items (meters), allow decimal quantities
-        # For count-based items (pieces), check whole number availability
-        if variant.primary_unit == "meter" or variant.primary_unit == "metr":
-            # Length-based: allow decimal quantities, check if we have enough
+        # For serialized items, stock is tracked by serial numbers, not quantity
+        if not variant.is_serialized and not allow_negative:
+            # Meter based vs Piece based check
+            is_meter = variant.primary_unit in ["meter", "metr", "m"]
+            unit_suffix = "m" if is_meter else ""
+            
             if variant.stock_quantity < item.quantity:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}m, Talab: {item.quantity}m"
+                    detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}{unit_suffix}, Talab: {item.quantity}{unit_suffix}"
                 )
-        else:
-            # Count-based: check whole number availability
-            # ✅ PART 2: Stock check with decimal support for length-based items
-            # For serialized items, stock is tracked by serial numbers, not quantity
-            if not variant.is_serialized:
-                # For length-based items (meters), allow decimal quantities
-                # For count-based items (pieces), check whole number availability
-                if variant.primary_unit in ["meter", "metr", "m"]:
-                    # Length-based: allow decimal quantities, check if we have enough
-                    if variant.stock_quantity < item.quantity:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}m, Talab: {item.quantity}m"
-                        )
-                else:
-                    # Count-based: check whole number availability
-                    if variant.stock_quantity < item.quantity:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Variant {variant.sku} uchun yetarli ombor yo'q. Mavjud: {variant.stock_quantity}, Talab: {item.quantity}"
-                        )
         
         # Narxni aniqlash (PriceTier dan)
         unit_price = variant.price

@@ -65,14 +65,10 @@ class BusinessLogicService:
                 if mgc_price and variant.price < mgc_price:
                     return False, f"Davlat minimal narxi (MGC): {mgc_price} so'm. Narx past bo'lishi mumkin emas."
         
-        # Stock check (unless retail allows negative)
-        if business_type == "retail":
-            allow_negative = tenant_config.get("allow_negative_stock", False)
-            if not allow_negative and variant.stock_quantity < quantity:
-                return False, f"Omborda yetarli emas. Mavjud: {variant.stock_quantity}"
-        else:
-            if variant.stock_quantity < quantity:
-                return False, f"Omborda yetarli emas. Mavjud: {variant.stock_quantity}"
+        # Stock check: Respect 'allow_negative_stock' configuration for all business types
+        allow_negative = tenant_config.get("allow_negative_stock", False)
+        if not allow_negative and variant.stock_quantity < quantity:
+            return False, f"Omborda yetarli emas. Mavjud: {variant.stock_quantity}"
         
         return True, None
     
